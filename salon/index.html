@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Salón de belleza: peinado, maquillaje, uñas, pestañas y cuidado facial. Reserva tu cita." />
+    <title>Salón de belleza — Peinado, maquillaje y uñas</title>
+
+    <!-- Tipografías: serif elegante para títulos y sans moderna para textos -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Manrope:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+/* ==========================================================================
+   Reset mínimo
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body { min-height: 100vh; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+img, video, svg { display: block; max-width: 100%; }
+p, h1, h2, h3 { overflow-wrap: break-word; }
+ul { list-style: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Lenis (scroll suave) */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* ==========================================================================
+   Variables de diseño: marfil, negro cálido y oro rosado
+   ========================================================================== */
+:root {
+  --color-ivory: #f6f1eb;
+  --color-sand: #ebe2d7;
+  --color-ink: #1c1916;
+  --color-ink-soft: #5f564e;
+  --color-gold: #b58a68;
+  --color-gold-light: #d9b99b;
+
+  --font-display: "Cormorant Garamond", "Didot", "Bodoni 72", Georgia, serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --gutter: clamp(1rem, 5vw, 4rem);
+  --space-lg: clamp(2rem, 5vw, 3.5rem);
+  --space-xl: clamp(5rem, 14vw, 11rem);
+  --radius: 2px;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+body {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  background-color: var(--color-ivory);
+  color: var(--color-ink);
+  overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+}
+
+em { font-style: italic; color: var(--color-gold); }
+
+a { color: inherit; text-decoration: none; }
+
+img, video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: var(--color-sand); /* respaldo mientras carga */
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+.button--light { color: var(--color-ivory); }
+.button--light:hover, .button--light:focus-visible { background-color: var(--color-ivory); color: var(--color-ink); }
+
+.button--dark { color: var(--color-ink); }
+.button--dark:hover, .button--dark:focus-visible { background-color: var(--color-ink); color: var(--color-ivory); border-color: var(--color-ink); }
+
+/* ==========================================================================
+   Navegación
+   ========================================================================== */
+.nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem var(--gutter);
+  color: var(--color-ivory);
+  mix-blend-mode: difference;
+}
+
+.nav__logo { width: 2.5rem; height: 2.5rem; }
+
+.nav__links { display: flex; gap: clamp(1rem, 3vw, 2.5rem); }
+
+.nav__links a {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.nav__links .nav__hide-mobile { display: none; }
+
+@media (min-width: 48rem) {
+  .nav__links .nav__hide-mobile { display: inline; }
+}
+
+/* ==========================================================================
+   1. Hero (parallax). Aquí irá después el video de la entrada del salón.
+   ========================================================================== */
+.hero {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  color: var(--color-ivory);
+  background-color: var(--color-ink);
+}
+
+.hero__media { position: absolute; inset: 0; }
+
+.hero__img {
+  height: 130%; /* más alta que la pantalla para que el parallax no deje huecos */
+  will-change: transform;
+}
+
+.hero__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgb(28 25 22 / 0.35), rgb(28 25 22 / 0.1) 40%, rgb(28 25 22 / 0.75));
+}
+
+.hero__content {
+  position: absolute;
+  inset: auto var(--gutter) clamp(5rem, 14vh, 8rem);
+  z-index: 1;
+  will-change: transform, opacity;
+}
+
+.hero__title {
+  font-size: clamp(3.4rem, 13vw, 11rem);
+  margin-block: 1.25rem 1.5rem;
+}
+
+/* Cada línea del título sale de una "máscara" */
+.line { display: block; overflow: hidden; padding-bottom: 0.08em; }
+.line__inner { display: block; will-change: transform; }
+
+.hero__services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+  margin-bottom: 2rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(246 241 235 / 0.8);
+}
+
+.scroll-hint {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 2rem;
+  z-index: 1;
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+}
+
+.scroll-hint::after {
+  content: "";
+  width: 1px;
+  height: 4rem;
+  background: linear-gradient(to bottom, var(--color-ivory), transparent);
+  animation: scroll-line 2s ease-in-out infinite;
+  transform-origin: top;
+}
+
+@keyframes scroll-line {
+  0% { transform: scaleY(0); }
+  50% { transform: scaleY(1); }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+@media (min-width: 48rem) {
+  .scroll-hint { display: flex; }
+}
+
+/* ==========================================================================
+   2. Manifiesto: las palabras se iluminan al hacer scroll
+   ========================================================================== */
+.manifesto {
+  padding: var(--space-xl) var(--gutter);
+  text-align: center;
+}
+
+.manifesto__text {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(1.9rem, 5.2vw, 4.2rem);
+  line-height: 1.15;
+  max-width: 22ch;
+  margin: 1.5rem auto 0;
+}
+
+.manifesto__text .word { display: inline-block; }
+
+/* ==========================================================================
+   3. Cinta de servicios que se desliza con el scroll
+   ========================================================================== */
+.marquee {
+  overflow: hidden;
+  padding-block: 1.75rem;
+  border-block: 1px solid rgb(28 25 22 / 0.12);
+}
+
+.marquee__row {
+  display: flex;
+  gap: 3rem;
+  width: max-content;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(2.2rem, 6vw, 4.5rem);
+  line-height: 1;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.marquee__row span::after {
+  content: "✦";
+  margin-left: 3rem;
+  font-size: 0.4em;
+  vertical-align: middle;
+  color: var(--color-gold);
+}
+
+/* ==========================================================================
+   4. Servicios destacados: imágenes que se expanden
+   Por defecto (sin JS) se ve la imagen completa; GSAP la encoge al inicio.
+   ========================================================================== */
+.expand {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  color: var(--color-ivory);
+}
+
+.expand__frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  will-change: clip-path;
+}
+
+.expand__img { will-change: transform; }
+
+.expand__frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgb(28 25 22 / 0.75), transparent 60%);
+}
+
+.expand__label {
+  position: absolute;
+  top: clamp(5rem, 14vh, 8rem);
+  left: var(--gutter);
+  z-index: 1;
+  color: var(--color-ink);
+  mix-blend-mode: normal;
+}
+
+.expand__caption {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: clamp(2.5rem, 9vh, 5.5rem);
+  z-index: 1;
+}
+
+.expand__number {
+  display: block;
+  font-size: 0.8rem;
+  letter-spacing: 0.3em;
+  color: var(--color-gold-light);
+  margin-bottom: 0.75rem;
+}
+
+.expand__caption h2 { font-size: clamp(3.4rem, 13vw, 9.5rem); }
+
+.expand__caption p {
+  margin-top: 1rem;
+  max-width: 36ch;
+  font-size: 1.05rem;
+  color: rgb(246 241 235 / 0.85);
+}
+
+/* ==========================================================================
+   5. Todos los servicios: scroll horizontal
+   Sin JS, la fila se desplaza con el dedo o el trackpad.
+   ========================================================================== */
+.services {
+  padding-top: var(--space-xl);
+  background-color: var(--color-ink);
+  color: var(--color-ivory);
+  overflow: hidden;
+}
+
+.services__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1.5rem;
+  padding-inline: var(--gutter);
+  margin-bottom: var(--space-lg);
+}
+
+.services__title {
+  font-size: clamp(2.8rem, 9vw, 7rem);
+  margin-top: 1rem;
+}
+
+.services__note {
+  max-width: 30ch;
+  color: rgb(246 241 235 / 0.65);
+}
+
+.services__track {
+  display: flex;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  padding: 0 var(--gutter) var(--space-xl);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.is-animated .services__track {
+  overflow: visible;
+  width: max-content;
+  will-change: transform;
+}
+
+.card {
+  flex: 0 0 min(78vw, 24rem);
+  scroll-snap-align: start;
+}
+
+.card__media {
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+
+.card__media img { transition: transform 1.2s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.card:hover .card__media img { transform: scale(1.06); }
+
+.card__body {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding-top: 1.25rem;
+  border-bottom: 1px solid rgb(246 241 235 / 0.15);
+  padding-bottom: 1.25rem;
+}
+
+.card h3 { font-size: 2.2rem; }
+
+.card__num {
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: var(--color-gold-light);
+}
+
+.card p {
+  margin-top: 1rem;
+  color: rgb(246 241 235 / 0.65);
+  font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   6. Galería en capas
+   ========================================================================== */
+.gallery { padding: var(--space-xl) var(--gutter); }
+
+.gallery__head { text-align: center; margin-bottom: var(--space-xl); }
+
+.gallery__title {
+  font-size: clamp(2.8rem, 9vw, 7rem);
+  margin-top: 1rem;
+}
+
+.gallery__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+  max-width: 80rem;
+  margin-inline: auto;
+}
+
+.gallery__item {
+  margin: 0;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: var(--radius);
+  will-change: transform;
+}
+
+@media (min-width: 48rem) {
+  .gallery__grid {
+    grid-template-columns: repeat(12, 1fr);
+    align-items: start;
+  }
+  .gallery__item:nth-child(1) { grid-column: 1 / span 4; margin-top: 6rem; }
+  .gallery__item:nth-child(2) { grid-column: 6 / span 4; }
+  .gallery__item:nth-child(3) { grid-column: 10 / span 3; margin-top: 12rem; }
+  .gallery__item:nth-child(4) { grid-column: 2 / span 3; margin-top: -4rem; }
+  .gallery__item:nth-child(5) { grid-column: 7 / span 5; aspect-ratio: 4 / 3; margin-top: 2rem; }
+}
+
+/* ==========================================================================
+   7. Reserva: la foto se aleja y el texto aparece
+   ========================================================================== */
+.booking {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  text-align: center;
+  color: var(--color-ivory);
+  background-color: var(--color-ink);
+}
+
+.booking__media { position: absolute; inset: 0; }
+
+.booking__img { will-change: transform; }
+
+.booking__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(28 25 22 / 0.55);
+}
+
+.booking__content {
+  position: relative;
+  z-index: 1;
+  padding: var(--space-xl) var(--gutter);
+}
+
+.booking__title {
+  font-size: clamp(3.2rem, 12vw, 10rem);
+  margin-block: 1.25rem 2.5rem;
+}
+
+/* ==========================================================================
+   8. Información y footer
+   ========================================================================== */
+.info {
+  display: grid;
+  gap: var(--space-lg);
+  padding: var(--space-xl) var(--gutter) var(--space-lg);
+}
+
+@media (min-width: 48rem) {
+  .info { grid-template-columns: repeat(3, 1fr); }
+}
+
+.info h3 {
+  font-size: 1.9rem;
+  margin-block: 0.75rem;
+}
+
+.info p { color: var(--color-ink-soft); }
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: var(--space-lg) var(--gutter);
+  border-top: 1px solid rgb(28 25 22 / 0.12);
+  font-size: 0.8rem;
+  color: var(--color-ink-soft);
+}
+
+.site-footer a { text-decoration: underline; text-underline-offset: 3px; }
+    </style>
+
+    <!-- GSAP + ScrollTrigger y Lenis (scroll suave) desde CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
+  </head>
+  <body>
+    <!-- NAVEGACIÓN: el logo es un monograma provisional hasta tener el nombre -->
+    <nav class="nav" aria-label="Principal">
+      <a href="#inicio" aria-label="Ir al inicio">
+        <svg class="nav__logo" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">
+          <circle cx="20" cy="20" r="19" />
+          <path d="M20 8 C 26 14, 26 26, 20 32 C 14 26, 14 14, 20 8 Z" />
+          <circle cx="20" cy="20" r="2" fill="currentColor" stroke="none" />
+        </svg>
+      </a>
+      <div class="nav__links">
+        <a class="nav__hide-mobile" href="#servicios">Servicios</a>
+        <a class="nav__hide-mobile" href="#galeria">Galería</a>
+        <a href="#reserva">Reservar</a>
+      </div>
+    </nav>
+
+    <!-- 1. HERO
+         Cuando tengas el video de la entrada del salón, cambia la <img> por:
+         <video class="hero__img" src="entrada.mp4" autoplay muted loop playsinline poster="foto.jpg"></video>
+    -->
+    <header class="hero" id="inicio">
+      <div class="hero__media">
+        <img
+          class="hero__img"
+          src="https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=2000&q=80"
+          alt="Interior luminoso de un salón de belleza con tocadores y espejos"
+        />
+      </div>
+
+      <div class="hero__content">
+        <span class="eyebrow">Salón de belleza</span>
+        <h1 class="hero__title">
+          <span class="line"><span class="line__inner">Tu belleza,</span></span>
+          <span class="line"><span class="line__inner"><em>en su mejor</em></span></span>
+          <span class="line"><span class="line__inner">versión</span></span>
+        </h1>
+        <ul class="hero__services hero__fade">
+          <li>Peinado</li>
+          <li>Maquillaje</li>
+          <li>Uñas</li>
+          <li>Pestañas</li>
+          <li>Facial</li>
+        </ul>
+        <a class="button button--light hero__fade" href="#reserva">Reserva tu cita</a>
+      </div>
+
+      <div class="scroll-hint" aria-hidden="true">Desliza</div>
+    </header>
+
+    <main>
+      <!-- 2. MANIFIESTO -->
+      <section class="manifesto" aria-label="Nuestra filosofía">
+        <span class="eyebrow">Nuestra filosofía</span>
+        <p class="manifesto__text" data-words>
+          Creemos que la belleza no se fabrica: se revela. Cada detalle, del peinado a la última
+          uña, está pensado para que te mires y te reconozcas.
+        </p>
+      </section>
+
+      <!-- 3. CINTA DE SERVICIOS -->
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee__row">
+          <span>Peinado</span><span>Maquillaje</span><span>Uñas</span><span>Pestañas</span>
+          <span>Cejas</span><span>Facial</span><span>Novias</span><span>Peinado</span>
+          <span>Maquillaje</span><span>Uñas</span><span>Pestañas</span><span>Cejas</span>
+        </div>
+      </div>
+
+      <!-- 4. SERVICIOS DESTACADOS: IMÁGENES QUE SE EXPANDEN -->
+      <section class="expand">
+        <div class="expand__frame">
+          <img
+            class="expand__img"
+            src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=2000&q=80"
+            alt="Estilista peinando el cabello largo de una clienta"
+          />
+        </div>
+        <div class="expand__caption">
+          <span class="expand__number">01 — Cabello</span>
+          <h2>Peinado</h2>
+          <p>Cortes, color, ondas y recogidos que respetan la personalidad de tu cabello.</p>
+        </div>
+      </section>
+
+      <section class="expand">
+        <div class="expand__frame">
+          <img
+            class="expand__img"
+            src="https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=2000&q=80"
+            alt="Retrato de una mujer con maquillaje natural y luminoso"
+          />
+        </div>
+        <div class="expand__caption">
+          <span class="expand__number">02 — Rostro</span>
+          <h2>Maquillaje</h2>
+          <p>Del natural de día al glamour de noche, con productos de alta gama.</p>
+        </div>
+      </section>
+
+      <section class="expand">
+        <div class="expand__frame">
+          <img
+            class="expand__img"
+            src="https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=2000&q=80"
+            alt="Manos con manicura en tono rosa sobre una tela suave"
+          />
+        </div>
+        <div class="expand__caption">
+          <span class="expand__number">03 — Manos</span>
+          <h2>Uñas</h2>
+          <p>Manicura, gel, acrílico y diseños a mano alzada, con acabado impecable.</p>
+        </div>
+      </section>
+
+      <!-- 5. TODOS LOS SERVICIOS: SCROLL HORIZONTAL -->
+      <section class="services" id="servicios" aria-labelledby="servicios-titulo">
+        <div class="services__head">
+          <div>
+            <span class="eyebrow">Servicios</span>
+            <h2 class="services__title reveal" id="servicios-titulo">Todo en <em>un lugar</em></h2>
+          </div>
+          <p class="services__note reveal">Un equipo de especialistas para cada detalle de tu imagen.</p>
+        </div>
+
+        <div class="services__track">
+          <article class="card">
+            <div class="card__media">
+              <img src="https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=900&q=80" alt="Estilista trabajando el cabello de una clienta en el salón" loading="lazy" />
+            </div>
+            <div class="card__body"><h3>Peinado y color</h3><span class="card__num">01</span></div>
+            <p>Corte, tinte, mechas, balayage, alisado y tratamientos capilares.</p>
+          </article>
+          <article class="card">
+            <div class="card__media">
+              <img src="https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=900&q=80" alt="Productos de maquillaje sobre una superficie clara" loading="lazy" />
+            </div>
+            <div class="card__body"><h3>Maquillaje</h3><span class="card__num">02</span></div>
+            <p>Social, de noche, editorial y clases de automaquillaje.</p>
+          </article>
+          <article class="card">
+            <div class="card__media">
+              <img src="https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=900&q=80" alt="Manicurista pintando las uñas de una clienta" loading="lazy" />
+            </div>
+            <div class="card__body"><h3>Uñas</h3><span class="card__num">03</span></div>
+            <p>Manicura, pedicura, gel, acrílico y nail art.</p>
+          </article>
+          <article class="card">
+            <div class="card__media">
+              <img src="https://images.unsplash.com/photo-1457972729786-0411a3b2b626?auto=format&fit=crop&w=900&q=80" alt="Brochas de maquillaje ordenadas" loading="lazy" />
+            </div>
+            <div class="card__body"><h3>Pestañas y cejas</h3><span class="card__num">04</span></div>
+            <p>Extensiones, lifting, laminado y diseño de cejas.</p>
+          </article>
+          <article class="card">
+            <div class="card__media">
+              <img src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=900&q=80" alt="Mujer recibiendo un tratamiento facial relajante" loading="lazy" />
+            </div>
+            <div class="card__body"><h3>Cuidado facial</h3><span class="card__num">05</span></div>
+            <p>Limpiezas profundas, hidratación y tratamientos de luminosidad.</p>
+          </article>
+          <article class="card">
+            <div class="card__media">
+              <img src="https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=900&q=80" alt="Estilista preparando un peinado para un evento" loading="lazy" />
+            </div>
+            <div class="card__body"><h3>Novias y eventos</h3><span class="card__num">06</span></div>
+            <p>Peinado y maquillaje con prueba previa, en el salón o a domicilio.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 6. GALERÍA EN CAPAS -->
+      <section class="gallery" id="galeria" aria-labelledby="galeria-titulo">
+        <div class="gallery__head">
+          <span class="eyebrow">Galería</span>
+          <h2 class="gallery__title reveal" id="galeria-titulo">Detalles que <em>enamoran</em></h2>
+        </div>
+        <div class="gallery__grid">
+          <figure class="gallery__item" data-speed="-12">
+            <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=900&q=80" alt="Paleta de sombras y labiales en tonos nude" loading="lazy" />
+          </figure>
+          <figure class="gallery__item" data-speed="18">
+            <img src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=900&q=80" alt="Sillones y espejos de un salón de belleza moderno" loading="lazy" />
+          </figure>
+          <figure class="gallery__item" data-speed="-20">
+            <img src="https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=900&q=80" alt="Detalle de una manicura en tono rosa" loading="lazy" />
+          </figure>
+          <figure class="gallery__item" data-speed="10">
+            <img src="https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=900&q=80" alt="Rostro con maquillaje suave y piel luminosa" loading="lazy" />
+          </figure>
+          <figure class="gallery__item" data-speed="-8">
+            <img src="https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=1200&q=80" alt="Zona de lavado de cabello de un salón elegante" loading="lazy" />
+          </figure>
+        </div>
+      </section>
+
+      <!-- 7. RESERVA -->
+      <section class="booking" id="reserva" aria-labelledby="reserva-titulo">
+        <div class="booking__media">
+          <img
+            class="booking__img"
+            src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=2000&q=80"
+            alt="Clienta sonriendo mientras le arreglan el cabello"
+            loading="lazy"
+          />
+        </div>
+        <div class="booking__content">
+          <span class="eyebrow">Reserva tu cita</span>
+          <h2 class="booking__title reveal" id="reserva-titulo">Mereces<br /><em>este momento</em></h2>
+          <a class="button button--light reveal" href="#contacto">Agendar ahora</a>
+        </div>
+      </section>
+
+      <!-- 8. INFORMACIÓN (datos provisionales) -->
+      <section class="info" id="contacto" aria-label="Información de contacto">
+        <div class="reveal">
+          <span class="eyebrow">Horario</span>
+          <h3>Lunes a sábado</h3>
+          <p>10:00 – 20:00<br />Domingo con cita previa</p>
+        </div>
+        <div class="reveal">
+          <span class="eyebrow">Ubicación</span>
+          <h3>Visítanos</h3>
+          <p>Dirección del salón<br />Ciudad, código postal</p>
+        </div>
+        <div class="reveal">
+          <span class="eyebrow">Contacto</span>
+          <h3>Escríbenos</h3>
+          <p>Teléfono / WhatsApp<br />correo@salon.com</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>© Salón de belleza</p>
+      <p>Fotografías de <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a> · Animaciones con GSAP</p>
+    </footer>
+
+    <script>
+// Los scripts del CDN se cargan con defer: esperamos a DOMContentLoaded para que ya existan.
+document.addEventListener("DOMContentLoaded", () => {
+  const { gsap, ScrollTrigger, Lenis } = window;
+
+  if (!gsap || !ScrollTrigger) {
+    // Si el CDN falla, el CSS ya muestra el estado final y la página se lee bien.
+    console.warn("GSAP no se pudo cargar; se muestra la página sin animaciones.");
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const mm = gsap.matchMedia();
+
+  mm.add("(prefers-reduced-motion: no-preference)", () => {
+    const stopSmoothScroll = initSmoothScroll();
+
+    // Animaciones en el orden en que aparecen en la página.
+    initHero();
+    initManifesto();
+    initMarquee();
+    initExpandingImages();
+    const resetServices = initHorizontalServices();
+    initGalleryParallax();
+    initBooking();
+    initReveals(); // al final: sus posiciones dependen de las secciones fijadas de arriba
+
+    return () => {
+      stopSmoothScroll();
+      resetServices();
+    };
+  });
+
+  // Recalcular posiciones cuando todas las imágenes y fuentes hayan cargado.
+  window.addEventListener("load", () => ScrollTrigger.refresh());
+  if (document.fonts) document.fonts.ready.then(() => ScrollTrigger.refresh());
+
+  /** Scroll suave y profesional con Lenis, sincronizado con ScrollTrigger. */
+  function initSmoothScroll() {
+    if (!Lenis) return () => {};
+
+    const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 0.9 });
+    const raf = (time) => lenis.raf(time * 1000);
+
+    lenis.on("scroll", ScrollTrigger.update);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+
+    // Los enlaces internos (#reserva, #servicios...) también se desplazan con suavidad.
+    const onClick = (event) => {
+      const link = event.target.closest('a[href^="#"]');
+      if (!link) return;
+      const target = document.querySelector(link.getAttribute("href"));
+      if (!target) return;
+      event.preventDefault();
+      lenis.scrollTo(target, { duration: 1.6 });
+    };
+    document.addEventListener("click", onClick);
+
+    return () => {
+      document.removeEventListener("click", onClick);
+      gsap.ticker.remove(raf);
+      lenis.destroy();
+    };
+  }
+
+  /** 1. Hero: entrada al cargar y parallax al hacer scroll. */
+  function initHero() {
+    // Entrada: la foto se asienta y el título sube línea a línea.
+    gsap
+      .timeline({ defaults: { ease: "power4.out" } })
+      .from(".hero__media", { scale: 1.25, duration: 2.4, ease: "power3.out" })
+      .from(".hero .eyebrow", { opacity: 0, y: 20, duration: 1 }, 0.4)
+      .from(".line__inner", { yPercent: 110, duration: 1.4, stagger: 0.12 }, 0.5)
+      .from(".hero__fade", { opacity: 0, y: 30, duration: 1.2, stagger: 0.12 }, 1.1)
+      .from(".scroll-hint", { opacity: 0, duration: 1 }, 1.6);
+
+    // Parallax: la foto baja más despacio que el texto, que sube y se desvanece.
+    gsap
+      .timeline({
+        scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
+      })
+      .fromTo(".hero__img", { yPercent: -10 }, { yPercent: 10, ease: "none" }, 0)
+      .to(".hero__content", { yPercent: -40, opacity: 0, ease: "none" }, 0)
+      .to(".scroll-hint", { opacity: 0, ease: "none", duration: 0.2 }, 0);
+  }
+
+  /** 2. Manifiesto: cada palabra pasa de tenue a nítida según avanzas. */
+  function initManifesto() {
+    const text = document.querySelector("[data-words]");
+    const words = text.textContent.trim().split(/\s+/);
+    text.innerHTML = words.map((word) => `<span class="word">${word}</span>`).join(" ");
+
+    gsap.fromTo(
+      text.querySelectorAll(".word"),
+      { opacity: 0.15 },
+      {
+        opacity: 1,
+        ease: "none",
+        stagger: 0.1,
+        scrollTrigger: { trigger: text, start: "top 80%", end: "bottom 45%", scrub: true },
+      },
+    );
+  }
+
+  /** 3. Cinta de servicios: se desliza en horizontal al ritmo del scroll. */
+  function initMarquee() {
+    gsap.fromTo(
+      ".marquee__row",
+      { xPercent: 0 },
+      {
+        xPercent: -35,
+        ease: "none",
+        scrollTrigger: { trigger: ".marquee", start: "top bottom", end: "bottom top", scrub: true },
+      },
+    );
+  }
+
+  /** 4. Imágenes que se expanden: la sección se fija y el marco crece hasta pantalla completa. */
+  function initExpandingImages() {
+    const startClip = () =>
+      window.innerWidth < 768
+        ? "inset(25% 10% 25% 10% round 20px)"
+        : "inset(22% 28% 22% 28% round 24px)";
+
+    gsap.utils.toArray(".expand").forEach((section) => {
+      const frame = section.querySelector(".expand__frame");
+      const img = section.querySelector(".expand__img");
+      const caption = section.querySelector(".expand__caption");
+
+      gsap
+        .timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "+=150%",
+            pin: true,
+            scrub: 1,
+            invalidateOnRefresh: true,
+          },
+        })
+        .fromTo(frame, { clipPath: startClip }, { clipPath: "inset(0% 0% 0% 0% round 0px)", ease: "power2.inOut", duration: 1 })
+        .fromTo(img, { scale: 1.4 }, { scale: 1, ease: "power2.inOut", duration: 1 }, 0)
+        .fromTo(caption, { opacity: 0, y: 60 }, { opacity: 1, y: 0, ease: "power2.out", duration: 0.4 }, 0.6);
+    });
+  }
+
+  /** 5. Servicios: la sección se fija y las tarjetas avanzan en horizontal. */
+  function initHorizontalServices() {
+    const section = document.querySelector(".services");
+    const track = section.querySelector(".services__track");
+    section.classList.add("is-animated");
+
+    const distance = () => Math.max(0, track.scrollWidth - window.innerWidth);
+
+    gsap.to(track, {
+      x: () => -distance(),
+      ease: "none",
+      scrollTrigger: {
+        trigger: section,
+        start: "top top",
+        end: () => "+=" + distance(),
+        pin: true,
+        scrub: 1,
+        invalidateOnRefresh: true,
+      },
+    });
+
+    // Con movimiento reducido se vuelve al scroll nativo de la fila.
+    return () => section.classList.remove("is-animated");
+  }
+
+  /** 6. Galería: cada imagen se mueve a una velocidad distinta (data-speed). */
+  function initGalleryParallax() {
+    gsap.utils.toArray(".gallery__item").forEach((item) => {
+      const speed = Number(item.dataset.speed) || 0;
+
+      gsap.fromTo(
+        item,
+        { yPercent: speed },
+        {
+          yPercent: -speed,
+          ease: "none",
+          scrollTrigger: { trigger: item, start: "top bottom", end: "bottom top", scrub: true },
+        },
+      );
+
+      gsap.fromTo(
+        item.querySelector("img"),
+        { scale: 1.25 },
+        {
+          scale: 1,
+          ease: "none",
+          scrollTrigger: { trigger: item, start: "top bottom", end: "bottom top", scrub: true },
+        },
+      );
+    });
+  }
+
+  /** 7. Reserva: la foto se aleja lentamente mientras la sección entra. */
+  function initBooking() {
+    gsap.fromTo(
+      ".booking__img",
+      { scale: 1.3, yPercent: -8 },
+      {
+        scale: 1,
+        yPercent: 8,
+        ease: "none",
+        scrollTrigger: { trigger: ".booking", start: "top bottom", end: "bottom top", scrub: true },
+      },
+    );
+  }
+
+  /** Textos que aparecen suavemente al entrar en pantalla. */
+  function initReveals() {
+    gsap.set(".reveal", { opacity: 0, y: 50 });
+
+    ScrollTrigger.batch(".reveal", {
+      start: "top 88%",
+      once: true,
+      onEnter: (elements) =>
+        gsap.to(elements, { opacity: 1, y: 0, duration: 1.2, ease: "power3.out", stagger: 0.12 }),
+    });
+  }
+});
+    </script>
+  </body>
+</html>
