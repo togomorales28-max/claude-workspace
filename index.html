@@ -613,6 +613,13 @@
   const $ = (s, c = document) => c.querySelector(s);
   const $$ = (s, c = document) => [...c.querySelectorAll(s)];
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Empezar siempre arriba del todo: sin restaurar el scroll anterior ni saltar a un #ancla
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  const toTop = () => window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  toTop();
+  addEventListener('load', toTop);
+  addEventListener('pageshow', toTop);
   const clamp01 = v => Math.min(1, Math.max(0, v));
   const easeOut = v => 1 - Math.pow(1 - v, 3);
   const easeInOut = v => v < .5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2;
@@ -803,6 +810,7 @@
   function finish() {
     if (finished) return;
     finished = true;
+    toTop();
     pre.classList.add('revealing', 'gone');
     document.body.classList.remove('is-loading');
     setTimeout(() => pre.remove(), 700);
