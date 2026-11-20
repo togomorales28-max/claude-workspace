@@ -1,0 +1,113 @@
+/* ==========================================================================
+   Variables de diseño (colores, tipografía, espaciado)
+   ========================================================================== */
+:root {
+  --color-bg: #ffffff;
+  --color-text: #1f2328;
+  --color-muted: #59636e;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-border: #d1d9e0;
+
+  --font-base: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-size-base: 1rem;
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 2rem;
+  --space-xl: 4rem;
+
+  --radius: 0.5rem;
+  --container-width: 72rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0d1117;
+    --color-text: #e6edf3;
+    --color-muted: #9198a1;
+    --color-border: #30363d;
+  }
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+body {
+  font-family: var(--font-base);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  padding-block: var(--space-lg);
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin-bottom: var(--space-md);
+}
+
+p {
+  margin-bottom: var(--space-md);
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+.container {
+  width: 100%;
+  max-width: var(--container-width);
+  margin-inline: auto;
+  padding-inline: var(--space-md);
+}
+
+.site-header,
+.site-footer {
+  padding-block: var(--space-md);
+  border-color: var(--color-border);
+}
+
+.site-header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.site-footer p {
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Componentes
+   ========================================================================== */
+.button {
+  display: inline-block;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: var(--radius);
+  background-color: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

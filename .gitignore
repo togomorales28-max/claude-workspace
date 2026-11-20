@@ -1,0 +1,27 @@
+# Dependencias (para cuando se instalen)
+node_modules/
+
+# Builds y salidas generadas
+dist/
+build/
+.cache/
+coverage/
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
