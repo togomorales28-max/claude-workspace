@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Origen, café de especialidad: una landing con parallax, imágenes que se expanden y scroll horizontal hecha con GSAP y ScrollTrigger." />
+    <title>Origen — Café de especialidad</title>
+    <style>
+/* ==========================================================================
+   Reset mínimo
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body { min-height: 100vh; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+img, picture, svg { display: block; max-width: 100%; }
+p, h1, h2, h3 { overflow-wrap: break-word; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Variables de diseño
+   ========================================================================== */
+:root {
+  --color-bg: #15110e;
+  --color-surface: #2a211b;
+  --color-cream: #f4ece1;
+  --color-muted: #b9aa98;
+  --color-accent: #d98b4e;
+
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --space-md: 1rem;
+  --space-lg: 2rem;
+  --space-xl: clamp(4rem, 12vw, 9rem);
+  --radius: 1.25rem;
+  --container-width: 72rem;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-bg);
+  color: var(--color-cream);
+  overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+a { color: inherit; }
+
+img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-color: var(--color-surface); /* respaldo mientras carga */
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container-width);
+  margin-inline: auto;
+  padding-inline: var(--space-md);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  margin-bottom: var(--space-md);
+}
+
+/* Barra superior */
+.nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem clamp(1rem, 4vw, 2.5rem);
+  mix-blend-mode: difference;
+}
+
+.nav__logo {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  text-decoration: none;
+}
+
+.nav__link {
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+/* ==========================================================================
+   1. Hero con parallax
+   ========================================================================== */
+.hero {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  text-align: center;
+}
+
+.hero__media { position: absolute; inset: 0; }
+
+.hero__img {
+  height: 130%; /* más alta que la pantalla para que el parallax no deje huecos */
+  will-change: transform;
+}
+
+.hero__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgb(21 17 14 / 0.25), rgb(21 17 14 / 0.85));
+}
+
+.hero__content {
+  position: relative;
+  z-index: 1;
+  padding-inline: var(--space-md);
+  will-change: transform, opacity;
+}
+
+.hero__title { font-size: clamp(4rem, 20vw, 13rem); }
+
+.hero__subtitle {
+  margin-top: var(--space-md);
+  color: var(--color-muted);
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+}
+
+.scroll-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  translate: -50% 0;
+  width: 1.5rem;
+  height: 2.5rem;
+  border: 2px solid var(--color-muted);
+  border-radius: 1rem;
+  z-index: 1;
+}
+
+.scroll-hint span {
+  position: absolute;
+  top: 0.4rem;
+  left: 50%;
+  width: 4px;
+  height: 8px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--color-cream);
+  animation: scroll-hint 1.6s ease-in-out infinite;
+}
+
+@keyframes scroll-hint {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(14px); opacity: 0; }
+}
+
+/* ==========================================================================
+   2. Intro
+   ========================================================================== */
+.intro { padding-block: var(--space-xl); text-align: center; }
+
+.intro__text {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4.5vw, 3rem);
+  line-height: 1.25;
+  max-width: 24ch;
+  margin-inline: auto;
+}
+
+.intro__text em { color: var(--color-accent); font-style: italic; }
+
+/* ==========================================================================
+   3. Imágenes que se expanden
+   Por defecto (sin JS) se ve la imagen completa; GSAP la encoge al inicio.
+   ========================================================================== */
+.expand {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.expand__frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  will-change: clip-path;
+}
+
+.expand__img { will-change: transform; }
+
+.expand__frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgb(21 17 14 / 0.75), transparent 55%);
+}
+
+.expand__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(2rem, 8vh, 5rem);
+  z-index: 1;
+  padding-inline: clamp(1rem, 6vw, 5rem);
+}
+
+.expand__number {
+  display: block;
+  font-size: 0.875rem;
+  letter-spacing: 0.2em;
+  color: var(--color-accent);
+  margin-bottom: 0.5rem;
+}
+
+.expand__caption h2 { font-size: clamp(3rem, 12vw, 8rem); }
+
+.expand__caption p {
+  margin-top: 0.75rem;
+  color: var(--color-muted);
+  font-size: 1.125rem;
+  max-width: 34ch;
+}
+
+/* ==========================================================================
+   4. Proceso: scroll horizontal
+   Sin JS, la fila se desplaza con el dedo o el trackpad (overflow-x: auto).
+   ========================================================================== */
+.process {
+  padding-top: var(--space-xl);
+  overflow: hidden;
+}
+
+.process__head { margin-bottom: var(--space-lg); }
+
+.process__title { font-size: clamp(2.5rem, 9vw, 6rem); }
+
+.process__track {
+  display: flex;
+  gap: var(--space-lg);
+  padding: 0 var(--space-md) var(--space-xl);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.is-animated .process__track {
+  overflow: visible;
+  width: max-content;
+  will-change: transform;
+}
+
+.step {
+  flex: 0 0 min(80vw, 26rem);
+  scroll-snap-align: start;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.step__media { aspect-ratio: 4 / 3; }
+
+.step__body { padding: 1.5rem; }
+
+.step__num {
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: var(--color-accent);
+}
+
+.step h3 { font-size: 2rem; margin-block: 0.5rem; }
+
+.step p { color: var(--color-muted); }
+
+/* ==========================================================================
+   5. Galería en capas
+   ========================================================================== */
+.gallery { padding-block: var(--space-xl); }
+
+.gallery__title {
+  font-size: clamp(2.5rem, 9vw, 6rem);
+  margin-bottom: var(--space-lg);
+}
+
+.gallery__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+}
+
+.gallery__item {
+  margin: 0;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius);
+  overflow: hidden;
+  will-change: transform;
+}
+
+@media (min-width: 48rem) {
+  .gallery__grid {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+  }
+  .gallery__item--offset { margin-top: 8rem; }
+}
+
+/* ==========================================================================
+   6. Cierre y footer
+   ========================================================================== */
+.outro { padding-block: var(--space-xl); text-align: center; }
+
+.outro__title {
+  font-size: clamp(2.5rem, 9vw, 6rem);
+  margin-bottom: var(--space-md);
+}
+
+.outro__text {
+  color: var(--color-muted);
+  max-width: 40ch;
+  margin: 0 auto var(--space-lg);
+}
+
+.button {
+  display: inline-block;
+  padding: 0.9rem 1.8rem;
+  border-radius: 999px;
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.button:hover, .button:focus-visible { background-color: var(--color-cream); }
+
+.site-footer {
+  padding-block: var(--space-lg);
+  border-top: 1px solid rgb(244 236 225 / 0.12);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+    </style>
+
+    <!-- GSAP + ScrollTrigger desde CDN (sin instalar dependencias) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+  </head>
+  <body>
+    <nav class="nav" aria-label="Principal">
+      <a class="nav__logo" href="#inicio">Origen</a>
+      <a class="nav__link" href="#visitanos">Visítanos</a>
+    </nav>
+
+    <!-- 1. HERO -->
+    <header class="hero" id="inicio">
+      <div class="hero__media">
+        <img
+          class="hero__img"
+          src="https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=2000&q=80"
+          alt="Granos de café tostado vistos de cerca"
+        />
+      </div>
+      <div class="hero__content">
+        <p class="eyebrow">Café de especialidad · Tostado en casa</p>
+        <h1 class="hero__title">Origen</h1>
+        <p class="hero__subtitle">Del cafetal a tu taza, sin atajos.</p>
+      </div>
+      <div class="scroll-hint" aria-hidden="true"><span></span></div>
+    </header>
+
+    <main>
+      <!-- 2. INTRO -->
+      <section class="intro container">
+        <p class="intro__text reveal">
+          Cada taza cuenta una historia que empieza a <em>1.800 metros</em> de altura y termina
+          en tus manos.
+        </p>
+      </section>
+
+      <!-- 3. IMÁGENES QUE SE EXPANDEN -->
+      <section class="expand">
+        <div class="expand__frame">
+          <img
+            class="expand__img"
+            src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=2000&q=80"
+            alt="Taza de café humeante sobre una mesa de madera"
+          />
+        </div>
+        <div class="expand__caption">
+          <span class="expand__number">01</span>
+          <h2>Tierra</h2>
+          <p>Granos de pequeños productores, comprados de forma directa y justa.</p>
+        </div>
+      </section>
+
+      <section class="expand">
+        <div class="expand__frame">
+          <img
+            class="expand__img"
+            src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=2000&q=80"
+            alt="Café recién servido en una taza blanca"
+          />
+        </div>
+        <div class="expand__caption">
+          <span class="expand__number">02</span>
+          <h2>Tueste</h2>
+          <p>Tostamos cada semana en lotes pequeños para respetar el sabor de cada origen.</p>
+        </div>
+      </section>
+
+      <section class="expand">
+        <div class="expand__frame">
+          <img
+            class="expand__img"
+            src="https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=2000&q=80"
+            alt="Café con leche con arte latte en forma de hoja"
+          />
+        </div>
+        <div class="expand__caption">
+          <span class="expand__number">03</span>
+          <h2>Taza</h2>
+          <p>Preparado por baristas que conocen cada grano por su nombre.</p>
+        </div>
+      </section>
+
+      <!-- 4. PROCESO: SCROLL HORIZONTAL -->
+      <section class="process" aria-labelledby="proceso-titulo">
+        <div class="process__head container">
+          <p class="eyebrow reveal">El proceso</p>
+          <h2 class="process__title reveal" id="proceso-titulo">Cuatro pasos</h2>
+        </div>
+        <div class="process__track">
+          <article class="step">
+            <div class="step__media">
+              <img
+                src="https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=900&q=80"
+                alt="Granos de café recién seleccionados"
+                loading="lazy"
+              />
+            </div>
+            <div class="step__body">
+              <span class="step__num">PASO 1</span>
+              <h3>Selección</h3>
+              <p>Catamos decenas de muestras y elegimos solo los lotes que nos emocionan.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step__media">
+              <img
+                src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=900&q=80"
+                alt="Taza de café junto a una libreta"
+                loading="lazy"
+              />
+            </div>
+            <div class="step__body">
+              <span class="step__num">PASO 2</span>
+              <h3>Tueste</h3>
+              <p>Ajustamos el perfil de tueste a cada grano para resaltar sus notas naturales.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step__media">
+              <img
+                src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=80"
+                alt="Taza de café sobre una mesa con luz natural"
+                loading="lazy"
+              />
+            </div>
+            <div class="step__body">
+              <span class="step__num">PASO 3</span>
+              <h3>Reposo</h3>
+              <p>Dejamos que el café respire unos días para que sus aromas se asienten.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step__media">
+              <img
+                src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=900&q=80"
+                alt="Taza de café negro vista desde arriba"
+                loading="lazy"
+              />
+            </div>
+            <div class="step__body">
+              <span class="step__num">PASO 4</span>
+              <h3>Servicio</h3>
+              <p>Lo preparamos al momento, en espresso o en filtro, como más te guste.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 5. GALERÍA EN CAPAS -->
+      <section class="gallery container">
+        <h2 class="gallery__title reveal">Nuestra casa</h2>
+        <div class="gallery__grid">
+          <figure class="gallery__item" data-speed="-15">
+            <img
+              src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=900&q=80"
+              alt="Interior acogedor de una cafetería con mesas de madera"
+              loading="lazy"
+            />
+          </figure>
+          <figure class="gallery__item gallery__item--offset" data-speed="20">
+            <img
+              src="https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=900&q=80"
+              alt="Café con leche servido en la barra"
+              loading="lazy"
+            />
+          </figure>
+          <figure class="gallery__item" data-speed="-8">
+            <img
+              src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=900&q=80"
+              alt="Taza de café caliente junto a la ventana"
+              loading="lazy"
+            />
+          </figure>
+        </div>
+      </section>
+
+      <!-- 6. CIERRE -->
+      <section class="outro container" id="visitanos">
+        <h2 class="outro__title reveal">Ven a probarlo</h2>
+        <p class="outro__text reveal">
+          Abrimos todos los días de 8:00 a 20:00. La primera taza de filtro corre por nuestra cuenta.
+        </p>
+        <a class="button reveal" href="#inicio">Volver arriba</a>
+      </section>
+    </main>
+
+    <footer class="site-footer container">
+      <p>Fotografías de <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a> · Animaciones con GSAP</p>
+    </footer>
+
+    <script>
+// GSAP se carga con defer: esperamos a DOMContentLoaded para que ya exista.
+document.addEventListener("DOMContentLoaded", () => {
+  const { gsap, ScrollTrigger } = window;
+
+  if (!gsap || !ScrollTrigger) {
+    // Si el CDN falla, el CSS ya muestra el estado final y la página se lee bien.
+    console.warn("GSAP no se pudo cargar; se muestra la página sin animaciones.");
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  const mm = gsap.matchMedia();
+
+  // Todas las animaciones, en el orden en que aparecen en la página.
+  mm.add("(prefers-reduced-motion: no-preference)", () => {
+    initHero();
+    initReveals();
+    initExpandingImages();
+    initHorizontalProcess();
+    initGalleryParallax();
+  });
+
+  // Recalcular posiciones cuando todas las imágenes hayan cargado.
+  window.addEventListener("load", () => ScrollTrigger.refresh());
+
+  /** 1. Hero: la foto se mueve más lento que el texto, que sube y se desvanece. */
+  function initHero() {
+    gsap
+      .timeline({
+        scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
+      })
+      .fromTo(".hero__img", { yPercent: -10, scale: 1.05 }, { yPercent: 10, scale: 1.15, ease: "none" }, 0)
+      .to(".hero__content", { yPercent: -60, opacity: 0, ease: "none" }, 0)
+      .to(".scroll-hint", { opacity: 0, ease: "none", duration: 0.2 }, 0);
+  }
+
+  /** 2. Textos que aparecen al entrar en pantalla. */
+  function initReveals() {
+    gsap.set(".reveal", { opacity: 0, y: 40 });
+
+    ScrollTrigger.batch(".reveal", {
+      start: "top 85%",
+      once: true,
+      onEnter: (elements) =>
+        gsap.to(elements, { opacity: 1, y: 0, duration: 1, ease: "power3.out", stagger: 0.15 }),
+    });
+  }
+
+  /** 3. Imágenes que se expanden: la sección se fija y el marco crece hasta pantalla completa. */
+  function initExpandingImages() {
+    const startClip = () =>
+      window.innerWidth < 768
+        ? "inset(25% 10% 25% 10% round 20px)"
+        : "inset(22% 28% 22% 28% round 24px)";
+
+    gsap.utils.toArray(".expand").forEach((section) => {
+      const frame = section.querySelector(".expand__frame");
+      const img = section.querySelector(".expand__img");
+      const caption = section.querySelector(".expand__caption");
+
+      gsap
+        .timeline({
+          scrollTrigger: {
+            trigger: section,
+            start: "top top",
+            end: "+=150%",
+            pin: true,
+            scrub: 1,
+            invalidateOnRefresh: true,
+          },
+        })
+        .fromTo(frame, { clipPath: startClip }, { clipPath: "inset(0% 0% 0% 0% round 0px)", ease: "power2.inOut", duration: 1 })
+        .fromTo(img, { scale: 1.4 }, { scale: 1, ease: "power2.inOut", duration: 1 }, 0)
+        .fromTo(caption, { opacity: 0, y: 60 }, { opacity: 1, y: 0, ease: "power2.out", duration: 0.4 }, 0.6);
+    });
+  }
+
+  /** 4. Proceso: la sección se fija y las tarjetas se desplazan en horizontal. */
+  function initHorizontalProcess() {
+    const section = document.querySelector(".process");
+    const track = section.querySelector(".process__track");
+    section.classList.add("is-animated");
+
+    // Distancia que debe recorrer la fila para mostrar la última tarjeta.
+    const distance = () => Math.max(0, track.scrollWidth - window.innerWidth);
+
+    gsap.to(track, {
+      x: () => -distance(),
+      ease: "none",
+      scrollTrigger: {
+        trigger: section,
+        start: "top top",
+        end: () => "+=" + distance(),
+        pin: true,
+        scrub: 1,
+        invalidateOnRefresh: true,
+      },
+    });
+
+    // Al desactivarse (movimiento reducido), volver al scroll nativo.
+    return () => section.classList.remove("is-animated");
+  }
+
+  /** 5. Galería: cada imagen se desplaza a una velocidad distinta (data-speed). */
+  function initGalleryParallax() {
+    gsap.utils.toArray(".gallery__item").forEach((item) => {
+      const speed = Number(item.dataset.speed) || 0;
+
+      gsap.fromTo(
+        item,
+        { yPercent: speed },
+        {
+          yPercent: -speed,
+          ease: "none",
+          scrollTrigger: { trigger: ".gallery", start: "top bottom", end: "bottom top", scrub: true },
+        },
+      );
+
+      gsap.fromTo(
+        item.querySelector("img"),
+        { scale: 1.25 },
+        {
+          scale: 1,
+          ease: "none",
+          scrollTrigger: { trigger: item, start: "top bottom", end: "bottom top", scrub: true },
+        },
+      );
+    });
+  }
+});
+    </script>
+  </body>
+</html>
