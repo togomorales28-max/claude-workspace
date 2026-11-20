@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>NOVA — Cut & Colour Studio</title>
-<meta name="description" content="NOVA is a calm, considered hair and colour studio in SoHo, New York." />
+<title>NOVA Studio</title>
+<meta name="description" content="NOVA es un estudio de corte y colorimetría de alta gama en SoHo, Nueva York." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
+  /* Layout: lujo silencioso — blanco puro, grandes márgenes, columnas asimétricas; la única nota de color es el cobre del preloader */
   :root{
     --white:#FFFFFF;
     --soft:#F6F6F6;
@@ -16,63 +17,77 @@
     --muted:#6E6E6E;
     --line:#EAEAEA;
     --hero:#EAECEF;
+    --night:#0B0B0B;
     --ease:cubic-bezier(.22,.61,.36,1);
     --pad:clamp(20px,5vw,72px);
     --section:clamp(88px,12vw,168px);
     --max:1360px;
+    --font:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   }
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   body{
-    font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
-    background:var(--white);color:var(--ink);
+    font-family:var(--font);background:var(--white);color:var(--ink);
     font-weight:300;line-height:1.65;font-size:16px;
     -webkit-font-smoothing:antialiased;overflow-x:hidden;
   }
+  body.is-loading{overflow:hidden}
   img{display:block;max-width:100%}
   a{color:inherit;text-decoration:none}
   button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  :focus-visible{outline:1px solid var(--ink);outline-offset:4px}
   ::selection{background:var(--ink);color:var(--white)}
 
   .wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
   section{scroll-margin-top:72px}
   .eyebrow{font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
-  h1,h2,h3{font-weight:500;letter-spacing:-.035em;line-height:1.05}
+  h1,h2,h3{font-weight:500;letter-spacing:-.035em;line-height:1.05;text-wrap:balance}
   h2{font-size:clamp(36px,5vw,64px)}
-  .lead{color:var(--muted);font-size:clamp(16px,1.25vw,18px);max-width:44ch}
+  .lead{color:var(--muted);font-size:clamp(16px,1.25vw,18px);max-width:46ch}
 
-  /* image placeholder fallback */
   .ph{background:var(--soft);overflow:hidden;position:relative}
   .ph img{width:100%;height:100%;object-fit:cover}
 
-  /* ---------- Buttons ---------- */
+  /* ---------- Preloader ---------- */
+  .preloader{position:fixed;inset:0;z-index:500;background:var(--night);cursor:pointer}
+  .preloader.revealing{background:transparent}
+  .preloader canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .preloader .pre-meta{
+    position:absolute;left:0;right:0;bottom:calc(36px + env(safe-area-inset-bottom,0px));
+    display:flex;justify-content:space-between;padding:0 var(--pad);
+    font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.55);
+    opacity:0;animation:preIn 1s .2s var(--ease) forwards;transition:opacity .5s var(--ease);
+  }
+  .preloader .pre-meta b{color:#fff;font-weight:700;letter-spacing:.42em}
+  .preloader.revealing .pre-meta{opacity:0 !important}
+  .preloader.gone{opacity:0;visibility:hidden;transition:opacity .6s var(--ease),visibility .6s}
+  @keyframes preIn{to{opacity:1}}
+
+  /* ---------- Botones ---------- */
   .btn{
     display:inline-flex;align-items:center;gap:10px;
     padding:14px 28px;border-radius:999px;font-size:14px;font-weight:500;letter-spacing:.01em;
-    transition:background .35s var(--ease),color .35s var(--ease),border-color .35s var(--ease),transform .35s var(--ease);
+    transition:background .35s var(--ease),color .35s var(--ease),border-color .35s var(--ease);
     white-space:nowrap;
   }
   .btn-outline{border:1px solid var(--ink);background:transparent}
   .btn-outline:hover{background:var(--ink);color:var(--white)}
   .btn-dark{background:var(--ink);color:var(--white);border:1px solid var(--ink)}
   .btn-dark:hover{background:transparent;color:var(--ink)}
-  .arrow-link{
-    display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:500;
-    padding-bottom:4px;border-bottom:1px solid var(--ink);
-  }
+  .arrow-link{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:500;padding-bottom:4px;border-bottom:1px solid var(--ink)}
   .arrow-link .ar{display:inline-block;transition:transform .45s var(--ease)}
   .arrow-link:hover .ar{transform:translateX(6px)}
 
   /* ---------- Navbar ---------- */
   .nav{
-    position:fixed;inset:0 0 auto 0;z-index:100;height:72px;
-    background:rgba(255,255,255,.72);
-    -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+    position:fixed;inset:0 0 auto 0;z-index:100;
+    height:calc(72px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);
+    background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
     border-bottom:1px solid transparent;transition:border-color .4s var(--ease),background .4s var(--ease);
   }
   .nav.scrolled{border-bottom-color:var(--line);background:rgba(255,255,255,.85)}
   .nav .wrap{height:100%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
-  .logo{font-weight:800;letter-spacing:.42em;font-size:17px;padding-left:.42em;margin-left:-.42em}
+  .logo{font-weight:800;letter-spacing:.42em;font-size:17px}
   .nav-links{display:flex;gap:clamp(20px,3vw,44px);list-style:none}
   .nav-links a{font-size:13px;color:var(--muted);transition:color .3s;position:relative}
   .nav-links a::after{content:"";position:absolute;left:0;bottom:-4px;height:1px;width:100%;background:var(--ink);transform:scaleX(0);transform-origin:right;transition:transform .4s var(--ease)}
@@ -81,14 +96,13 @@
   .nav-right{justify-self:end;display:flex;align-items:center;gap:14px}
   .nav .btn{padding:10px 22px;font-size:13px}
   .burger{display:none;width:40px;height:40px;position:relative}
-  .burger span{position:absolute;left:10px;right:10px;height:1px;background:var(--ink);transition:transform .4s var(--ease),opacity .3s}
+  .burger span{position:absolute;left:10px;right:10px;height:1px;background:var(--ink);transition:transform .4s var(--ease)}
   .burger span:nth-child(1){top:16px}
   .burger span:nth-child(2){top:23px}
   .burger.open span:nth-child(1){transform:translateY(3.5px) rotate(45deg)}
   .burger.open span:nth-child(2){transform:translateY(-3.5px) rotate(-45deg)}
-
   .mobile-menu{
-    position:fixed;inset:72px 0 0 0;z-index:99;background:var(--white);
+    position:fixed;inset:calc(72px + env(safe-area-inset-top,0px)) 0 0 0;z-index:99;background:var(--white);
     padding:40px var(--pad);display:flex;flex-direction:column;gap:8px;
     opacity:0;visibility:hidden;transform:translateY(-8px);
     transition:opacity .4s var(--ease),transform .4s var(--ease),visibility .4s;
@@ -100,62 +114,43 @@
   /* ---------- Hero ---------- */
   .hero{
     position:relative;height:90vh;min-height:560px;margin-top:72px;
-    background:var(--hero);overflow:hidden;cursor:none;touch-action:pan-y;
-    user-select:none;-webkit-user-select:none;
+    background:var(--hero);overflow:hidden;cursor:none;touch-action:pan-y;user-select:none;-webkit-user-select:none;
   }
   .hero-layer{position:absolute;inset:0;will-change:clip-path}
   .hero-layer img{width:100%;height:100%;object-fit:cover;object-position:center 30%;pointer-events:none}
-  .hero-layer[data-state="1"] img{filter:saturate(.85) brightness(1.04)}
-  .hero-layer[data-state="2"]{clip-path:inset(0 100% 0 0)}
-  .hero-layer[data-state="3"]{clip-path:inset(0 100% 0 0)}
-  .hero-layer[data-state="3"] img{filter:saturate(1.08) sepia(.12) hue-rotate(-8deg)}
-  .hero::after{
-    content:"";position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(to top,rgba(10,10,10,.55) 0%,rgba(10,10,10,.12) 38%,rgba(10,10,10,0) 60%);
-  }
-  .hero-guide{
-    position:absolute;top:0;bottom:0;left:0;width:1px;z-index:3;pointer-events:none;
-    background:rgba(255,255,255,.85);transform:translateX(50vw);
-  }
-  .hero-guide::before{
-    content:"";position:absolute;left:50%;width:44px;height:44px;margin-left:-22px;
-    top:var(--cy,50%);margin-top:-22px;border-radius:50%;
-    border:1px solid rgba(255,255,255,.9);
-    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);background:rgba(255,255,255,.08);
-  }
-  .hero-guide::after{
-    content:"‹ ›";position:absolute;left:50%;top:var(--cy,50%);transform:translate(-50%,-52%);
-    color:#fff;font-size:14px;letter-spacing:.1em;white-space:nowrap
-  }
-  .hero-states{
-    position:absolute;top:32px;left:var(--pad);right:var(--pad);z-index:4;
-    display:flex;justify-content:space-between;gap:12px;pointer-events:none;
-  }
-  .hero-states span{
-    font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55);text-shadow:0 1px 8px rgba(0,0,0,.25);
-    transition:color .4s var(--ease);font-weight:500
-  }
+  .hero-layer[data-state="2"],.hero-layer[data-state="3"]{clip-path:inset(0 100% 0 0)}
+  .hero::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(to top,rgba(10,10,10,.55) 0%,rgba(10,10,10,.12) 38%,rgba(10,10,10,0) 60%)}
+  .hero-guide{position:absolute;top:0;bottom:0;left:0;width:1px;z-index:3;pointer-events:none;background:rgba(255,255,255,.85);transform:translateX(50vw)}
+  .hero-guide::before{content:"";position:absolute;left:50%;width:44px;height:44px;margin-left:-22px;top:var(--cy,50%);margin-top:-22px;border-radius:50%;border:1px solid rgba(255,255,255,.9);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);background:rgba(255,255,255,.08)}
+  .hero-guide::after{content:"‹ ›";position:absolute;left:50%;top:var(--cy,50%);transform:translate(-50%,-52%);color:#fff;font-size:14px;letter-spacing:.1em;white-space:nowrap}
+  .hero-states{position:absolute;top:32px;left:var(--pad);right:var(--pad);z-index:4;display:flex;justify-content:space-between;gap:12px;pointer-events:none}
+  .hero-states span{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55);text-shadow:0 1px 8px rgba(0,0,0,.25);transition:color .4s var(--ease);font-weight:500}
   .hero-states span.active{color:#fff}
   .hero-states span i{font-style:normal;opacity:.6;margin-right:8px}
-  .hero-copy{
-    position:absolute;z-index:4;left:0;right:0;bottom:clamp(36px,7vh,72px);
-    text-align:center;color:#fff;padding:0 var(--pad);pointer-events:none;
-  }
-  .hero-copy h1{font-size:clamp(38px,7.4vw,112px);font-weight:600;letter-spacing:-.045em;line-height:.95}
+  .hero-states em{font-style:normal}
+  .hero-copy{position:absolute;z-index:4;left:0;right:0;bottom:clamp(36px,7vh,72px);text-align:center;color:#fff;padding:0 var(--pad);pointer-events:none}
+  .hero-copy h1{font-size:clamp(36px,7vw,108px);font-weight:600;letter-spacing:-.045em;line-height:.95}
   .hero-copy p{margin-top:18px;font-size:12px;letter-spacing:.24em;text-transform:uppercase;opacity:.85;font-weight:400}
+  .hero-copy > *{transition:opacity 1.2s var(--ease),transform 1.2s var(--ease)}
+  body.is-loading .hero-copy > *{opacity:0;transform:translateY(30px)}
+  .hero-copy p{transition-delay:.15s}
   .hero-progress{position:absolute;z-index:4;left:var(--pad);right:var(--pad);bottom:20px;height:1px;background:rgba(255,255,255,.3)}
-  .hero-progress b{display:block;height:100%;width:50%;background:#fff;transform-origin:left}
+  .hero-progress b{display:block;height:100%;width:50%;background:#fff}
 
-  /* ---------- Studio ---------- */
+  /* ---------- Estudio ---------- */
   .studio{padding:var(--section) 0}
   .studio .wrap{display:grid;grid-template-columns:4fr 6fr;gap:clamp(40px,7vw,120px);align-items:center}
+  .studio-text{min-width:0}
   .studio-text h2{margin:18px 0 28px}
   .studio-text .lead{margin-bottom:40px}
+  .studio-facts{display:flex;gap:40px;margin-bottom:44px;padding-top:28px;border-top:1px solid var(--line)}
+  .studio-facts strong{display:block;font-size:28px;font-weight:500;letter-spacing:-.03em}
+  .studio-facts span{font-size:13px;color:var(--muted)}
   .studio-img{aspect-ratio:4/3.1}
   .studio-img img{transition:transform 1.6s var(--ease)}
   .studio-img:hover img{transform:scale(1.03)}
 
-  /* ---------- Work ---------- */
+  /* ---------- Trabajos ---------- */
   .work{padding:0 0 var(--section)}
   .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:clamp(40px,6vw,80px);padding-top:clamp(40px,5vw,64px);border-top:1px solid var(--line)}
   .section-head .count{color:var(--muted);font-size:13px}
@@ -167,8 +162,8 @@
   .card-meta strong{font-weight:500}
   .card-meta span{color:var(--muted)}
 
-  /* ---------- Artists ---------- */
-  .artists{padding:var(--section) 0;background:var(--white)}
+  /* ---------- Artistas ---------- */
+  .artists{padding:var(--section) 0}
   .artists-head{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:clamp(48px,6vw,88px)}
   .artists-head .lead{justify-self:end}
   .artist-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(20px,2.6vw,40px)}
@@ -176,16 +171,18 @@
   .artist img{filter:grayscale(1) contrast(1.02);transition:filter .9s var(--ease),transform 1.2s var(--ease)}
   .artist:hover img{filter:grayscale(0);transform:scale(1.03)}
   .artist h3{font-size:20px;font-weight:600;letter-spacing:-.02em;margin-top:22px}
-  .artist .role{color:var(--muted);font-size:14px;margin:2px 0 18px}
+  .artist .role{color:var(--ink);font-size:14px;margin-top:2px}
+  .artist .spec{color:var(--muted);font-size:14px;margin:2px 0 18px}
   .artist .arrow-link{font-size:13px;border-bottom-color:var(--line);transition:border-color .3s}
   .artist .arrow-link:hover{border-bottom-color:var(--ink)}
 
-  /* ---------- Services ---------- */
+  /* ---------- Servicios ---------- */
   .services{padding:var(--section) 0;border-top:1px solid var(--line)}
   .services .wrap{display:grid;grid-template-columns:35fr 65fr;gap:clamp(40px,7vw,120px);align-items:start}
   .services-aside{position:sticky;top:100px}
   .services-aside h2{margin:18px 0 24px}
   .services-aside .lead{margin-bottom:36px}
+  .services-list{min-width:0}
   .svc-cat + .svc-cat{margin-top:clamp(56px,6vw,88px)}
   .svc-cat h3{font-size:13px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;padding-bottom:20px;border-bottom:1px solid var(--ink);display:flex;justify-content:space-between}
   .svc-cat h3 span{color:var(--muted);font-weight:400;letter-spacing:.1em}
@@ -193,35 +190,35 @@
   .svc:hover{padding-left:10px}
   .svc h4{font-size:18px;font-weight:500;letter-spacing:-.015em}
   .svc p{color:var(--muted);font-size:14px;margin-top:4px;max-width:46ch}
-  .svc-price{text-align:right;white-space:nowrap}
-  .svc-price strong{display:block;font-size:18px;font-weight:500;letter-spacing:-.01em}
+  .svc-price{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .svc-price strong{display:block;font-size:18px;font-weight:500}
   .svc-price span{color:var(--muted);font-size:13px}
 
   /* ---------- CTA ---------- */
   .cta{padding:0 0 var(--section)}
-  .cta-box{background:var(--soft);display:grid;grid-template-columns:1fr 1fr;align-items:stretch;overflow:hidden}
+  .cta-box{background:var(--soft);display:grid;grid-template-columns:1fr 1fr;overflow:hidden}
   .cta-text{padding:clamp(40px,7vw,104px);display:flex;flex-direction:column;justify-content:center;gap:24px}
   .cta-text h2{font-size:clamp(40px,5.4vw,76px)}
   .cta-text .btn{align-self:flex-start;margin-top:12px}
   .cta-img{min-height:520px}
   .cta-img img{object-position:center 25%}
 
-  /* ---------- Find us ---------- */
+  /* ---------- Ubicación ---------- */
   .find{padding:0 0 var(--section)}
   .find .wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(40px,7vw,120px);align-items:center}
   .find-img{aspect-ratio:4/5}
   .find h2{margin:18px 0 32px}
-  .contact-list{list-style:none;display:grid;gap:8px;margin-bottom:40px;font-size:16px}
+  .contact-list{list-style:none;display:grid;gap:8px;margin-bottom:40px}
   .contact-list li{display:flex;gap:20px}
-  .contact-list .k{color:var(--muted);width:72px;flex-shrink:0;font-size:13px;padding-top:2px}
+  .contact-list .k{color:var(--muted);width:84px;flex-shrink:0;font-size:13px;padding-top:2px}
   .contact-list a:hover{text-decoration:underline;text-underline-offset:4px}
-  .hours{width:100%;border-collapse:collapse;margin-bottom:44px;font-size:15px}
+  .hours{width:100%;border-collapse:collapse;margin-bottom:44px;font-size:15px;font-variant-numeric:tabular-nums}
   .hours td{padding:14px 0;border-bottom:1px solid var(--line)}
   .hours tr:first-child td{border-top:1px solid var(--line)}
   .hours td:last-child{text-align:right}
   .hours .closed td{color:var(--muted)}
   .hours .today td{font-weight:500}
-  .hours .today td:first-child::after{content:"Today";margin-left:10px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;border:1px solid var(--ink);border-radius:999px;padding:2px 8px;vertical-align:2px;font-weight:500}
+  .hours .today td:first-child::after{content:"Hoy";margin-left:10px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;border:1px solid var(--ink);border-radius:999px;padding:2px 8px;vertical-align:2px;font-weight:500}
 
   /* ---------- Footer ---------- */
   footer{border-top:1px solid var(--line);padding:40px 0}
@@ -240,17 +237,10 @@
   .reveal[data-delay="3"]{transition-delay:.3s}
 
   /* ---------- Modal ---------- */
-  .modal{
-    position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
-    visibility:hidden;opacity:0;transition:opacity .45s var(--ease),visibility .45s;
-  }
+  .modal{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;visibility:hidden;opacity:0;transition:opacity .45s var(--ease),visibility .45s}
   .modal.open{visibility:visible;opacity:1}
   .modal-backdrop{position:absolute;inset:0;background:rgba(24,24,24,.38);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-  .modal-panel{
-    position:relative;width:min(640px,100%);max-height:calc(100vh - 40px);overflow-y:auto;
-    background:var(--white);padding:clamp(28px,5vw,56px);
-    transform:translateY(24px) scale(.985);transition:transform .55s var(--ease);
-  }
+  .modal-panel{position:relative;width:min(640px,100%);max-height:calc(100vh - 40px);overflow-y:auto;background:var(--white);padding:clamp(28px,5vw,56px);transform:translateY(24px) scale(.985);transition:transform .55s var(--ease)}
   .modal.open .modal-panel{transform:none}
   .modal-close{position:absolute;top:18px;right:18px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;transition:border-color .3s,transform .4s var(--ease)}
   .modal-close:hover{border-color:var(--ink);transform:rotate(90deg)}
@@ -261,16 +251,12 @@
   .steps i.on{background:var(--ink)}
   .field{margin-bottom:22px}
   .field label,.field .label{display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;font-weight:500}
-  .field select,.field input{
-    width:100%;appearance:none;-webkit-appearance:none;border:0;border-bottom:1px solid var(--line);
-    padding:12px 28px 12px 0;font:inherit;font-size:16px;font-weight:400;color:var(--ink);background:transparent;border-radius:0;
-    transition:border-color .3s;
-  }
+  .field select,.field input{width:100%;appearance:none;-webkit-appearance:none;border:0;border-bottom:1px solid var(--line);padding:12px 28px 12px 0;font:inherit;font-size:16px;font-weight:400;color:var(--ink);background:transparent;border-radius:0;transition:border-color .3s}
   .field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%23181818'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 4px center}
   .field select:focus,.field input:focus{outline:none;border-bottom-color:var(--ink)}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:13px;transition:all .3s var(--ease)}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:13px;transition:all .3s var(--ease);font-variant-numeric:tabular-nums}
   .chip:hover{border-color:var(--ink)}
   .chip.sel{background:var(--ink);color:var(--white);border-color:var(--ink)}
   .chip:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
@@ -285,7 +271,7 @@
   @keyframes draw{to{stroke-dashoffset:0}}
   .success p{color:var(--muted);max-width:40ch;margin:0 auto 28px;font-size:15px}
   .success .details{border-top:1px solid var(--line);margin-bottom:28px;text-align:left}
-  .success .details div{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .success .details div{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
   .success .details span{color:var(--muted)}
   .modal.done form{display:none}
   .modal.done .success{display:block}
@@ -311,13 +297,14 @@
   @media (max-width:600px){
     .nav .btn-outline{display:none}
     .hero{height:82vh;min-height:520px}
-    .hero-states span em{display:none}
+    .hero-states em{display:none}
     .work-grid,.artist-grid{grid-template-columns:1fr}
     .row2{grid-template-columns:1fr;gap:0}
     .svc{grid-template-columns:1fr;gap:10px}
     .svc-price{text-align:left;display:flex;gap:12px;align-items:baseline}
     .copy{flex-direction:column;gap:6px}
     .section-head{flex-direction:column;align-items:flex-start}
+    .studio-facts{gap:28px}
   }
   @media (hover:none){.hero{cursor:auto}}
   @media (prefers-reduced-motion:reduce){
@@ -326,162 +313,174 @@
   }
 </style>
 </head>
-<body>
+<body class="is-loading">
+
+<!-- ============ PRELOADER: gota de tinte ============ -->
+<div class="preloader" id="preloader" aria-hidden="true" title="Clic para saltar">
+  <canvas id="preCanvas"></canvas>
+  <div class="pre-meta"><b>NOVA</b><span>Corte &amp; Color — SoHo</span></div>
+</div>
 
 <!-- ============ NAVBAR ============ -->
 <header class="nav" id="nav">
   <div class="wrap">
-    <a href="#top" class="logo" aria-label="NOVA home">NOVA</a>
+    <a href="#top" class="logo" aria-label="NOVA, inicio">NOVA</a>
     <ul class="nav-links">
-      <li><a href="#studio">The Studio</a></li>
-      <li><a href="#work">Work</a></li>
-      <li><a href="#artists">Artists</a></li>
-      <li><a href="#services">Services</a></li>
-      <li><a href="#find">Find Us</a></li>
+      <li><a href="#studio">El Estudio</a></li>
+      <li><a href="#work">Trabajos</a></li>
+      <li><a href="#artists">Artistas</a></li>
+      <li><a href="#services">Servicios</a></li>
+      <li><a href="#find">Ubicación</a></li>
     </ul>
     <div class="nav-right">
-      <button class="btn btn-outline" data-book>Book Appointment</button>
-      <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+      <button class="btn btn-outline" data-book>Reservar cita</button>
+      <button class="burger" id="burger" aria-label="Abrir menú" aria-expanded="false"><span></span><span></span></button>
     </div>
   </div>
 </header>
 
-<nav class="mobile-menu" id="mobileMenu" aria-label="Mobile">
-  <a href="#studio">The Studio</a>
-  <a href="#work">Work</a>
-  <a href="#artists">Artists</a>
-  <a href="#services">Services</a>
-  <a href="#find">Find Us</a>
-  <button class="btn btn-dark" data-book>Book Appointment</button>
+<nav class="mobile-menu" id="mobileMenu" aria-label="Menú móvil">
+  <a href="#studio">El Estudio</a>
+  <a href="#work">Trabajos</a>
+  <a href="#artists">Artistas</a>
+  <a href="#services">Servicios</a>
+  <a href="#find">Ubicación</a>
+  <button class="btn btn-dark" data-book>Reservar cita</button>
 </nav>
 
 <main id="top">
 
 <!-- ============ HERO ============ -->
-<section class="hero" id="hero" aria-label="Interactive hair transformations">
+<section class="hero" id="hero" aria-label="Transformaciones de cabello interactivas">
   <div class="hero-layer" data-state="1">
-    <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=2000&q=80" alt="Model with long platinum blonde hair" />
+    <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=2000&q=80" alt="Modelo con melena larga rubio platino" />
   </div>
   <div class="hero-layer" data-state="2">
-    <img src="https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=2000&q=80" alt="Model with a brunette precision bob" />
+    <img src="https://images.unsplash.com/photo-1509967419530-da38b4704bc6?auto=format&fit=crop&w=2000&q=80" alt="Modelo con bob castaño de precisión" />
   </div>
   <div class="hero-layer" data-state="3">
-    <img src="https://images.unsplash.com/photo-1526510747491-58f928ec870f?auto=format&fit=crop&w=2000&q=80" alt="Model with long copper rose waves" />
+    <img src="https://images.unsplash.com/photo-1526510747491-58f928ec870f?auto=format&fit=crop&w=2000&q=80" alt="Modelo con ondas largas cobrizas" />
   </div>
 
   <div class="hero-guide" id="heroGuide" aria-hidden="true"></div>
 
   <div class="hero-states" aria-hidden="true">
-    <span data-s="1" class="active"><i>01</i><em>Platinum Long</em></span>
-    <span data-s="2"><i>02</i><em>Chestnut Bob</em></span>
-    <span data-s="3"><i>03</i><em>Copper Waves</em></span>
+    <span data-s="1" class="active"><i>01</i><em>Platino largo</em></span>
+    <span data-s="2"><i>02</i><em>Bob castaño</em></span>
+    <span data-s="3"><i>03</i><em>Ondas cobrizas</em></span>
   </div>
 
   <div class="hero-copy">
-    <h1>EVERY HEAD,<br/>A NEW STORY.</h1>
-    <p>Move cursor to explore transformations</p>
+    <h1>CADA MELENA,<br />UNA NUEVA HISTORIA.</h1>
+    <p id="heroHint">Mueve el cursor para explorar las transformaciones</p>
   </div>
   <div class="hero-progress" aria-hidden="true"><b id="heroBar"></b></div>
 </section>
 
-<!-- ============ STUDIO ============ -->
+<!-- ============ EL ESTUDIO ============ -->
 <section class="studio" id="studio">
   <div class="wrap">
     <div class="studio-text">
-      <p class="eyebrow reveal">01 — About</p>
-      <h2 class="reveal" data-delay="1">The Studio</h2>
-      <p class="lead reveal" data-delay="2">A calm space for considered cutting and colour. Designed to feel less like a salon and more like a private creative sanctuary.</p>
-      <a href="#artists" class="arrow-link reveal" data-delay="3">Read More <span class="ar">→</span></a>
+      <p class="eyebrow reveal">El espacio</p>
+      <h2 class="reveal" data-delay="1">El Estudio</h2>
+      <p class="lead reveal" data-delay="2">Un espacio sereno para el corte y el color pensados sin prisa. Diseñado para sentirse menos como un salón y más como un refugio creativo privado.</p>
+      <div class="studio-facts reveal" data-delay="2">
+        <div><strong>4</strong><span>sillones, nunca más</span></div>
+        <div><strong>15 min</strong><span>de consulta en cada cita</span></div>
+      </div>
+      <a href="#artists" class="arrow-link reveal" data-delay="3">Leer más <span class="ar">→</span></a>
     </div>
     <div class="studio-img ph reveal" data-delay="1">
-      <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1800&q=80" alt="Bright minimalist salon interior with large mirrors and modern chairs" loading="lazy" />
+      <img src="https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1800&q=80" alt="Interior luminoso y minimalista del salón con grandes espejos y sillones modernos" loading="lazy" />
     </div>
   </div>
 </section>
 
-<!-- ============ WORK ============ -->
+<!-- ============ TRABAJOS ============ -->
 <section class="work" id="work">
   <div class="wrap">
     <div class="section-head reveal">
       <div>
-        <p class="eyebrow">02 — Portfolio</p>
-        <h2 style="margin-top:18px">Selected Work</h2>
+        <p class="eyebrow">Portafolio</p>
+        <h2 style="margin-top:18px">Trabajos seleccionados</h2>
       </div>
-      <span class="count">(06) Recent transformations</span>
+      <span class="count">(06) Transformaciones recientes</span>
     </div>
     <div class="work-grid">
       <article class="card reveal">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=900&q=80" alt="Copper dimension colour" loading="lazy" /></div>
-        <div class="card-meta"><strong>Copper Dimension</strong><span>Colour</span></div>
+        <div class="ph"><img src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=900&q=80" alt="Color cobrizo con dimensión" loading="lazy" /></div>
+        <div class="card-meta"><strong>Dimensión Cobre</strong><span>Color</span></div>
       </article>
       <article class="card reveal" data-delay="1">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=900&q=80" alt="Precision bob haircut" loading="lazy" /></div>
-        <div class="card-meta"><strong>Precision Bob</strong><span>Cut</span></div>
+        <div class="ph"><img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=900&q=80" alt="Bob de precisión" loading="lazy" /></div>
+        <div class="card-meta"><strong>Bob de Precisión</strong><span>Corte</span></div>
       </article>
       <article class="card reveal" data-delay="2">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?auto=format&fit=crop&w=900&q=80" alt="Platinum gloss blonde" loading="lazy" /></div>
-        <div class="card-meta"><strong>Platinum Gloss</strong><span>Colour</span></div>
+        <div class="ph"><img src="https://images.unsplash.com/photo-1595959183082-7b570b7e08e2?auto=format&fit=crop&w=900&q=80" alt="Rubio platino con brillo" loading="lazy" /></div>
+        <div class="card-meta"><strong>Platino Brillante</strong><span>Color</span></div>
       </article>
       <article class="card reveal">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=900&q=80" alt="Soft wave styling" loading="lazy" /></div>
-        <div class="card-meta"><strong>Soft Wave</strong><span>Style</span></div>
+        <div class="ph"><img src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=900&q=80" alt="Ondas suaves con balayage" loading="lazy" /></div>
+        <div class="card-meta"><strong>Onda Suave</strong><span>Peinado</span></div>
       </article>
       <article class="card reveal" data-delay="1">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&fit=crop&w=900&q=80" alt="Sculpted curls" loading="lazy" /></div>
-        <div class="card-meta"><strong>Sculpted Curls</strong><span>Cut & Style</span></div>
+        <div class="ph"><img src="https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&fit=crop&w=900&q=80" alt="Rizos esculpidos" loading="lazy" /></div>
+        <div class="card-meta"><strong>Rizos Esculpidos</strong><span>Corte y peinado</span></div>
       </article>
       <article class="card reveal" data-delay="2">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1492106087820-71f1a00d2b11?auto=format&fit=crop&w=900&q=80" alt="Violet tint colour" loading="lazy" /></div>
-        <div class="card-meta"><strong>Violet Tint</strong><span>Colour</span></div>
+        <div class="ph"><img src="https://images.unsplash.com/photo-1492106087820-71f1a00d2b11?auto=format&fit=crop&w=900&q=80" alt="Tinte violeta lavanda" loading="lazy" /></div>
+        <div class="card-meta"><strong>Tinte Violeta</strong><span>Color</span></div>
       </article>
     </div>
   </div>
 </section>
 
-<!-- ============ ARTISTS ============ -->
+<!-- ============ ARTISTAS ============ -->
 <section class="artists" id="artists">
   <div class="wrap">
     <div class="artists-head">
       <div class="reveal">
-        <p class="eyebrow">03 — Team</p>
-        <h2 style="margin-top:18px">The Artists</h2>
+        <p class="eyebrow">Equipo</p>
+        <h2 style="margin-top:18px">Los Artistas</h2>
       </div>
-      <p class="lead reveal" data-delay="1">We work slowly and deliberately. Every appointment begins with a conversation — about your hair, your routine and the way you want to feel — so the result is entirely, unmistakably yours.</p>
+      <p class="lead reveal" data-delay="1">Trabajamos despacio y con intención. Cada cita empieza con una conversación sobre tu cabello, tu rutina y cómo quieres sentirte, para que el resultado sea inconfundiblemente tuyo.</p>
     </div>
     <div class="artist-grid">
       <article class="artist reveal">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=900&q=80" alt="Portrait of Maya Linnea" loading="lazy" /></div>
+        <div class="ph"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=900&q=80" alt="Retrato de Maya Linnea" loading="lazy" /></div>
         <h3>Maya Linnea</h3>
-        <p class="role">Creative Director</p>
-        <a href="#" class="arrow-link" data-book data-artist="Maya Linnea">Book with Maya <span class="ar">→</span></a>
+        <p class="role">Directora Creativa</p>
+        <p class="spec">Cortes de autor y transformaciones completas</p>
+        <a href="#" class="arrow-link" data-book data-artist="Maya Linnea">Reservar con Maya <span class="ar">→</span></a>
       </article>
       <article class="artist reveal" data-delay="1">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=80" alt="Portrait of Theo Mercer" loading="lazy" /></div>
+        <div class="ph"><img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=80" alt="Retrato de Theo Mercer" loading="lazy" /></div>
         <h3>Theo Mercer</h3>
-        <p class="role">Senior Colourist</p>
-        <a href="#" class="arrow-link" data-book data-artist="Theo Mercer">Book with Theo <span class="ar">→</span></a>
+        <p class="role">Colorista Senior</p>
+        <p class="spec">Balayage, rubios platino y cobres</p>
+        <a href="#" class="arrow-link" data-book data-artist="Theo Mercer">Reservar con Theo <span class="ar">→</span></a>
       </article>
       <article class="artist reveal" data-delay="2">
-        <div class="ph"><img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=80" alt="Portrait of Inez Duarte" loading="lazy" /></div>
+        <div class="ph"><img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=900&q=80" alt="Retrato de Inez Duarte" loading="lazy" /></div>
         <h3>Inez Duarte</h3>
-        <p class="role">Master Stylist</p>
-        <a href="#" class="arrow-link" data-book data-artist="Inez Duarte">Book with Inez <span class="ar">→</span></a>
+        <p class="role">Estilista Máster</p>
+        <p class="spec">Rizos, texturas y cortes esculpidos</p>
+        <a href="#" class="arrow-link" data-book data-artist="Inez Duarte">Reservar con Inez <span class="ar">→</span></a>
       </article>
     </div>
   </div>
 </section>
 
-<!-- ============ SERVICES ============ -->
+<!-- ============ SERVICIOS ============ -->
 <section class="services" id="services">
   <div class="wrap">
     <aside class="services-aside reveal">
-      <p class="eyebrow">04 — Menu</p>
-      <h2>Services &amp; Pricing</h2>
-      <p class="lead">Every service includes a personal consultation. Prices reflect starting rates and may vary with length, density and the complexity of your colour story.</p>
-      <button class="btn btn-dark" data-book>Book Now</button>
+      <p class="eyebrow">Carta</p>
+      <h2>Servicios y Tarifas</h2>
+      <p class="lead">Todos los servicios incluyen una consulta personalizada. Los precios son tarifas de partida y pueden variar según el largo, la densidad y la complejidad de tu historia de color.</p>
+      <button class="btn btn-dark" data-book>Reservar ahora</button>
     </aside>
-
-    <div class="services-list" id="servicesList"><!-- rendered by JS --></div>
+    <div class="services-list" id="servicesList"></div>
   </div>
 </section>
 
@@ -490,40 +489,40 @@
   <div class="wrap">
     <div class="cta-box reveal">
       <div class="cta-text">
-        <p class="eyebrow">Reservations</p>
-        <h2>Book an Appointment</h2>
-        <p class="lead">Not sure where to begin? Start with a complimentary 15-minute consultation and we'll design a plan around your hair, your lifestyle and your pace.</p>
-        <button class="btn btn-dark" data-book>Reserve Your Chair</button>
+        <p class="eyebrow">Reservas</p>
+        <h2>Reserva tu cita</h2>
+        <p class="lead">¿No sabes por dónde empezar? Comienza con una consulta gratuita de 15 minutos y diseñaremos un plan a la medida de tu cabello, tu estilo de vida y tu ritmo.</p>
+        <button class="btn btn-dark" data-book>Reservar mi sillón</button>
       </div>
       <div class="cta-img ph">
-        <img src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=1400&q=80" alt="Profile of a woman with an elegant updo" loading="lazy" />
+        <img src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=1400&q=80" alt="Mujer con un recogido elegante" loading="lazy" />
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ FIND US ============ -->
+<!-- ============ UBICACIÓN ============ -->
 <section class="find" id="find">
   <div class="wrap">
     <div class="find-img ph reveal">
-      <img src="https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=1400&q=80" alt="Interior of the NOVA salon" loading="lazy" />
+      <img src="https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=1400&q=80" alt="Interior del estudio NOVA" loading="lazy" />
     </div>
     <div class="reveal" data-delay="1">
-      <p class="eyebrow">05 — Visit</p>
-      <h2>Find Us</h2>
+      <p class="eyebrow">Visítanos</p>
+      <h2>Ubicación</h2>
       <ul class="contact-list">
-        <li><span class="k">Address</span><span>142 Mercer Street, SoHo, NY 10012</span></li>
-        <li><span class="k">Phone</span><a href="tel:+12125550142">+1 (212) 555-0142</a></li>
-        <li><span class="k">Email</span><a href="mailto:hello@novastudio.example">hello@novastudio.example</a></li>
+        <li><span class="k">Dirección</span><span>142 Mercer Street, SoHo, NY 10012</span></li>
+        <li><span class="k">Teléfono</span><a href="tel:+12125550142">+1 (212) 555-0142</a></li>
+        <li><span class="k">Email</span><a href="mailto:hola@novastudio.example">hola@novastudio.example</a></li>
       </ul>
       <table class="hours" id="hours">
         <tbody>
-          <tr data-days="2,3,4,5"><td>Tuesday — Friday</td><td>10am – 8pm</td></tr>
-          <tr data-days="6"><td>Saturday</td><td>9am – 6pm</td></tr>
-          <tr data-days="0,1" class="closed"><td>Sunday &amp; Monday</td><td>Closed</td></tr>
+          <tr data-days="2,3,4,5"><td>Martes — Viernes</td><td>10:00 – 20:00</td></tr>
+          <tr data-days="6"><td>Sábado</td><td>9:00 – 18:00</td></tr>
+          <tr data-days="0,1" class="closed"><td>Domingo y Lunes</td><td>Cerrado</td></tr>
         </tbody>
       </table>
-      <a class="arrow-link" href="https://www.google.com/maps/search/?api=1&query=142+Mercer+Street+New+York+NY" target="_blank" rel="noopener">Open in Maps <span class="ar">→</span></a>
+      <a class="arrow-link" href="https://www.google.com/maps/search/?api=1&query=142+Mercer+Street+New+York+NY" target="_blank" rel="noopener">Abrir en Mapas <span class="ar">→</span></a>
     </div>
   </div>
 </section>
@@ -535,118 +534,319 @@
   <div class="wrap">
     <a href="#top" class="logo">NOVA</a>
     <ul>
-      <li><a href="#studio">The Studio</a></li>
-      <li><a href="#work">Work</a></li>
-      <li><a href="#artists">Artists</a></li>
-      <li><a href="#services">Services</a></li>
-      <li><a href="#find">Find Us</a></li>
+      <li><a href="#studio">El Estudio</a></li>
+      <li><a href="#work">Trabajos</a></li>
+      <li><a href="#artists">Artistas</a></li>
+      <li><a href="#services">Servicios</a></li>
+      <li><a href="#find">Ubicación</a></li>
     </ul>
     <div class="social">
       <a href="https://instagram.com" target="_blank" rel="noopener">Instagram ↗</a>
       <a href="https://tiktok.com" target="_blank" rel="noopener">TikTok ↗</a>
     </div>
     <div class="copy">
-      <span>© <span id="year"></span> NOVA Cut &amp; Colour Studio</span>
-      <span>142 Mercer Street, New York</span>
+      <span>© <span id="year"></span> NOVA Estudio de Corte y Color</span>
+      <span>142 Mercer Street, Nueva York</span>
     </div>
   </div>
 </footer>
 
-<!-- ============ BOOKING MODAL ============ -->
+<!-- ============ MODAL DE RESERVA ============ -->
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
   <div class="modal-backdrop" data-close></div>
   <div class="modal-panel">
-    <button class="modal-close" data-close aria-label="Close">
+    <button class="modal-close" data-close aria-label="Cerrar">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#181818"><path d="M1 1l12 12M13 1L1 13"/></svg>
     </button>
 
     <form id="bookingForm" novalidate>
-      <p class="eyebrow">Reservation</p>
-      <h2 id="modalTitle">Book an Appointment</h2>
-      <p class="sub">Choose your service, artist and time. We'll confirm by email within the hour.</p>
+      <p class="eyebrow">Reserva</p>
+      <h2 id="modalTitle">Reservar cita</h2>
+      <p class="sub">Elige servicio, artista y horario. Te confirmaremos por email en menos de una hora.</p>
       <div class="steps" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 
       <div class="field">
-        <label for="fService">Service</label>
+        <label for="fService">Servicio</label>
         <select id="fService" required></select>
       </div>
-
       <div class="field">
-        <span class="label">Artist</span>
-        <div class="chips" id="artistChips" role="radiogroup" aria-label="Artist"></div>
+        <span class="label">Artista</span>
+        <div class="chips" id="artistChips" role="radiogroup" aria-label="Artista"></div>
       </div>
-
       <div class="row2">
         <div class="field">
-          <label for="fDate">Date</label>
+          <label for="fDate">Fecha</label>
           <input type="date" id="fDate" required />
         </div>
         <div class="field">
-          <label for="fName">Full name</label>
-          <input type="text" id="fName" placeholder="Your name" autocomplete="name" required />
+          <label for="fName">Nombre completo</label>
+          <input type="text" id="fName" placeholder="Tu nombre" autocomplete="name" required />
         </div>
       </div>
-
       <div class="field">
-        <span class="label">Time</span>
-        <div class="chips" id="timeChips" role="radiogroup" aria-label="Time"></div>
+        <span class="label">Hora</span>
+        <div class="chips" id="timeChips" role="radiogroup" aria-label="Hora"></div>
       </div>
-
       <div class="field">
         <label for="fEmail">Email</label>
-        <input type="email" id="fEmail" placeholder="you@example.com" autocomplete="email" required />
+        <input type="email" id="fEmail" placeholder="tu@email.com" autocomplete="email" required />
       </div>
 
-      <div class="summary" id="summary"><span>Select a service</span><strong>—</strong></div>
+      <div class="summary" id="summary"><span>Elige un servicio</span><strong>—</strong></div>
       <p class="form-error" id="formError" role="alert"></p>
-      <button type="submit" class="btn btn-dark">Confirm Appointment</button>
+      <button type="submit" class="btn btn-dark">Confirmar cita</button>
     </form>
 
     <div class="success" aria-live="polite">
       <div class="tick"><svg width="26" height="20" viewBox="0 0 26 20" fill="none" stroke="#181818" stroke-width="1.5"><path d="M1 10l8 8L25 2"/></svg></div>
-      <p class="eyebrow">Confirmed</p>
-      <h2 style="margin:12px 0 14px">See you soon<span id="sName"></span>.</h2>
-      <p>Your appointment is reserved. A confirmation and preparation notes are on their way to your inbox.</p>
+      <p class="eyebrow">Confirmada</p>
+      <h2 style="margin:12px 0 14px">Te esperamos<span id="sName"></span>.</h2>
+      <p>Tu cita está reservada. Te enviamos la confirmación y unas notas de preparación a tu correo.</p>
       <div class="details" id="sDetails"></div>
-      <button class="btn btn-outline" data-close style="width:100%;justify-content:center">Close</button>
+      <button class="btn btn-outline" data-close style="width:100%;justify-content:center">Cerrar</button>
     </div>
   </div>
 </div>
 
 <script>
 (() => {
-  /* ---------- Data ---------- */
-  const SERVICES = [
-    { cat: 'Cut & Style', items: [
-      ['Signature Cut', 'Consultation, precision cut, wash and finish tailored to your texture.', 95, 60],
-      ['Restyle & Finish', 'A complete change of shape with detailed styling guidance.', 120, 75],
-      ['Blowout & Styling', 'Smooth, voluminous or undone — a finish built to last.', 65, 45],
-    ]},
-    { cat: 'Creative Colour', items: [
-      ['Full Balayage & Gloss', 'Hand-painted lightness with a glossing toner for depth.', 240, 180],
-      ['Global Bleach & Tone', 'Even, bond-protected lift to platinum or pastel bases.', 210, 150],
-      ['Dimensional Tint', 'Multi-tonal colour placed for movement and shine.', 165, 120],
-    ]},
-    { cat: 'Treatment & Care', items: [
-      ['Keratin Smoothing', 'Frizz control and softness that lasts up to four months.', 280, 150],
-      ['Molecular Hair Repair', 'Bond-building therapy for stressed or lightened hair.', 85, 45],
-      ['Scalp Ritual', 'Exfoliation, massage and a restorative scalp mask.', 70, 40],
-    ]},
-  ];
-  const ARTISTS = ['Maya Linnea', 'Theo Mercer', 'Inez Duarte', 'No preference'];
-  const TIMES = ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30'];
-
   const $ = (s, c = document) => c.querySelector(s);
   const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const clamp01 = v => Math.min(1, Math.max(0, v));
+  const easeOut = v => 1 - Math.pow(1 - v, 3);
+  const easeInOut = v => v < .5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2;
 
-  /* ---------- Image fallback ---------- */
+  /* =====================================================
+     PRELOADER — gota de tinte 3D (metaballs en Canvas)
+     ===================================================== */
+  const pre = $('#preloader'), cv = $('#preCanvas'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, DPR = 1;
+  const sizeCanvas = () => {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  };
+
+  // Buffer donde se sombrea el campo de metaballs píxel a píxel
+  const off = document.createElement('canvas'), octx = off.getContext('2d');
+  const RES = 0.75;
+
+  // Material cobre metálico
+  const norm = v => { const l = Math.hypot(...v); return v.map(x => x / l); };
+  const LIGHT = norm([-0.45, -0.75, 0.62]);
+  const HALF = norm([LIGHT[0], LIGHT[1], LIGHT[2] + 1]);
+  const DARK = [46, 18, 8], BASE = [184, 102, 52], SPEC = [255, 232, 204];
+
+  function drawBlobs(balls, refR) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const b of balls) {
+      const m = b.r * 1.9;
+      x0 = Math.min(x0, b.x - m); y0 = Math.min(y0, b.y - m);
+      x1 = Math.max(x1, b.x + m); y1 = Math.max(y1, b.y + m);
+    }
+    x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0));
+    x1 = Math.min(W, Math.ceil(x1)); y1 = Math.min(H, Math.ceil(y1));
+    const bw = x1 - x0, bh = y1 - y0;
+    if (bw <= 0 || bh <= 0) return;
+    const pw = Math.max(1, Math.round(bw * RES)), ph = Math.max(1, Math.round(bh * RES));
+    off.width = pw; off.height = ph;
+    const img = octx.createImageData(pw, ph), d = img.data;
+    const nzK = 0.7 / refR, n = balls.length;
+    const bx = balls.map(b => b.x), by = balls.map(b => b.y), br2 = balls.map(b => b.r * b.r);
+    for (let j = 0; j < ph; j++) {
+      const y = y0 + (j + 0.5) / RES;
+      for (let i = 0; i < pw; i++) {
+        const x = x0 + (i + 0.5) / RES;
+        let f = 0, gx = 0, gy = 0;
+        for (let k = 0; k < n; k++) {
+          const dx = x - bx[k], dy = y - by[k];
+          const dd = dx * dx + dy * dy + 0.0001;
+          const v = br2[k] / dd;
+          f += v;
+          const g = -2 * v / dd;
+          gx += g * dx; gy += g * dy;
+        }
+        if (f < 0.85) continue;
+        // normal de la superficie a partir del gradiente del campo
+        let nx = -gx, ny = -gy, nz = nzK;
+        const nl = Math.hypot(nx, ny, nz); nx /= nl; ny /= nl; nz /= nl;
+        const diff = Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
+        const nh = Math.max(0, nx * HALF[0] + ny * HALF[1] + nz * HALF[2]);
+        const spec = Math.pow(nh, 110) * 0.95 + Math.pow(nh, 18) * 0.12;
+        const fres = Math.pow(1 - nz, 3) * 0.35;
+        const bounce = Math.max(0, nx * 0.5 + ny * 0.7) * 0.22;
+        const lit = 0.18 + diff * 0.82;
+        const p = (j * pw + i) * 4;
+        for (let c = 0; c < 3; c++) {
+          const base = DARK[c] + (BASE[c] - DARK[c]) * lit;
+          d[p + c] = Math.min(255, base + SPEC[c] * spec + 255 * fres * (c === 0 ? 0.9 : c === 1 ? 0.55 : 0.35) + bounce * (c === 2 ? 120 : 70));
+        }
+        const a = clamp01((f - 0.9) / 0.2);
+        d[p + 3] = a * a * (3 - 2 * a) * 255;
+      }
+    }
+    octx.putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(off, x0, y0, bw, bh);
+  }
+
+  // Forma cerrada orgánica, ligeramente ondulante
+  function blobPath(cx, cy, R, t, amp = 1) {
+    ctx.beginPath();
+    const N = 120;
+    for (let i = 0; i <= N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      const r = R * (1 + amp * (0.045 * Math.sin(5 * a + t * 2.1) + 0.03 * Math.sin(9 * a - t * 3.3) + 0.02 * Math.sin(13 * a + 1.7 + t)));
+      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath();
+  }
+
+  // Línea de tiempo (ms)
+  const T_DETACH = 1050, T_IMPACT = 1950, T_REVEAL = 2150, T_REVEAL_END = 3350;
+  let startTime = 0, finished = false, splashDrops = [];
+
+  function frame(now) {
+    if (finished) return;
+    if (!startTime) startTime = now;
+    const t = now - startTime;
+    const cx = W / 2, cy = H / 2;
+    const R = Math.max(20, Math.min(40, Math.min(W, H) * 0.038));
+    const balls = [];
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0B0B0B';
+    ctx.fillRect(0, 0, W, H);
+
+    if (t < T_DETACH) {
+      // 1 · la gota se acumula en el borde superior y crece
+      const u = easeOut(clamp01(t / T_DETACH));
+      const sway = Math.sin(t / 180) * 1.5;
+      balls.push({ x: cx, y: -R * 0.35, r: R * (0.9 + 0.25 * u) });
+      const dropY = R * 0.5 + u * R * 2.1;
+      balls.push({ x: cx + sway, y: dropY, r: R * (0.25 + 0.75 * u) });
+      // cuello que se adelgaza justo antes de soltarse
+      const neck = 1 - clamp01((t - T_DETACH * 0.6) / (T_DETACH * 0.4));
+      balls.push({ x: cx + sway * 0.5, y: dropY * 0.5, r: R * 0.42 * neck * u + 0.01 });
+    } else if (t < T_IMPACT) {
+      // 2 · caída libre con gravedad, estirada por la velocidad
+      const fallT = (t - T_DETACH) / (T_IMPACT - T_DETACH);
+      const y0 = R * 2.6;
+      const y = y0 + (cy - y0) * fallT * fallT;
+      balls.push({ x: cx, y, r: R * (1 - 0.06 * fallT) });
+      balls.push({ x: cx, y: y - R * (0.7 + 0.9 * fallT), r: R * (0.55 - 0.15 * fallT) });
+      // el anclaje se retrae hacia arriba
+      const back = clamp01((t - T_DETACH) / 380);
+      balls.push({ x: cx, y: -R * 0.35 - back * R * 1.4, r: R * 1.15 * (1 - back * 0.5) });
+      // gotita satélite que deja el cuello
+      if (t > T_DETACH + 60) {
+        const sy = R * 1.6 + (cy - R * 1.6) * Math.pow(clamp01((t - T_DETACH - 120) / (T_IMPACT - T_DETACH)), 2);
+        balls.push({ x: cx, y: sy, r: R * 0.22 });
+      }
+    } else {
+      // 3 · impacto: la gota se aplasta y lanza una corona de gotas
+      const spread = easeOut(clamp01((t - T_IMPACT) / 420));
+      const squash = 1 - 0.45 * spread;
+      for (let i = -3; i <= 3; i++) {
+        balls.push({ x: cx + i * R * 0.88 * spread, y: cy + R * 0.2 * spread, r: R * squash * (1 - Math.abs(i) * 0.12) });
+      }
+      if (!splashDrops.length) {
+        for (let i = 0; i < 9; i++) {
+          const a = -Math.PI / 2 + (i - 4) * 0.33 + (Math.random() - 0.5) * 0.2;
+          const sp = R * (5 + Math.random() * 4);
+          splashDrops.push({ vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 1.2, r: R * (0.16 + Math.random() * 0.14) });
+        }
+      }
+      const st = (t - T_IMPACT) / 1000;
+      for (const p of splashDrops) {
+        balls.push({ x: cx + p.vx * st, y: cy + p.vy * st + 30 * R * st * st, r: p.r * (1 - clamp01(st * 1.6)) + 0.01 });
+      }
+      // onda expansiva
+      const rr = clamp01((t - T_IMPACT) / 900);
+      ctx.strokeStyle = `rgba(214,140,86,${0.45 * (1 - rr)})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(cx, cy + R * 0.3, R * (1.2 + rr * 7), R * (0.35 + rr * 2), 0, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    drawBlobs(balls, t > T_IMPACT ? R * 1.8 : R);
+
+    // 4 · el color se expande y abre una ventana hacia la web
+    if (t > T_REVEAL) {
+      pre.classList.add('revealing');
+      const p = easeInOut(clamp01((t - T_REVEAL) / (T_REVEAL_END - T_REVEAL)));
+      const hole = p * Math.hypot(W, H) * 0.62;
+      const rim = R * 0.9 + 26 * (1 - p);
+      const ts = t / 1000;
+      const g = ctx.createRadialGradient(cx, cy, Math.max(0, hole - rim), cx, cy, hole + rim * 1.3);
+      g.addColorStop(0, 'rgba(255,214,170,1)');
+      g.addColorStop(0.35, 'rgba(198,112,58,1)');
+      g.addColorStop(0.8, 'rgba(92,38,16,1)');
+      g.addColorStop(1, 'rgba(11,11,11,1)');
+      ctx.fillStyle = g;
+      blobPath(cx, cy, hole + rim, ts, 1.2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'destination-out';
+      blobPath(cx, cy, hole, ts + 0.6, 1);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    if (t > T_REVEAL_END) return finish();
+    requestAnimationFrame(frame);
+  }
+
+  let onDone = () => {};
+  function finish() {
+    if (finished) return;
+    finished = true;
+    pre.classList.add('revealing', 'gone');
+    document.body.classList.remove('is-loading');
+    setTimeout(() => pre.remove(), 700);
+    onDone();
+  }
+
+  if (reduceMotion || !ctx) {
+    finish();
+  } else {
+    sizeCanvas();
+    addEventListener('resize', sizeCanvas);
+    pre.addEventListener('click', finish);
+    requestAnimationFrame(frame);
+    setTimeout(finish, T_REVEAL_END + 2000); // red de seguridad
+  }
+
+  /* =====================================================
+     DATOS
+     ===================================================== */
+  const SERVICES = [
+    { cat: 'Corte y Peinado', items: [
+      ['Corte Signature', 'Consulta, corte de precisión, lavado y acabado adaptado a tu textura.', 95, 60],
+      ['Cambio de Look y Acabado', 'Un cambio completo de forma con guía detallada de peinado.', 120, 75],
+      ['Brushing y Peinado', 'Liso, con volumen o desenfadado: un acabado pensado para durar.', 65, 45],
+    ]},
+    { cat: 'Color Creativo', items: [
+      ['Balayage Completo y Gloss', 'Luz pintada a mano con un matiz glossing que aporta profundidad.', 240, 180],
+      ['Decoloración Global y Matiz', 'Aclarado uniforme con protección de enlaces hacia platinos o pasteles.', 210, 150],
+      ['Tinte Dimensional', 'Color multitonal colocado para dar movimiento y brillo.', 165, 120],
+    ]},
+    { cat: 'Tratamiento y Cuidado', items: [
+      ['Alisado con Keratina', 'Control del frizz y suavidad que dura hasta cuatro meses.', 280, 150],
+      ['Reparación Molecular', 'Terapia reconstructora de enlaces para cabellos dañados o aclarados.', 85, 45],
+      ['Ritual de Cuero Cabelludo', 'Exfoliación, masaje y mascarilla restauradora.', 70, 40],
+    ]},
+  ];
+  const ARTISTS = ['Maya Linnea', 'Theo Mercer', 'Inez Duarte', 'Sin preferencia'];
+  const TIMES = ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30'];
+
   $$('img').forEach(img => img.addEventListener('error', () => { img.style.opacity = 0; }, { once: true }));
 
-  /* ---------- Services render ---------- */
-  const list = $('#servicesList');
-  list.innerHTML = SERVICES.map(c => `
+  $('#servicesList').innerHTML = SERVICES.map(c => `
     <div class="svc-cat reveal">
-      <h3>${c.cat}<span>${String(c.items.length).padStart(2,'0')}</span></h3>
+      <h3>${c.cat}<span>${String(c.items.length).padStart(2, '0')}</span></h3>
       ${c.items.map(([n, d, p, m]) => `
         <div class="svc">
           <div><h4>${n}</h4><p>${d}</p></div>
@@ -656,54 +856,45 @@
 
   /* ---------- Navbar ---------- */
   const nav = $('#nav');
-  const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 10);
-  window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  const onScroll = () => nav.classList.toggle('scrolled', scrollY > 10);
+  addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
   const burger = $('#burger'), menu = $('#mobileMenu');
-  const toggleMenu = (open) => {
+  const toggleMenu = open => {
     burger.classList.toggle('open', open); menu.classList.toggle('open', open);
     burger.setAttribute('aria-expanded', open);
+    burger.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
     document.body.style.overflow = open ? 'hidden' : '';
   };
   burger.addEventListener('click', () => toggleMenu(!menu.classList.contains('open')));
   $$('a', menu).forEach(a => a.addEventListener('click', () => toggleMenu(false)));
 
-  /* ---------- Hero transformation ---------- */
+  /* ---------- Hero: transformación con clip-path ---------- */
   const hero = $('#hero');
-  const l2 = $('.hero-layer[data-state="2"]', hero);
-  const l3 = $('.hero-layer[data-state="3"]', hero);
-  const guide = $('#heroGuide'), bar = $('#heroBar');
-  const labels = $$('.hero-states span', hero);
+  const l2 = $('.hero-layer[data-state="2"]', hero), l3 = $('.hero-layer[data-state="3"]', hero);
+  const guide = $('#heroGuide'), bar = $('#heroBar'), labels = $$('.hero-states span', hero);
+  if (matchMedia('(hover: none)').matches) $('#heroHint').textContent = 'Desliza para explorar las transformaciones';
   let target = 0.5, current = 0.5, ty = 0.5, cy = 0.5, rect = hero.getBoundingClientRect(), interacted = false;
 
   const setTarget = (x, y) => {
     rect = hero.getBoundingClientRect();
-    target = Math.min(1, Math.max(0, (x - rect.left) / rect.width));
-    ty = Math.min(1, Math.max(0, (y - rect.top) / rect.height));
+    target = clamp01((x - rect.left) / rect.width);
+    ty = clamp01((y - rect.top) / rect.height);
     interacted = true;
   };
   hero.addEventListener('mousemove', e => setTarget(e.clientX, e.clientY));
   hero.addEventListener('touchstart', e => setTarget(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
   hero.addEventListener('touchmove', e => setTarget(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
-  window.addEventListener('resize', () => rect = hero.getBoundingClientRect());
+  addEventListener('resize', () => rect = hero.getBoundingClientRect());
 
-  // Map cursor progress p (0..1) to two wipes:
-  //  0 → 0.5 : state 2 wipes in over state 1 (edge follows cursor)
-  //  0.5 → 1 : state 3 wipes in over state 2 (edge follows cursor)
+  // p 0→0.5: el estado 2 cubre al 1 · p 0.5→1: el estado 3 cubre al 2 (el borde sigue al cursor)
   const render = () => {
     current += (target - current) * 0.09;
     cy += (ty - cy) * 0.12;
-    const p = current;
-    const edge = p * 100; // % from left where the guide sits
-    const a = Math.min(1, p / 0.5);              // progress of wipe 2
-    const b = Math.max(0, (p - 0.5) / 0.5);      // progress of wipe 3
-    // Wipe 2 is revealed up to the guide while p < .5, then fully.
-    const r2 = p < 0.5 ? 100 - edge : 0;
-    // Wipe 3 is revealed up to the guide once p > .5.
-    const r3 = p > 0.5 ? 100 - edge : 100;
-    l2.style.clipPath = `inset(0 ${r2}% 0 0)`;
-    l3.style.clipPath = `inset(0 ${r3}% 0 0)`;
-    guide.style.transform = `translateX(${(edge / 100) * rect.width}px)`;
+    const p = current, edge = p * 100;
+    l2.style.clipPath = `inset(0 ${p < 0.5 ? 100 - edge : 0}% 0 0)`;
+    l3.style.clipPath = `inset(0 ${p > 0.5 ? 100 - edge : 100}% 0 0)`;
+    guide.style.transform = `translateX(${p * rect.width}px)`;
     guide.style.setProperty('--cy', `${cy * 100}%`);
     bar.style.width = `${edge}%`;
     const s = p < 0.33 ? 1 : p < 0.67 ? 2 : 3;
@@ -712,27 +903,26 @@
   };
   requestAnimationFrame(render);
 
-  // Gentle idle hint until the visitor interacts
-  let t0 = performance.now();
-  const idle = (t) => {
-    if (interacted) return;
-    target = 0.5 + Math.sin((t - t0) / 1400) * 0.42;
-    requestAnimationFrame(idle);
+  // Movimiento sugerido mientras nadie interactúa (empieza tras el preloader)
+  onDone = () => {
+    const t0 = performance.now();
+    const idle = t => { if (interacted) return; target = 0.5 + Math.sin((t - t0) / 1400) * 0.42; requestAnimationFrame(idle); };
+    setTimeout(() => !interacted && requestAnimationFrame(idle), 700);
   };
-  setTimeout(() => !interacted && requestAnimationFrame(idle), 900);
+  if (finished) onDone();
 
-  /* ---------- Reveal on scroll ---------- */
+  /* ---------- Aparición al hacer scroll ---------- */
   const io = new IntersectionObserver(entries => {
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
   }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
   $$('.reveal').forEach(el => io.observe(el));
 
-  /* ---------- Hours: highlight today ---------- */
+  /* ---------- Horario: marcar hoy ---------- */
   const today = new Date().getDay();
   $$('#hours tr').forEach(tr => { if (tr.dataset.days.split(',').map(Number).includes(today)) tr.classList.add('today'); });
   $('#year').textContent = new Date().getFullYear();
 
-  /* ---------- Booking modal ---------- */
+  /* ---------- Modal de reserva ---------- */
   const modal = $('#modal'), form = $('#bookingForm');
   const fService = $('#fService'), fDate = $('#fDate'), fName = $('#fName'), fEmail = $('#fEmail');
   const artistChips = $('#artistChips'), timeChips = $('#timeChips');
@@ -740,31 +930,29 @@
   const state = { artist: null, time: null };
   let lastFocus = null;
 
-  fService.innerHTML = '<option value="">Select a service</option>' + SERVICES.map(c =>
-    `<optgroup label="${c.cat}">${c.items.map(([n,,p,m]) => `<option value="${n}" data-price="${p}" data-min="${m}">${n} — $${p} · ${m} min</option>`).join('')}</optgroup>`
+  fService.innerHTML = '<option value="">Elige un servicio</option>' + SERVICES.map(c =>
+    `<optgroup label="${c.cat}">${c.items.map(([n, , p, m]) => `<option value="${n}" data-price="${p}" data-min="${m}">${n} — $${p} · ${m} min</option>`).join('')}</optgroup>`
   ).join('');
-
   artistChips.innerHTML = ARTISTS.map(a => `<button type="button" class="chip" role="radio" aria-checked="false" data-v="${a}">${a}</button>`).join('');
 
   const pad = n => String(n).padStart(2, '0');
-  const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const nextOpen = () => { const d = new Date(); d.setDate(d.getDate()+1); while ([0,1].includes(d.getDay())) d.setDate(d.getDate()+1); return d; };
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const nextOpen = () => { const d = new Date(); d.setDate(d.getDate() + 1); while ([0, 1].includes(d.getDay())) d.setDate(d.getDate() + 1); return d; };
   fDate.min = iso(new Date());
   const max = new Date(); max.setMonth(max.getMonth() + 3); fDate.max = iso(max);
 
   const renderTimes = () => {
     const d = fDate.value ? new Date(fDate.value + 'T12:00') : null;
-    const closed = d && [0,1].includes(d.getDay());
+    const closed = d && [0, 1].includes(d.getDay());
     const sat = d && d.getDay() === 6;
-    // pseudo-random "booked" slots so the picker feels real
     const seed = d ? d.getDate() + d.getMonth() * 31 : 0;
     timeChips.innerHTML = closed
-      ? '<span style="color:var(--muted);font-size:14px">The studio is closed on Sundays & Mondays — please choose another day.</span>'
+      ? '<span style="color:var(--muted);font-size:14px">El estudio cierra domingos y lunes. Elige otro día.</span>'
       : TIMES.filter(t => !(sat && t === '17:30')).map((t, i) => {
           const taken = d && ((seed + i * 7) % 5 === 0);
-          return `<button type="button" class="chip${state.time===t&&!taken?' sel':''}" role="radio" data-v="${t}" ${taken?'disabled title="Fully booked"':''}>${t}</button>`;
+          return `<button type="button" class="chip${state.time === t && !taken ? ' sel' : ''}" role="radio" data-v="${t}" ${taken ? 'disabled title="Completo"' : ''}>${t}</button>`;
         }).join('');
-    if (closed || !$(`.chip.sel`, timeChips)) state.time = null;
+    if (closed || !$('.chip.sel', timeChips)) state.time = null;
     update();
   };
 
@@ -780,14 +968,15 @@
 
   function update() {
     const opt = fService.selectedOptions[0];
-    if (opt && opt.value) summary.innerHTML = `<span>${opt.value} · ${opt.dataset.min} min</span><strong>$${opt.dataset.price}</strong>`;
-    else summary.innerHTML = '<span>Select a service</span><strong>—</strong>';
+    summary.innerHTML = opt && opt.value
+      ? `<span>${opt.value} · ${opt.dataset.min} min</span><strong>$${opt.dataset.price}</strong>`
+      : '<span>Elige un servicio</span><strong>—</strong>';
     const done = [!!fService.value, !!state.artist, !!(fDate.value && state.time), !!(fName.value.trim() && /\S+@\S+\.\S+/.test(fEmail.value))];
     steps.forEach((s, i) => s.classList.toggle('on', done[i]));
     err.textContent = '';
   }
 
-  const openModal = (artist) => {
+  const openModal = artist => {
     lastFocus = document.activeElement;
     modal.classList.remove('done');
     form.reset(); state.time = null;
@@ -821,19 +1010,19 @@
 
   form.addEventListener('submit', e => {
     e.preventDefault();
-    const miss = !fService.value ? 'Please choose a service.'
-      : !state.artist ? 'Please choose an artist.'
-      : !fDate.value ? 'Please choose a date.'
-      : !state.time ? 'Please choose an available time.'
-      : !fName.value.trim() ? 'Please add your name.'
-      : !/\S+@\S+\.\S+/.test(fEmail.value) ? 'Please add a valid email.' : '';
+    const miss = !fService.value ? 'Elige un servicio.'
+      : !state.artist ? 'Elige un artista.'
+      : !fDate.value ? 'Elige una fecha.'
+      : !state.time ? 'Elige una hora disponible.'
+      : !fName.value.trim() ? 'Escribe tu nombre.'
+      : !/\S+@\S+\.\S+/.test(fEmail.value) ? 'Escribe un email válido.' : '';
     if (miss) { err.textContent = miss; return; }
     const opt = fService.selectedOptions[0];
-    const date = new Date(fDate.value + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const date = new Date(fDate.value + 'T12:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
     $('#sName').textContent = ', ' + fName.value.trim().split(' ')[0];
     $('#sDetails').innerHTML = [
-      ['Service', opt.value], ['Artist', state.artist], ['When', `${date} · ${state.time}`], ['Estimate', `$${opt.dataset.price} · ${opt.dataset.min} min`]
-    ].map(([k, v]) => `<div><span>${k}</span><strong style="font-weight:500">${v}</strong></div>`).join('');
+      ['Servicio', opt.value], ['Artista', state.artist], ['Cuándo', `${date} · ${state.time}`], ['Estimado', `$${opt.dataset.price} · ${opt.dataset.min} min`]
+    ].map(([k, v]) => `<div><span>${k}</span><strong style="font-weight:500;text-align:right">${v}</strong></div>`).join('');
     modal.classList.add('done');
     $('.success .btn', modal).focus();
   });
