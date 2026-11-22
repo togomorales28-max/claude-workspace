@@ -1,0 +1,13 @@
+{
+  "name": "jarvis-local",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Asistente de voz local con interfaz holográfica, Claude Code y ElevenLabs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

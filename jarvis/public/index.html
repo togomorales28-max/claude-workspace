@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jarvis</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="room" aria-hidden="true">
+    <div class="beam"></div>
+    <div class="pillar"></div>
+    <div class="floor"></div>
+  </div>
+
+  <canvas id="orb" aria-label="Núcleo holográfico de Jarvis"></canvas>
+
+  <header class="hud hud-top">
+    <div class="brand">J.A.R.V.I.S.</div>
+    <div class="chips">
+      <span class="chip" id="chip-brain">CEREBRO · …</span>
+      <span class="chip" id="chip-voice">VOZ · …</span>
+      <span class="chip" id="chip-mic">MIC · …</span>
+    </div>
+  </header>
+
+  <aside class="hud hud-side">
+    <label for="session">Chat de Claude Code</label>
+    <select id="session">
+      <option value="">Nueva conversación</option>
+    </select>
+    <label class="toggle"><input type="checkbox" id="handsfree"> Manos libres</label>
+    <div class="tools" id="tools"></div>
+  </aside>
+
+  <main class="hud hud-bottom">
+    <div class="status" id="status">EN ESPERA</div>
+    <p class="line you" id="you"></p>
+    <p class="line reply" id="reply">Toca el núcleo o pulsa Espacio para hablar.</p>
+    <form id="form" autocomplete="off">
+      <input id="text" type="text" placeholder="…o escribe aquí y pulsa Enter" aria-label="Mensaje">
+    </form>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
