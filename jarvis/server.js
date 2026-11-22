@@ -41,6 +41,11 @@ const ALLOWED_TOOLS = (process.env.JARVIS_ALLOWED_TOOLS ?? 'Read Glob Grep WebSe
 const XI_KEY = process.env.ELEVENLABS_API_KEY || '';
 const XI_VOICE = process.env.ELEVENLABS_VOICE_ID || 'JBFqnCBsd6RMkjVDRZzb';
 const XI_MODEL = process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2';
+const PIPER_BIN = process.env.PIPER_BIN || 'piper';
+const PIPER_MODEL = process.env.PIPER_MODEL || '';
+// Proveedor de voz: elevenlabs | piper | browser. Vacío = automático según lo que esté configurado.
+const TTS_PROVIDER = (process.env.TTS_PROVIDER || (XI_KEY ? 'elevenlabs' : PIPER_MODEL ? 'piper' : 'browser')).toLowerCase();
+const OPEN_APP = process.argv.includes('--open');
 const CLAUDE_TIMEOUT_MS = 5 * 60 * 1000;
 
 const SYSTEM_PROMPT = [
@@ -183,9 +188,48 @@ async function tts(text) {
   return Buffer.from(await r.arrayBuffer());
 }
 
+// ---------- Piper (voz libre y local: github.com/OHF-Voice/piper1-gpl) ----------
+function ttsPiper(text) {
+  return new Promise((resolve, reject) => {
+    const out = path.join(os.tmpdir(), `jarvis-${crypto.randomUUID()}.wav`);
+    const child = spawn(PIPER_BIN, ['-m', PIPER_MODEL, '-f', out], { stdio: ['pipe', 'ignore', 'pipe'] });
+    let err = '';
+    child.stderr.on('data', (d) => { err += d; });
+    child.on('error', (e) => reject(new Error(e.code === 'ENOENT'
+      ? `No encuentro "${PIPER_BIN}". Instálalo con: pip install piper-tts` : e.message)));
+    child.on('close', (code) => {
+      fs.readFile(out, (e, data) => {
+        fs.unlink(out, () => {});
+        if (e || code !== 0) return reject(new Error(`Piper falló (${code}): ${err.slice(-300)}`));
+        resolve(data);
+      });
+    });
+    child.stdin.end(text.slice(0, 2500).replace(/\s+/g, ' '));
+  });
+}
+
+// ---------- abrir como app (ventana propia, sin barra del navegador) ----------
+function openAppWindow() {
+  const url = `http://localhost:${PORT}`;
+  const tries = process.platform === 'win32'
+    ? [['cmd', ['/c', `start "" msedge --app=${url}`]], ['cmd', ['/c', `start "" ${url}`]]]
+    : process.platform === 'darwin'
+      ? [['open', ['-na', 'Google Chrome', '--args', `--app=${url}`]], ['open', ['-na', 'Microsoft Edge', '--args', `--app=${url}`]], ['open', [url]]]
+      : [['google-chrome', [`--app=${url}`]], ['chromium', [`--app=${url}`]], ['microsoft-edge', [`--app=${url}`]], ['xdg-open', [url]]];
+  const next = (i) => {
+    if (i >= tries.length) return console.log(`  Abre tú mismo: ${url}`);
+    const [cmd, args] = tries[i];
+    const c = spawn(cmd, args, { detached: true, stdio: 'ignore', windowsVerbatimArguments: cmd === 'cmd' });
+    c.on('error', () => next(i + 1));
+    c.on('exit', (code) => { if (code) next(i + 1); });
+    c.unref();
+  };
+  next(0);
+}
+
 // ---------- archivos estáticos ----------
 const PUBLIC = path.join(__dirname, 'public');
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json', '.json': 'application/json' };
 function serveStatic(req, res) {
   const urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   const file = path.normalize(path.join(PUBLIC, urlPath === '/' ? 'index.html' : urlPath));
@@ -212,7 +256,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     if (pathname === '/api/status' && req.method === 'GET') {
-      return send(res, 200, { voice: !!XI_KEY, tools: ALLOWED_TOOLS, workdir: WORKDIR, model: MODEL || 'por defecto' });
+      return send(res, 200, { voice: TTS_PROVIDER, tools: ALLOWED_TOOLS, workdir: WORKDIR, model: MODEL || 'por defecto' });
     }
     if (pathname === '/api/sessions' && req.method === 'GET') {
       return send(res, 200, { sessions: listSessions() });
@@ -228,10 +272,17 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, r);
     }
     if (pathname === '/api/tts' && req.method === 'POST') {
-      if (!XI_KEY) return send(res, 503, { error: 'Falta ELEVENLABS_API_KEY en .env' });
       const { text } = await readJson(req);
       if (!text) return send(res, 400, { error: 'Falta el texto' });
-      return send(res, 200, await tts(String(text)), 'audio/mpeg');
+      if (TTS_PROVIDER === 'piper') {
+        if (!PIPER_MODEL) return send(res, 503, { error: 'Falta PIPER_MODEL en .env' });
+        return send(res, 200, await ttsPiper(String(text)), 'audio/wav');
+      }
+      if (TTS_PROVIDER === 'elevenlabs') {
+        if (!XI_KEY) return send(res, 503, { error: 'Falta ELEVENLABS_API_KEY en .env' });
+        return send(res, 200, await tts(String(text)), 'audio/mpeg');
+      }
+      return send(res, 503, { error: 'Voz del navegador: no hay audio en el servidor' });
     }
     send(res, 404, { error: 'Ruta no encontrada' });
   } catch (e) {
@@ -240,9 +291,19 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.log(`Jarvis ya está encendido en http://localhost:${PORT}`);
+    if (OPEN_APP) openAppWindow();
+    setTimeout(() => process.exit(0), 1500);
+  } else { console.error(e); process.exit(1); }
+});
+
 server.listen(PORT, HOST, () => {
   console.log(`\n  JARVIS en línea  ->  http://localhost:${PORT}\n`);
-  console.log(`  Voz ElevenLabs:   ${XI_KEY ? 'configurada' : 'NO configurada (usará la voz del navegador)'}`);
+  const voz = { elevenlabs: `ElevenLabs${XI_KEY ? '' : ' (FALTA LA LLAVE)'}`, piper: `Piper (${PIPER_MODEL || 'FALTA PIPER_MODEL'})`, browser: 'voz del navegador' };
+  console.log(`  Voz:              ${voz[TTS_PROVIDER] || TTS_PROVIDER}`);
   console.log(`  Herramientas:     ${ALLOWED_TOOLS.join(', ') || '(ninguna)'}`);
   console.log(`  Carpeta trabajo:  ${WORKDIR}\n`);
+  if (OPEN_APP) openAppWindow();
 });

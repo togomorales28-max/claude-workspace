@@ -190,8 +190,8 @@ async function api(path, opts = {}) {
 async function init() {
   try {
     const s = await (await api('/api/status')).json();
-    voiceOn = s.voice;
-    chip(ui.chipVoice, s.voice ? 'VOZ · ELEVENLABS' : 'VOZ · NAVEGADOR', s.voice);
+    voiceOn = s.voice !== 'browser';
+    chip(ui.chipVoice, 'VOZ · ' + ({ elevenlabs: 'ELEVENLABS', piper: 'PIPER' }[s.voice] || 'NAVEGADOR'), voiceOn);
     chip(ui.chipBrain, 'CEREBRO · CLAUDE CODE', true);
     ui.tools.textContent = 'Permisos: ' + (s.tools.join(' · ') || 'ninguno');
   } catch (e) { chip(ui.chipBrain, 'CEREBRO · SIN CONEXIÓN', false); }
@@ -287,7 +287,7 @@ async function speak(text) {
       const blob = await (await api('/api/tts', { method: 'POST', body: JSON.stringify({ text }) })).blob();
       return await playBlob(blob);
     } catch (e) {
-      console.warn('ElevenLabs falló, uso la voz del navegador:', e.message);
+      console.warn('La voz del servidor falló, uso la del navegador:', e.message);
     }
   }
   return browserSpeak(text);
@@ -342,3 +342,5 @@ ui.form.addEventListener('submit', (e) => {
 ui.handsfree.addEventListener('change', () => { if (ui.handsfree.checked) listen(); });
 
 init();
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});

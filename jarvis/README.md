@@ -15,6 +15,7 @@ Navegador (micrófono + esfera)  ──►  server.js (127.0.0.1)  ──►  cl
 |---|---|---|---|
 | Micrófono | Acceso al micrófono del navegador. El reconocimiento de voz de Chrome/Edge envía el audio a los servidores de Google para transcribirlo. | Ventana emergente del navegador | Te lo pide al primer uso |
 | Voz ElevenLabs | Tu llave de API. Se envía el **texto de cada respuesta** a ElevenLabs. Consume créditos de tu cuenta. | `ELEVENLABS_API_KEY` en `.env` | No hasta que pongas la llave |
+| Voz Piper | Ninguno: corre en tu computador sin internet. | `PIPER_MODEL` en `.env` | No hasta que la instales |
 | Claude Code (cerebro) | Usa tu sesión de Claude Code ya iniciada. Cada mensaje consume tu plan/uso de Claude. | `claude` instalado y con sesión iniciada | Sí |
 | Tus chats de Claude Code | Lectura de `~/.claude/projects` para listar y retomar conversaciones. Al retomar una, Jarvis añade mensajes a ese chat. | Automático | Sí (solo lectura del listado) |
 | Leer archivos / buscar en la web | `Read Glob Grep WebSearch WebFetch` | `JARVIS_ALLOWED_TOOLS` | **Sí** (solo lectura) |
@@ -49,6 +50,45 @@ Abre **http://localhost:7777**, acepta el micrófono y:
 - Arriba a la derecha eliges **un chat existente de Claude Code** para continuarlo, o “Nueva conversación”.
 
 Para apagarlo: `Ctrl + C` en la terminal.
+
+## Usarlo como app
+
+- **Doble clic:** `Jarvis.bat` (Windows), `Jarvis.command` (Mac) o `jarvis.sh` (Linux). Enciende el servidor y abre
+  Jarvis en su propia ventana, sin barra del navegador. Si ya estaba encendido, solo abre la ventana.
+  También funciona `npm run app`.
+- **Instalarlo con icono:** con Jarvis abierto en Chrome o Edge, pulsa el icono de instalar en la barra de direcciones
+  (o menú ⋮ → *Instalar Jarvis*). Te queda en el menú Inicio / Launchpad / Dock como cualquier app.
+  El servidor tiene que estar encendido, así que ábrelo con el doble clic de arriba.
+- **Que arranque solo al prender el computador (opcional):**
+  Windows: `Win + R` → `shell:startup` → pon ahí un acceso directo a `Jarvis.bat`.
+  Mac: Ajustes del Sistema → General → Ítems de inicio → añade `Jarvis.command`.
+
+## Voz gratis y libre (Piper, de GitHub)
+
+[Piper](https://github.com/OHF-Voice/piper1-gpl) es un motor de voz de código abierto que funciona **sin internet y sin
+pagar**: el texto nunca sale de tu computador. Tiene voces en español de México, España y Argentina.
+
+```bash
+pip install piper-tts
+python -m piper.download_voices es_MX-ald-medium      # descarga la voz en la carpeta actual
+```
+
+En `.env`:
+
+```
+TTS_PROVIDER=piper
+PIPER_MODEL=C:\ruta\completa\es_MX-ald-medium.onnx    # o /Users/tu/.../es_MX-ald-medium.onnx
+```
+
+Otras voces en español: `es_ES-davefx-medium`, `es_ES-sharvard-medium`, `es_AR-daniela-high`, `es_MX-claude-high`.
+Escúchalas antes en https://rhasspy.github.io/piper-samples/.
+Si `piper` no se encuentra, pon en `PIPER_BIN` la ruta completa del ejecutable.
+
+| Voz | Precio | Calidad | Privacidad |
+|---|---|---|---|
+| ElevenLabs | De pago (créditos) | La más natural | El texto va a ElevenLabs |
+| Piper | Gratis | Buena, algo más plana | 100 % local |
+| Navegador | Gratis | Robótica | Depende del sistema |
 
 ## Conectar correo y calendario (cuando decidas)
 
