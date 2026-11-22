@@ -4,71 +4,82 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Jarvis</title>
-  <style>
-    :root { --bg: #03060d; --panel: #0a1424; --gold: #ffb52e; --gold-dim: rgba(255,181,46,.35); --text: #f4e6c4; --muted: #8ea2bd; --warn: #ff8a65; color-scheme: dark; }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
-    body {
-      background: radial-gradient(120% 80% at 50% 30%, var(--panel), var(--bg) 70%); color: var(--text);
-      font: 16px system-ui, sans-serif; display: flex; flex-direction: column; justify-content: center; gap: 18px;
-      padding: calc(24px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
-    }
-    img { width: 120px; height: 120px; margin: 0 auto; border-radius: 50%; box-shadow: 0 0 40px var(--gold-dim); }
-    h1 { margin: 0; text-align: center; letter-spacing: .45em; font: 18px ui-monospace, monospace; color: var(--gold); }
-    p { margin: 0; color: var(--muted); line-height: 1.45; font-size: 14px; }
-    label { font: 12px ui-monospace, monospace; letter-spacing: .12em; color: var(--muted); }
-    input { width: 100%; font: 16px system-ui; color: var(--text); background: var(--bg); border: 1px solid var(--gold-dim); border-radius: 2px; padding: 12px; margin-top: 6px; }
-    input:focus { outline: none; border-color: var(--gold); }
-    button { font: 15px ui-monospace, monospace; letter-spacing: .15em; padding: 14px; border-radius: 2px; border: 1px solid var(--gold); background: var(--gold); color: var(--bg); }
-    button.ghost { background: transparent; color: var(--gold); }
-    .err { color: var(--warn); }
-    [hidden] { display: none !important; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <img src="icon.png" alt="">
-  <h1>J.A.R.V.I.S.</h1>
+  <canvas id="orb" aria-label="Núcleo de Jarvis. Tócalo para hablar."></canvas>
 
-  <section id="setup" hidden>
-    <p>Conecta esta app con el Jarvis de tu PC. Los dos datos aparecen en la ventana de Jarvis del PC al encenderlo.</p>
-    <div style="margin-top:14px"><label for="url">DIRECCIÓN DE TU PC (TAILSCALE)</label>
-      <input id="url" type="url" inputmode="url" placeholder="https://mi-pc.tu-red.ts.net" autocomplete="off"></div>
-    <div style="margin-top:12px"><label for="key">CLAVE DE JARVIS</label>
-      <input id="key" type="password" placeholder="La clave que muestra tu PC" autocomplete="off"></div>
-    <p id="error" class="err" hidden style="margin-top:12px"></p>
-    <button id="save" style="margin-top:16px;width:100%">CONECTAR</button>
-  </section>
+  <div class="app">
+    <header>
+      <div class="brand">J.A.R.V.I.S.</div>
+      <div class="chips">
+        <span class="chip" id="chip-brain">IA · …</span>
+        <span class="chip" id="chip-net">SIN INTERNET · OK</span>
+        <button class="chip ok" id="open-settings" type="button">AJUSTES</button>
+      </div>
+    </header>
 
-  <section id="connecting" hidden>
-    <p style="text-align:center">Conectando con tu PC…</p>
-    <button id="change" class="ghost" style="margin-top:16px;width:100%">CAMBIAR DIRECCIÓN</button>
-  </section>
+    <!-- Primera vez: descargar el cerebro -->
+    <section class="card" id="setup" hidden>
+      <h2>Bienvenido</h2>
+      <p>Jarvis piensa <strong>dentro de tu teléfono</strong>, sin internet y sin suscripciones. Solo necesita descargar su cerebro una vez.</p>
+      <p class="muted" id="setup-detail"></p>
+      <div class="progress" id="setup-progress" hidden><div id="setup-bar"></div></div>
+      <p class="muted" id="setup-status"></p>
+      <button class="primary" id="setup-download" type="button">Descargar cerebro</button>
+    </section>
 
-  <script>
-    const $ = (id) => document.getElementById(id);
-    const get = (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
-    const set = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+    <section class="console">
+      <div class="status" id="status" role="status">INICIANDO</div>
+      <p class="line you" id="you"></p>
+      <p class="line reply" id="reply"></p>
+      <form id="form" autocomplete="off">
+        <input id="text" type="text" placeholder="Escríbele a Jarvis…" aria-label="Mensaje para Jarvis" enterkeyhint="send">
+        <button class="round" id="mic" type="button" aria-label="Hablar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
+      </form>
+    </section>
+  </div>
 
-    function go(url, key) {
-      $('setup').hidden = true; $('connecting').hidden = false;
-      // La clave viaja en el fragmento (#), que nunca se envía a ningún servidor.
-      setTimeout(() => { location.href = url.replace(/\/$/, '') + '/#k=' + encodeURIComponent(key); }, 600);
-    }
-    function showSetup(msg) {
-      $('setup').hidden = false; $('connecting').hidden = true;
-      $('url').value = get('hub-url'); $('key').value = get('hub-key');
-      $('error').hidden = !msg; $('error').textContent = msg || '';
-    }
-    $('save').onclick = () => {
-      const url = $('url').value.trim(), key = $('key').value.trim();
-      if (!/^https:\/\/[^/]+\.ts\.net\/?$/i.test(url)) return showSetup('La dirección debe ser la de Tailscale, por ejemplo https://mi-pc.tu-red.ts.net');
-      if (key.length < 8) return showSetup('Escribe la clave completa que muestra tu PC.');
-      set('hub-url', url); set('hub-key', key); go(url, key);
-    };
-    $('change').onclick = () => { clearTimeout(window.__t); showSetup(); };
-    const url = get('hub-url'), key = get('hub-key');
-    if (url && key && !location.hash.includes('setup')) { $('connecting').hidden = false; window.__t = setTimeout(() => go(url, key), 1200); }
-    else showSetup();
-  </script>
+  <!-- Ajustes -->
+  <div class="sheet" id="settings" hidden>
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <h2>Ajustes</h2>
+        <button class="chip ok" id="close-settings" type="button">CERRAR</button>
+      </div>
+
+      <h3>Conversación</h3>
+      <label class="toggle"><input type="checkbox" id="continuous" checked> Conversación continua (vuelve a escuchar después de contestar)</label>
+      <button class="secondary" id="new-chat" type="button">Empezar conversación nueva</button>
+
+      <h3>Cerebro (IA de código abierto)</h3>
+      <p class="muted" id="device"></p>
+      <div id="models"></div>
+
+      <h3>Voz</h3>
+      <label for="voice">Voz de Jarvis</label>
+      <select id="voice"><option value="">La predeterminada del teléfono</option></select>
+      <label for="rate">Velocidad</label>
+      <input type="range" id="rate" min="0.7" max="1.4" step="0.05" value="1">
+      <button class="secondary" id="test-voice" type="button">Probar voz</button>
+      <button class="secondary" id="voice-settings" type="button">Abrir ajustes de voz del teléfono</button>
+      <p class="muted">Para que funcione sin internet: en los ajustes de voz del teléfono descarga el idioma <strong>Español</strong> (motor de Google o Samsung). Para que te entienda sin internet: Ajustes → Administración general → Idioma → Reconocimiento de voz → descarga Español.</p>
+
+      <h3>Google (cuando hay internet)</h3>
+      <p class="muted">Gmail, Calendar, Drive y búsqueda llegan en la próxima versión de la app. Jarvis te pedirá permiso de solo lectura antes de conectarse.</p>
+
+      <h3>Permisos que usa esta app</h3>
+      <ul class="muted perms">
+        <li><strong>Micrófono</strong>: solo mientras le hablas.</li>
+        <li><strong>Internet</strong>: solo para descargar el cerebro una vez (y Google cuando lo conectes).</li>
+        <li>Tus conversaciones no salen del teléfono.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="orb.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

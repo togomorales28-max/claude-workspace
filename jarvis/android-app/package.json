@@ -2,9 +2,9 @@
   "name": "jarvis-android",
   "version": "1.0.0",
   "private": true,
-  "description": "App Android de Jarvis: se conecta al Jarvis Hub de tu PC por Tailscale",
+  "description": "Jarvis para Android: IA de código abierto dentro del teléfono, sin internet",
   "scripts": {
-    "android": "cap add android && cap sync android"
+    "sync": "cap sync android"
   },
   "dependencies": {
     "@capacitor/android": "6.1.2",

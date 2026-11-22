@@ -3,8 +3,7 @@
   "appName": "Jarvis",
   "webDir": "www",
   "server": {
-    "androidScheme": "https",
-    "allowNavigation": ["*.ts.net"]
+    "androidScheme": "https"
   },
   "android": {
     "backgroundColor": "#03060d"

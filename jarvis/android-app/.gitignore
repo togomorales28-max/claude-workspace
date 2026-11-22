@@ -1,2 +1,5 @@
 node_modules/
-android/
+android/app/src/main/cpp/llama.cpp
+android/app/src/main/assets/public/
+*.keystore
+*.jks

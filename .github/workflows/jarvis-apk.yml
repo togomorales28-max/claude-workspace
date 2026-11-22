@@ -7,6 +7,9 @@ on:
       - "jarvis/android-app/**"
       - ".github/workflows/jarvis-apk.yml"
 
+env:
+  LLAMA_CPP_TAG: v1.0.0
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,49 +26,44 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Instalar Capacitor y crear el proyecto Android
-        run: |
-          npm install
-          npx cap add android
+      - name: Dependencias de Capacitor
+        run: npm ci
 
-      - name: Permisos de micrófono e icono de Jarvis
+      - name: Descargar llama.cpp (versión fija)
+        run: git clone --depth 1 --branch "$LLAMA_CPP_TAG" https://github.com/ggml-org/llama.cpp android/app/src/main/cpp/llama.cpp
+
+      # La firma se crea una vez y se reutiliza, para poder actualizar la app sin desinstalarla.
+      - name: Recuperar la firma de la app
+        uses: actions/cache@v4
+        with:
+          path: jarvis/android-app/jarvis.keystore
+          key: jarvis-keystore-v1
+      - name: Crear la firma si no existe
         run: |
-          python3 - <<'PY'
-          import re, pathlib
-          m = pathlib.Path("android/app/src/main/AndroidManifest.xml")
-          s = m.read_text()
-          extra = ('    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n'
-                   '    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n')
-          if "RECORD_AUDIO" not in s:
-              s = s.replace("</manifest>", extra + "</manifest>")
-          m.write_text(s)
-          PY
-          pip install --quiet pillow
-          python3 - <<'PY'
-          from PIL import Image
-          import pathlib
-          src = Image.open("www/icon.png").convert("RGBA")
-          sizes = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
-          res = pathlib.Path("android/app/src/main/res")
-          for d, n in sizes.items():
-              folder = res / f"mipmap-{d}"
-              for name in ("ic_launcher.png", "ic_launcher_round.png"):
-                  src.resize((n, n), Image.LANCZOS).save(folder / name)
-              fg = Image.new("RGBA", (int(n * 2.25),) * 2, (3, 6, 13, 255))
-              inner = src.resize((int(n * 1.5),) * 2, Image.LANCZOS)
-              off = (fg.width - inner.width) // 2
-              fg.paste(inner, (off, off))
-              fg.save(folder / "ic_launcher_foreground.png")
-          bg = res / "values" / "ic_launcher_background.xml"
-          if bg.exists():
-              bg.write_text('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#03060D</color>\n</resources>\n')
-          PY
-          npx cap sync android
+          if [ ! -f jarvis.keystore ]; then
+            keytool -genkeypair -v -keystore jarvis.keystore -alias jarvis -keyalg RSA -keysize 2048 \
+              -validity 10000 -storepass jarvis-android -keypass jarvis-android -dname "CN=Jarvis"
+          fi
+          echo "JARVIS_KEYSTORE=$PWD/jarvis.keystore" >> "$GITHUB_ENV"
+          echo "JARVIS_KEYSTORE_PASS=jarvis-android" >> "$GITHUB_ENV"
+
+      - name: Comprobar que los modelos se pueden descargar
+        run: |
+          for m in Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf \
+                   Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf \
+                   Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -L -r 0-0 "https://huggingface.co/Qwen/$m")
+            echo "$code $m"
+            case "$code" in 200|206) ;; *) echo "::warning::Modelo no accesible: $m ($code)";; esac
+          done
+
+      - name: Copiar la interfaz al proyecto Android
+        run: npx cap sync android
 
       - name: Compilar APK
-        run: cd android && ./gradlew assembleDebug --no-daemon
+        run: cd android && ./gradlew assembleRelease --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@v4
         with:
           name: Jarvis-apk
-          path: jarvis/android-app/android/app/build/outputs/apk/debug/app-debug.apk
+          path: jarvis/android-app/android/app/build/outputs/apk/release/app-release.apk
