@@ -16,7 +16,8 @@
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     color-scheme: dark;
   }
-  html, body { height: 100%; }
+  html { height: 100%; box-sizing: border-box; }
+  body { height: 100%; }
   [hidden] { display: none !important; }
   body {
     background: radial-gradient(120% 80% at 50% 38%, var(--bg-2) 0%, var(--bg) 70%);
@@ -28,11 +29,11 @@
   #orb { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: manipulation; }
 
   .app {
-    position: relative; z-index: 1; height: 100%;
+    position: relative; z-index: 1; height: 100%; max-height: 100dvh; box-sizing: border-box;
     display: flex; flex-direction: column; justify-content: space-between;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
-    padding-block: 14px;
+    padding-block: 14px calc(36px + env(safe-area-inset-bottom, 0px));
     pointer-events: none;
   }
   .app > * { pointer-events: auto; }
@@ -94,6 +95,7 @@
       <span class="chip" id="chip-brain">CEREBRO · …</span>
       <span class="chip" id="chip-mic">MIC · …</span>
       <button class="chip" id="chip-voice" type="button" aria-pressed="true">VOZ · …</button>
+      <button class="chip ok" id="test-voice" type="button">PROBAR VOZ</button>
     </div>
   </header>
 
@@ -308,6 +310,7 @@ ui.chipVoice.addEventListener('click', () => {
 });
 
 ui.mic.addEventListener('click', () => {
+  unlockSpeech();
   if (!dict) return;
   if (dict.active()) { dict.stop().catch(() => {}); return; }
   try { tts && tts.stop(); } catch {}
@@ -318,8 +321,30 @@ ui.mic.addEventListener('click', () => {
   });
 });
 
+// iPhone solo deja hablar al teléfono si la primera frase sale de un toque del usuario.
+let unlocked = false;
+function unlockSpeech() {
+  if (unlocked || !('speechSynthesis' in window)) return;
+  try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); unlocked = true; } catch {}
+}
+function spanishVoice() {
+  try {
+    const vs = speechSynthesis.getVoices().filter((v) => v.lang && v.lang.toLowerCase().startsWith('es'));
+    return vs.find((v) => /mx|us|419/i.test(v.lang)) || vs[0] || null;
+  } catch { return null; }
+}
+$('test-voice').addEventListener('click', async () => {
+  unlockSpeech();
+  if (!voiceOn) { voiceOn = true; try { localStorage.setItem('jarvis-voz', 'on'); } catch {} updateVoiceChip(); }
+  const msg = 'Hola, soy Jarvis. Si me escuchas, la voz está lista.';
+  addMsg('jarvis', msg); ui.hint.hidden = true;
+  await speak(msg);
+  setMode('idle');
+});
+
 ui.form.addEventListener('submit', (e) => {
   e.preventDefault();
+  unlockSpeech();
   const t = ui.text.value.trim();
   if (!t || busy) return;
   ui.text.value = ''; ui.text.dataset.base = '';
@@ -367,7 +392,8 @@ async function speak(text) {
   if ('speechSynthesis' in window) {
     await new Promise((res) => {
       try {
-        const u = new SpeechSynthesisUtterance(text); u.lang = 'es-ES';
+        const u = new SpeechSynthesisUtterance(text); const v = spanishVoice();
+        if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'es-ES';
         u.onend = u.onerror = res; speechSynthesis.speak(u);
         setTimeout(res, Math.max(4000, text.length * 90));
       } catch { res(); }
