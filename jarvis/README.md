@@ -1,110 +1,109 @@
-# Jarvis local
+# Jarvis
 
-Asistente de voz que corre **solo en tu computador** (`http://localhost:7777`):
-núcleo holográfico dorado, te escucha por el micrófono, piensa con **Claude Code**
-(tus chats, herramientas y conectores) y te contesta con voz de **ElevenLabs**.
+Tu asistente de voz con núcleo holográfico. El **cerebro vive en tu PC con Windows** (Jarvis Hub) y lo usas desde:
+
+- **El PC**: ventana propia con doble clic en `Jarvis.bat`.
+- **Tu Android**: app Jarvis (APK) que se conecta a tu PC desde cualquier lugar por Tailscale.
 
 ```
-Navegador (micrófono + esfera)  ──►  server.js (127.0.0.1)  ──►  claude -p   (tu Claude Code)
-                                                         └──►  ElevenLabs   (voz; la llave vive en .env)
+ Android (app Jarvis) ──Tailscale (privado, cifrado)──┐
+                                                      ▼
+ PC: Jarvis Hub (server.js, solo 127.0.0.1) ── Cerebro: Claude Code  o  Ollama (código abierto)
+                                             ── Oído:    Whisper (código abierto)
+                                             ── Voz:     Piper (código abierto) o ElevenLabs
+                                             ── Gmail:   solo lectura, avisos de correos nuevos
 ```
 
 ## Permisos que necesita cada pieza
 
-| Pieza | Qué permiso | Dónde se concede | Encendido por defecto |
+| Pieza | Qué permiso | Dónde | Por defecto |
 |---|---|---|---|
-| Micrófono | Acceso al micrófono del navegador. El reconocimiento de voz de Chrome/Edge envía el audio a los servidores de Google para transcribirlo. | Ventana emergente del navegador | Te lo pide al primer uso |
-| Voz ElevenLabs | Tu llave de API. Se envía el **texto de cada respuesta** a ElevenLabs. Consume créditos de tu cuenta. | `ELEVENLABS_API_KEY` en `.env` | No hasta que pongas la llave |
-| Voz Piper | Ninguno: corre en tu computador sin internet. | `PIPER_MODEL` en `.env` | No hasta que la instales |
-| Claude Code (cerebro) | Usa tu sesión de Claude Code ya iniciada. Cada mensaje consume tu plan/uso de Claude. | `claude` instalado y con sesión iniciada | Sí |
-| Tus chats de Claude Code | Lectura de `~/.claude/projects` para listar y retomar conversaciones. Al retomar una, Jarvis añade mensajes a ese chat. | Automático | Sí (solo lectura del listado) |
-| Leer archivos / buscar en la web | `Read Glob Grep WebSearch WebFetch` | `JARVIS_ALLOWED_TOOLS` | **Sí** (solo lectura) |
-| Funciones del computador | `Bash` (ejecutar comandos), `Edit Write` (modificar archivos). Puede hacer cualquier cosa que puedas hacer tú en la terminal. | `JARVIS_ALLOWED_TOOLS` | **No** |
-| Correo | Herramientas MCP de tu conector de correo (leer, buscar, redactar, enviar). Se recomienda empezar solo con las de lectura. | Conector en Claude Code + `JARVIS_ALLOWED_TOOLS` | **No** |
-| Calendario | Herramientas MCP de tu conector de calendario (ver, crear, mover eventos). | Conector en Claude Code + `JARVIS_ALLOWED_TOOLS` | **No** |
+| Micrófono | Usar el micrófono del PC o del teléfono. Con Whisper el audio va solo a tu PC. | Aviso del navegador / Android | Te lo pide la primera vez |
+| Claude Code | Tu sesión y tu plan de Claude. | `claude` instalado | Sí, si `BRAIN=claude` |
+| Ollama | Ninguno: corre en tu PC sin internet. | Ollama instalado | Si `BRAIN=ollama` o lo eliges en la app |
+| Archivos / web | `Read Glob Grep WebSearch WebFetch` (solo con Claude Code) | `JARVIS_ALLOWED_TOOLS` | **Sí** (solo lectura) |
+| Control del PC | `Bash`, `Edit`, `Write` (solo con Claude Code) | `JARVIS_ALLOWED_TOOLS` | **No** |
+| Gmail | `gmail.readonly`: leer remitente, asunto y vista previa. **No** puede enviar, borrar ni marcar como leído. El acceso se guarda solo en `data/` de tu PC. Los correos que pidas se mandan al cerebro elegido (Claude o Ollama local). | Botón «Conectar Gmail» | **No** |
+| Acceso desde el celular | Tu PC queda visible **solo para tus dispositivos** en Tailscale, y además Jarvis exige una clave. | Tailscale + clave | **No** |
+| Voz ElevenLabs | El texto de cada respuesta va a ElevenLabs; gasta créditos. | `ELEVENLABS_API_KEY` | No |
 
-Cualquier herramienta que **no** esté en `JARVIS_ALLOWED_TOOLS` se rechaza sola, y la página te avisa con
-“Permiso denegado: …”. Jarvis también tiene instrucciones de pedirte confirmación antes de enviar correos,
-crear eventos o cambiar cosas en el computador.
+## 1 · Encender Jarvis en el PC
 
-**Seguridad del servidor:** escucha solo en `127.0.0.1` (nadie de tu red puede entrar), rechaza peticiones
-de otras páginas web (comprueba `Host`, `Origin` y una cabecera propia) y la llave de ElevenLabs nunca llega al navegador.
+Requisitos: **Node 18+** y **Edge o Chrome**. Después, según lo que quieras usar:
 
-## Cómo lo prendes
-
-Requisitos: **Node 18+**, **Claude Code** instalado (`claude` en la terminal, sesión iniciada) y **Chrome o Edge**
-(Firefox no trae reconocimiento de voz).
+| Para… | Instala | Comando |
+|---|---|---|
+| Cerebro de código abierto | [Ollama](https://ollama.com/download) | `ollama pull qwen2.5:7b` |
+| Cerebro Claude | Claude Code | `claude` (inicia sesión una vez) |
+| Oír con Whisper | [Python 3.10+](https://python.org) (marca *Add to PATH*) | `pip install faster-whisper` |
+| Voz libre Piper | — | `pip install piper-tts` y `python -m piper.download_voices es_MX-ald-medium` |
 
 ```bash
 cd jarvis
-cp .env.example .env          # en Windows: copy .env.example .env
-# abre .env con tu editor y pega tu ELEVENLABS_API_KEY
-npm start                     # o: node server.js
+copy .env.example .env        # Mac/Linux: cp .env.example .env
+notepad .env                  # elige BRAIN, y si usas Piper: TTS_PROVIDER=piper y PIPER_MODEL=es_MX-ald-medium.onnx
+npm run app                   # o doble clic en Jarvis.bat
 ```
 
-Abre **http://localhost:7777**, acepta el micrófono y:
+La primera vez, Whisper descarga su modelo (unos 500 MB con `small`). La ventana negra muestra el estado de cada
+pieza y la **clave para el celular**.
 
-- **Toca la esfera** o pulsa **Espacio** para hablar (vuelve a tocar para cortar).
-- O escribe en la caja de abajo.
-- **Manos libres**: vuelve a escuchar solo después de cada respuesta.
-- Arriba a la derecha eliges **un chat existente de Claude Code** para continuarlo, o “Nueva conversación”.
+En la app: toca la esfera o pulsa **Espacio**, habla, y Jarvis detecta solo cuando terminas. Arriba a la derecha
+eliges el **cerebro** (Claude Code o código abierto) en cualquier momento.
 
-Para apagarlo: `Ctrl + C` en la terminal.
+## 2 · Conectar Gmail (solo lectura)
 
-## Usarlo como app
+Una sola vez, en el PC:
 
-- **Doble clic:** `Jarvis.bat` (Windows), `Jarvis.command` (Mac) o `jarvis.sh` (Linux). Enciende el servidor y abre
-  Jarvis en su propia ventana, sin barra del navegador. Si ya estaba encendido, solo abre la ventana.
-  También funciona `npm run app`.
-- **Instalarlo con icono:** con Jarvis abierto en Chrome o Edge, pulsa el icono de instalar en la barra de direcciones
-  (o menú ⋮ → *Instalar Jarvis*). Te queda en el menú Inicio / Launchpad / Dock como cualquier app.
-  El servidor tiene que estar encendido, así que ábrelo con el doble clic de arriba.
-- **Que arranque solo al prender el computador (opcional):**
-  Windows: `Win + R` → `shell:startup` → pon ahí un acceso directo a `Jarvis.bat`.
-  Mac: Ajustes del Sistema → General → Ítems de inicio → añade `Jarvis.command`.
+1. Entra a <https://console.cloud.google.com> con tu cuenta de Google y crea un proyecto (por ejemplo «Jarvis»).
+2. **APIs y servicios → Biblioteca** → busca **Gmail API** → **Habilitar**.
+3. **APIs y servicios → Pantalla de consentimiento de OAuth** (o *Google Auth Platform*):
+   tipo **Externo**, nombre «Jarvis», tu correo. En **Usuarios de prueba** añade tu propio Gmail.
+   Luego pulsa **Publicar app** (*In production*): si se queda «en prueba», Google corta el acceso cada 7 días.
+4. **Credenciales → Crear credenciales → ID de cliente de OAuth → Aplicación de escritorio**.
+   Descarga el JSON y guárdalo como **`jarvis/google-oauth.json`** (no se sube a git).
+5. Reinicia Jarvis y pulsa **Conectar Gmail**. Google avisará de que «la app no está verificada»: es normal porque
+   la app eres tú. Pulsa *Configuración avanzada → Ir a Jarvis*, acepta **solo lectura**, y listo.
 
-## Voz gratis y libre (Piper, de GitHub)
+Desde ahí:
+- Pregúntale «¿tengo correos nuevos?», «resúmeme mis correos de hoy», o pulsa **Resumir correos**.
+- Cada `GMAIL_POLL_MINUTES` minutos revisa si llegaron correos y, con **Avisarme de correos nuevos** activado,
+  te dice en voz alta quién escribe y qué quiere, mientras tengas Jarvis abierto.
+- Para quitar el acceso: <https://myaccount.google.com/permissions> → Jarvis → Quitar acceso.
 
-[Piper](https://github.com/OHF-Voice/piper1-gpl) es un motor de voz de código abierto que funciona **sin internet y sin
-pagar**: el texto nunca sale de tu computador. Tiene voces en español de México, España y Argentina.
+## 3 · Usarlo desde tu Android
 
-```bash
-pip install piper-tts
-python -m piper.download_voices es_MX-ald-medium      # descarga la voz en la carpeta actual
-```
+1. **Tailscale** (gratis, red privada entre tus dispositivos): instálalo en el PC (<https://tailscale.com/download>)
+   y en el teléfono (Play Store), e inicia sesión con **la misma cuenta** en los dos.
+2. En el PC, con Jarvis encendido, abre PowerShell y ejecuta una vez:
+   ```
+   tailscale serve --bg 7777
+   ```
+   Te muestra una dirección como `https://mi-pc.tu-red.ts.net`: solo tus dispositivos la pueden abrir.
+   (Si te pide activar HTTPS en tu red de Tailscale, acepta.)
+3. **Instala la app**: descarga `Jarvis-apk` desde la pestaña **Actions** del repositorio en GitHub
+   (último run de «Jarvis APK»), descomprime y abre `app-debug.apk` en el teléfono. Android te pedirá permitir
+   «instalar apps de fuentes desconocidas» para tu navegador o gestor de archivos.
+4. Abre Jarvis, escribe la dirección de Tailscale y la clave que muestra tu PC, y pulsa **Conectar**.
+   Acepta el permiso de micrófono.
 
-En `.env`:
+En la app Android la voz sale del PC, así que configura **Piper** (gratis) o ElevenLabs en el `.env`;
+la voz del navegador no existe dentro de la app.
 
-```
-TTS_PROVIDER=piper
-PIPER_MODEL=C:\ruta\completa\es_MX-ald-medium.onnx    # o /Users/tu/.../es_MX-ald-medium.onnx
-```
+¿Sin APK? En Chrome del teléfono abre `https://mi-pc.tu-red.ts.net/#k=TU_CLAVE` y usa menú ⋮ → *Instalar app*.
 
-Otras voces en español: `es_ES-davefx-medium`, `es_ES-sharvard-medium`, `es_AR-daniela-high`, `es_MX-claude-high`.
-Escúchalas antes en https://rhasspy.github.io/piper-samples/.
-Si `piper` no se encuentra, pon en `PIPER_BIN` la ruta completa del ejecutable.
+## 4 · Que arranque solo
 
-| Voz | Precio | Calidad | Privacidad |
-|---|---|---|---|
-| ElevenLabs | De pago (créditos) | La más natural | El texto va a ElevenLabs |
-| Piper | Gratis | Buena, algo más plana | 100 % local |
-| Navegador | Gratis | Robótica | Depende del sistema |
-
-## Conectar correo y calendario (cuando decidas)
-
-1. Abre `claude` en una terminal y escribe `/mcp`. Verás tus conectores (por ejemplo los de claude.ai si iniciaste
-   sesión con tu cuenta, o los que añadas con `claude mcp add`). Si no aparece el de correo o calendario, añádelo ahí primero.
-2. Anota el nombre del servidor y de las herramientas (formato `mcp__<servidor>__<herramienta>`).
-3. Añádelos a `JARVIS_ALLOWED_TOOLS` en `.env`. Ejemplo prudente, solo lectura:
-   `JARVIS_ALLOWED_TOOLS=Read Glob Grep WebSearch WebFetch mcp__<correo>__search_messages mcp__<calendario>__list_events`
-4. Reinicia `npm start`.
-
-Para darle control del computador añade `Bash` (y `Edit Write` si quieres que modifique archivos).
-Puedes limitar Bash a comandos concretos, por ejemplo `Bash(open:*)` o `Bash(ls:*)`.
+- Windows: `Win + R` → `shell:startup` → pon un acceso directo a `Jarvis.bat`.
+- Ollama y Tailscale ya arrancan solos con Windows por defecto.
 
 ## Problemas comunes
 
-- **“No encuentro el comando claude”** → instala Claude Code o pon la ruta completa en `CLAUDE_BIN`.
-- **MIC · NO SOPORTADO** → usa Chrome o Edge.
-- **Habla con voz robótica** → falta `ELEVENLABS_API_KEY` o la llave/voz no es válida (mira la terminal).
-- **Tarda unos segundos en responder** → es normal: cada mensaje arranca Claude Code.
+| Mensaje | Solución |
+|---|---|
+| `No puedo hablar con Ollama` | Abre Ollama (icono de llama junto al reloj) o ejecuta `ollama serve`. |
+| `Falta el modelo qwen2.5:7b` | `ollama pull qwen2.5:7b` |
+| `Falta faster-whisper` | `pip install faster-whisper` y reinicia Jarvis. |
+| `Falta la clave de Jarvis` (celular) | En la app pulsa **Cambiar dirección** y vuelve a escribir la clave. |
+| `No hay conexión con tu PC` | PC encendido, Jarvis abierto y Tailscale conectado en los dos equipos. |
+| Gmail: «acceso bloqueado» | Añade tu correo en **Usuarios de prueba** (paso 3 de Gmail). |

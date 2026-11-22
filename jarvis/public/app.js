@@ -162,24 +162,39 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 /* =====================================================================
-   2. INTERFAZ
+   2. INTERFAZ Y CONEXIÓN CON EL HUB
    ===================================================================== */
 const $ = (id) => document.getElementById(id);
 const ui = {
   status: $('status'), you: $('you'), reply: $('reply'), form: $('form'), text: $('text'),
-  session: $('session'), handsfree: $('handsfree'), tools: $('tools'),
+  session: $('session'), sessionLabel: $('session-label'), brain: $('brain'), handsfree: $('handsfree'), tools: $('tools'),
   chipBrain: $('chip-brain'), chipVoice: $('chip-voice'), chipMic: $('chip-mic'),
+  gmailState: $('gmail-state'), gmailConnect: $('gmail-connect'), gmailSummary: $('gmail-summary'),
+  mailAlerts: $('mail-alerts'), mailAlertsRow: $('mail-alerts-row'),
 };
 const LABELS = { idle: 'EN ESPERA', listening: 'ESCUCHANDO', thinking: 'PROCESANDO', speaking: 'HABLANDO' };
 function setMode(m) { state.mode = m; ui.status.textContent = LABELS[m]; }
 function chip(el, label, ok) { el.textContent = label; el.className = 'chip ' + (ok ? 'ok' : 'warn'); }
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+
+// La clave llega una vez en el enlace (#k=...) y se guarda en este dispositivo.
+(() => {
+  const m = location.hash.match(/[#&]k=([^&]+)/);
+  if (m) { store.set('jarvis-token', decodeURIComponent(m[1])); history.replaceState(null, '', location.pathname); }
+})();
+const TOKEN = store.get('jarvis-token', '');
 
 let sessions = [];
 let current = { id: '', cwd: '' };
-let voiceOn = false;
+let voiceOn = false, sttMode = 'browser', status = null;
 
 async function api(path, opts = {}) {
-  const r = await fetch(path, { ...opts, headers: { 'X-Jarvis': '1', 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+  const headers = { 'X-Jarvis': '1', ...(opts.body && typeof opts.body === 'string' ? { 'Content-Type': 'application/json' } : {}), ...(opts.headers || {}) };
+  if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
+  const r = await fetch(path, { ...opts, headers });
   if (!r.ok) {
     let msg = r.statusText; try { msg = (await r.json()).error || msg; } catch {}
     throw new Error(msg);
@@ -189,22 +204,86 @@ async function api(path, opts = {}) {
 
 async function init() {
   try {
-    const s = await (await api('/api/status')).json();
-    voiceOn = s.voice !== 'browser';
-    chip(ui.chipVoice, 'VOZ · ' + ({ elevenlabs: 'ELEVENLABS', piper: 'PIPER' }[s.voice] || 'NAVEGADOR'), voiceOn);
-    chip(ui.chipBrain, 'CEREBRO · CLAUDE CODE', true);
-    ui.tools.textContent = 'Permisos: ' + (s.tools.join(' · ') || 'ninguno');
-  } catch (e) { chip(ui.chipBrain, 'CEREBRO · SIN CONEXIÓN', false); }
+    status = await (await api('/api/status')).json();
+  } catch (e) {
+    chip(ui.chipBrain, 'CEREBRO · SIN CONEXIÓN', false);
+    ui.reply.textContent = /clave/i.test(e.message)
+      ? 'Falta la clave de Jarvis. Abre el enlace con la clave que muestra tu PC al encenderse.'
+      : 'No hay conexión con tu PC. Comprueba que Jarvis y Tailscale estén encendidos.';
+    return;
+  }
+  voiceOn = status.voice !== 'browser';
+  chip(ui.chipVoice, 'VOZ · ' + ({ elevenlabs: 'ELEVENLABS', piper: 'PIPER' }[status.voice] || 'NAVEGADOR'), true);
+  ui.tools.textContent = 'Permisos en el PC: ' + (status.tools.join(' · ') || 'ninguno');
+
+  ui.brain.value = store.get('jarvis-brain', status.brain);
+  ui.brain.querySelector('[value=ollama]').textContent = `IA de código abierto (${status.ollamaModel})${status.brains.ollama ? '' : ' · apagada'}`;
+  updateBrain();
+
+  sttMode = status.stt === 'whisper' || !Recognition ? 'whisper' : 'browser';
+  const micOk = sttMode === 'whisper' ? !!(navigator.mediaDevices && window.MediaRecorder) : !!Recognition;
+  chip(ui.chipMic, micOk ? `MIC · ${sttMode === 'whisper' ? 'WHISPER' : 'LISTO'}` : 'MIC · NO SOPORTADO', micOk);
+
+  renderGmail();
+  ui.mailAlerts.checked = store.get('jarvis-mail-alerts', '1') === '1';
+  listenEvents();
+
+  if (status.local) {
+    try {
+      sessions = (await (await api('/api/sessions')).json()).sessions;
+      for (const s of sessions) {
+        const o = document.createElement('option');
+        o.value = s.id; o.textContent = `${s.title}  ·  ${new Date(s.updated).toLocaleDateString()}`;
+        ui.session.appendChild(o);
+      }
+    } catch {}
+  }
+}
+
+function updateBrain() {
+  const b = ui.brain.value;
+  store.set('jarvis-brain', b);
+  chip(ui.chipBrain, b === 'ollama' ? 'CEREBRO · CÓDIGO ABIERTO' : 'CEREBRO · CLAUDE CODE', b === 'claude' || status?.brains.ollama);
+  ui.session.hidden = ui.sessionLabel.hidden = b !== 'claude' || !status?.local;
+  current = { id: '', cwd: '' }; ui.session.value = '';
+}
+ui.brain.addEventListener('change', () => { updateBrain(); ui.reply.textContent = 'Cerebro cambiado. Empezamos una conversación nueva.'; });
+
+function renderGmail() {
+  const g = status.gmail;
+  ui.gmailState.textContent = g.connected ? 'Gmail · conectado (solo lectura)' : g.configured ? 'Gmail · sin conectar' : 'Gmail · sin configurar (ver README)';
+  ui.gmailConnect.hidden = g.connected || !g.configured || !status.local;
+  ui.gmailSummary.hidden = ui.mailAlertsRow.hidden = !g.connected;
+}
+ui.gmailConnect.addEventListener('click', () => { window.open('/auth/google', '_blank'); ui.reply.textContent = 'Autoriza en la pestaña de Google y luego recarga Jarvis.'; });
+ui.gmailSummary.addEventListener('click', async () => {
+  if (busy) return;
+  busy = true; setMode('thinking'); ui.you.textContent = 'Resumen de correos'; ui.reply.textContent = '';
   try {
-    sessions = (await (await api('/api/sessions')).json()).sessions;
-    for (const s of sessions) {
-      const o = document.createElement('option');
-      o.value = s.id;
-      o.textContent = `${s.title}  ·  ${new Date(s.updated).toLocaleDateString()}`;
-      ui.session.appendChild(o);
-    }
-  } catch {}
-  chip(ui.chipMic, Recognition ? 'MIC · LISTO' : 'MIC · NO SOPORTADO', !!Recognition);
+    const r = await (await api('/api/gmail/summary', { method: 'POST', body: JSON.stringify({ brain: ui.brain.value }) })).json();
+    ui.reply.textContent = r.text; await speak(r.text);
+  } catch (e) { ui.reply.textContent = 'Error: ' + e.message; }
+  finally { busy = false; setMode('idle'); }
+});
+ui.mailAlerts.addEventListener('change', () => store.set('jarvis-mail-alerts', ui.mailAlerts.checked ? '1' : '0'));
+
+// Avisos en vivo del hub (correos nuevos).
+const mailQueue = [];
+function listenEvents() {
+  if (!window.EventSource) return;
+  const es = new EventSource('/api/events' + (TOKEN ? '?k=' + encodeURIComponent(TOKEN) : ''));
+  es.onmessage = (ev) => {
+    let msg; try { msg = JSON.parse(ev.data); } catch { return; }
+    if (msg.type !== 'mail' || !ui.mailAlerts.checked) return;
+    mailQueue.push(msg.text); flushMail();
+  };
+}
+async function flushMail() {
+  if (busy || listening || !mailQueue.length) return;
+  busy = true;
+  const text = mailQueue.shift();
+  ui.you.textContent = 'Correo nuevo'; ui.reply.textContent = text;
+  try { await speak(text); } finally { busy = false; setMode('idle'); flushMail(); }
 }
 
 ui.session.addEventListener('change', () => {
@@ -214,17 +293,25 @@ ui.session.addEventListener('change', () => {
 });
 
 /* =====================================================================
-   3. OÍDO (reconocimiento de voz del navegador)
+   3. OÍDO: navegador (Chrome/Edge) o Whisper en tu PC (app Android, cualquier navegador)
    ===================================================================== */
 const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, listening = false, busy = false;
 
 function listen() {
-  if (!Recognition || busy || listening) return;
+  if (busy || listening) return;
+  return sttMode === 'whisper' ? listenWhisper() : listenBrowser();
+}
+function stopListening() {
+  if (!listening) return;
+  if (rec && rec.stop) rec.stop();
+}
+
+function listenBrowser() {
+  if (!Recognition) return;
   rec = new Recognition();
   rec.lang = navigator.language && navigator.language.startsWith('es') ? navigator.language : 'es-ES';
   rec.interimResults = true;
-  rec.maxAlternatives = 1;
   let finalText = '';
   rec.onstart = () => { listening = true; setMode('listening'); ui.you.textContent = '…'; };
   rec.onresult = (ev) => {
@@ -235,18 +322,66 @@ function listen() {
     }
     ui.you.textContent = (finalText + interim).trim();
   };
-  rec.onerror = (ev) => {
-    if (ev.error === 'not-allowed') chip(ui.chipMic, 'MIC · BLOQUEADO', false);
-  };
+  rec.onerror = (ev) => { if (ev.error === 'not-allowed') chip(ui.chipMic, 'MIC · BLOQUEADO', false); };
   rec.onend = () => {
     listening = false;
     const t = finalText.trim();
     if (t) send(t);
     else { setMode('idle'); if (ui.handsfree.checked) setTimeout(listen, 400); }
   };
-  rec.start();
+  rec.start(); // Chrome termina solo cuando dejas de hablar
 }
-function stopListening() { if (rec && listening) rec.stop(); }
+
+// Graba, detecta el silencio al terminar de hablar y envía el audio a Whisper.
+let micStream = null;
+async function listenWhisper() {
+  try {
+    micStream = micStream || await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  } catch {
+    chip(ui.chipMic, 'MIC · BLOQUEADO', false); ui.reply.textContent = 'Permite el micrófono para hablarme.'; return;
+  }
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  await audioCtx.resume().catch(() => {});
+  const mime = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4'].find((t) => window.MediaRecorder.isTypeSupported?.(t)) || '';
+  const recorder = new MediaRecorder(micStream, mime ? { mimeType: mime } : undefined);
+  const chunks = [];
+  const src = audioCtx.createMediaStreamSource(micStream);
+  const an = audioCtx.createAnalyser(); an.fftSize = 1024; src.connect(an);
+  const buf = new Float32Array(an.fftSize);
+  const t0 = performance.now();
+  let floor = 0.01, spoke = false, lastVoice = t0, timer = null;
+
+  const finish = () => { clearInterval(timer); try { src.disconnect(); } catch {} if (recorder.state !== 'inactive') recorder.stop(); };
+  rec = { stop: finish };
+  recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  recorder.onstop = async () => {
+    listening = false;
+    if (!spoke) { setMode('idle'); ui.you.textContent = ''; if (ui.handsfree.checked) setTimeout(listen, 400); return; }
+    setMode('thinking'); ui.you.textContent = '(transcribiendo…)';
+    try {
+      const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+      const r = await (await api('/api/stt', { method: 'POST', body: blob, headers: { 'Content-Type': blob.type } })).json();
+      if (r.text && r.text.trim()) return send(r.text.trim());
+      ui.you.textContent = 'No te entendí, repítelo.'; setMode('idle');
+    } catch (e) { ui.reply.textContent = 'Error del oído: ' + e.message; setMode('idle'); }
+    if (ui.handsfree.checked) setTimeout(listen, 600);
+  };
+  recorder.start(250);
+  listening = true; setMode('listening'); ui.you.textContent = '…';
+
+  timer = setInterval(() => {
+    an.getFloatTimeDomainData(buf);
+    let sum = 0; for (const v of buf) sum += v * v;
+    const rms = Math.sqrt(sum / buf.length);
+    const now = performance.now();
+    if (now - t0 < 300) { floor = Math.max(floor, rms); return; } // ruido de fondo
+    const threshold = Math.max(0.015, floor * 2.5);
+    if (rms > threshold) { spoke = true; lastVoice = now; state.level = Math.min(1, rms * 8); }
+    if (spoke && now - lastVoice > 1300) finish();          // terminaste de hablar
+    else if (!spoke && now - t0 > 8000) finish();            // no dijiste nada
+    else if (now - t0 > 30000) finish();                     // máximo 30 s
+  }, 50);
+}
 
 /* =====================================================================
    4. CEREBRO + VOZ
@@ -259,22 +394,22 @@ async function send(text) {
   try {
     const r = await (await api('/api/chat', {
       method: 'POST',
-      body: JSON.stringify({ text, sessionId: current.id || undefined, cwd: current.cwd || undefined }),
+      body: JSON.stringify({ text, sessionId: current.id || undefined, cwd: current.cwd || undefined, brain: ui.brain.value }),
     })).json();
     if (r.sessionId) current.id = r.sessionId;
-    let reply = r.reply;
-    ui.reply.textContent = reply;
+    ui.reply.textContent = r.reply;
     if (r.denied && r.denied.length) {
       ui.reply.textContent += `\n[Permiso denegado: ${r.denied.join(', ')}. Añádelo a JARVIS_ALLOWED_TOOLS en .env si quieres permitirlo.]`;
     }
-    await speak(reply);
+    await speak(r.reply);
   } catch (e) {
     ui.reply.textContent = 'Error: ' + e.message;
-    await speak('Tuve un problema. Revisa la consola del servidor.');
+    await speak('Tuve un problema. Revisa la ventana de Jarvis en el PC.');
   } finally {
     busy = false;
     setMode('idle');
-    if (ui.handsfree.checked) setTimeout(listen, 500);
+    if (mailQueue.length) flushMail();
+    else if (ui.handsfree.checked) setTimeout(listen, 500);
   }
 }
 
@@ -287,7 +422,7 @@ async function speak(text) {
       const blob = await (await api('/api/tts', { method: 'POST', body: JSON.stringify({ text }) })).blob();
       return await playBlob(blob);
     } catch (e) {
-      console.warn('La voz del servidor falló, uso la del navegador:', e.message);
+      console.warn('La voz del servidor falló, uso la del dispositivo:', e.message);
     }
   }
   return browserSpeak(text);
@@ -317,9 +452,12 @@ function browserSpeak(text) {
   return new Promise((resolve) => {
     if (!('speechSynthesis' in window)) return resolve();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'es-ES';
+    const v = speechSynthesis.getVoices().find((x) => x.lang && x.lang.toLowerCase().startsWith('es'));
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'es-ES';
     const fake = setInterval(() => { state.level = 0.3 + Math.random() * 0.5; }, 90);
-    u.onend = u.onerror = () => { clearInterval(fake); state.level = 0; resolve(); };
+    const done = () => { clearInterval(fake); state.level = 0; resolve(); };
+    u.onend = u.onerror = done;
+    setTimeout(done, Math.max(5000, text.length * 95));
     speechSynthesis.speak(u);
   });
 }
@@ -329,7 +467,7 @@ function browserSpeak(text) {
    ===================================================================== */
 canvas.addEventListener('click', () => (listening ? stopListening() : listen()));
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'Space' && document.activeElement !== ui.text) {
+  if (e.code === 'Space' && !['INPUT', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) {
     e.preventDefault();
     listening ? stopListening() : listen();
   }
@@ -340,6 +478,13 @@ ui.form.addEventListener('submit', (e) => {
   if (t && !busy) { ui.text.value = ''; send(t); }
 });
 ui.handsfree.addEventListener('change', () => { if (ui.handsfree.checked) listen(); });
+
+const sideToggle = $('settings-toggle'), side = $('side');
+sideToggle.addEventListener('click', () => {
+  const open = side.classList.toggle('open');
+  sideToggle.setAttribute('aria-expanded', String(open));
+  sideToggle.textContent = open ? 'CERRAR' : 'AJUSTES';
+});
 
 init();
 

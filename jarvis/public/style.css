@@ -90,3 +90,21 @@ body {
   .hud-side { top: auto; bottom: 190px; right: 16px; left: 16px; width: auto; }
   .reply { font-size: 15px; }
 }
+
+.gmail { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--gold-dim); }
+.gmail-state { color: var(--text); }
+.act {
+  font: 12px var(--mono); letter-spacing: .08em; color: var(--gold-hi); background: rgba(3, 6, 13, .75);
+  border: 1px solid var(--gold); border-radius: 2px; padding: 7px 10px; cursor: pointer; text-align: left;
+}
+.act:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.settings-toggle { display: none; font-family: var(--mono); cursor: pointer; }
+@media (max-width: 640px) {
+  .settings-toggle { display: inline-block; }
+  .hud-side {
+    display: none; top: 150px; bottom: auto; max-height: calc(100% - 330px); overflow-y: auto;
+    background: rgba(3, 6, 13, .94); border: 1px solid var(--gold-dim); padding: 12px;
+  }
+  .hud-side.open { display: flex; }
+}

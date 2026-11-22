@@ -25,15 +25,27 @@
       <span class="chip" id="chip-brain">CEREBRO · …</span>
       <span class="chip" id="chip-voice">VOZ · …</span>
       <span class="chip" id="chip-mic">MIC · …</span>
+      <button class="chip ok settings-toggle" id="settings-toggle" type="button" aria-expanded="false" aria-controls="side">AJUSTES</button>
     </div>
   </header>
 
-  <aside class="hud hud-side">
-    <label for="session">Chat de Claude Code</label>
+  <aside class="hud hud-side" id="side">
+    <label for="brain">Cerebro</label>
+    <select id="brain">
+      <option value="claude">Claude Code</option>
+      <option value="ollama">IA de código abierto (Ollama)</option>
+    </select>
+    <label for="session" id="session-label">Chat de Claude Code</label>
     <select id="session">
       <option value="">Nueva conversación</option>
     </select>
     <label class="toggle"><input type="checkbox" id="handsfree"> Manos libres</label>
+    <div class="gmail" id="gmail">
+      <span class="gmail-state" id="gmail-state">Gmail · …</span>
+      <button type="button" class="act" id="gmail-connect" hidden>Conectar Gmail</button>
+      <button type="button" class="act" id="gmail-summary" hidden>Resumir correos</button>
+      <label class="toggle" id="mail-alerts-row" hidden><input type="checkbox" id="mail-alerts" checked> Avisarme de correos nuevos</label>
+    </div>
     <div class="tools" id="tools"></div>
   </aside>
 

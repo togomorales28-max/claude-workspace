@@ -1,0 +1,12 @@
+{
+  "appId": "com.jarvis.asistente",
+  "appName": "Jarvis",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": ["*.ts.net"]
+  },
+  "android": {
+    "backgroundColor": "#03060d"
+  }
+}
