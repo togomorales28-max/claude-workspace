@@ -276,9 +276,14 @@ async function boot() {
   updateVoiceChip();
   if (dict) {
     ui.mic.hidden = false; chip(ui.chipMic, 'MIC · LISTO', true);
-    let partial = null;
-    dict.onPartial(({ text }) => { ui.text.value = (ui.text.dataset.base || '') + text; });
-    dict.onFinal(({ text }) => { ui.text.dataset.base = ((ui.text.dataset.base || '') + text + ' '); ui.text.value = ui.text.dataset.base; });
+    // Detecta el final de la frase: si pasan 1,6 s sin palabras nuevas, deja de escuchar y envía.
+    let silence = null;
+    const armSilence = () => {
+      clearTimeout(silence);
+      silence = setTimeout(() => { if (dict.active() && ui.text.value.trim()) dict.stop().catch(() => {}); }, 1600);
+    };
+    dict.onPartial(({ text }) => { ui.text.value = (ui.text.dataset.base || '') + text; armSilence(); });
+    dict.onFinal(({ text }) => { ui.text.dataset.base = ((ui.text.dataset.base || '') + text + ' '); ui.text.value = ui.text.dataset.base; armSilence(); });
     dict.onState(({ state, reason }) => {
       const live = state === 'listening' || state === 'starting';
       ui.mic.classList.toggle('live', live);
