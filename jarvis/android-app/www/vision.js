@@ -85,7 +85,7 @@ const Vision = (() => {
     ui.reply.textContent = 'Mirando…';
     const wantsText = /\b(lee|leeme|texto|dice|letrero|etiqueta)\b/.test(norm(question));
     const prompt = wantsText
-      ? 'Read and transcribe all the visible text in this image exactly. Then briefly say what the object is.'
+      ? 'Describe this image in detail, and transcribe all the visible text exactly, word by word.'
       : 'Describe this image in detail: the main objects, people, colors, any visible text, and where things are.';
     const { text: desc } = await J.visionDescribe({ image: img, prompt, maxTokens: wantsText ? 200 : 150 });
     if (stopRequested) return;

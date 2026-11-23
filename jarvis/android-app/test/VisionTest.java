@@ -11,7 +11,7 @@ public class VisionTest {
         System.out.println("carga -> " + load.invoke(null, a[0], a[1], 4) + " (" + (System.currentTimeMillis() - t) + " ms)");
         for (String prompt : new String[] {
             "Describe this image in detail: the main objects, people, colors, any visible text, and where things are.",
-            "Read and transcribe all the visible text in this image exactly. Then briefly say what the object is." }) {
+            "Describe this image in detail, and transcribe all the visible text exactly, word by word." }) {
             t = System.currentTimeMillis();
             byte[] r = (byte[]) desc.invoke(null, a[2], prompt, 120, (LlamaEngine.TokenCallback) p -> true);
             System.out.println("\n[" + prompt.substring(0, 30) + "…] " + (System.currentTimeMillis() - t) + " ms:\n"
