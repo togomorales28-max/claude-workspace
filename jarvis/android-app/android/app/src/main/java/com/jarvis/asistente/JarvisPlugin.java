@@ -57,7 +57,6 @@ public class JarvisPlugin extends Plugin {
     private String loadedModel = null;
     private SpeechRecognizer recognizer;
     private PluginCall listenCall;
-    private boolean triedFallback;
 
     private TextToSpeech tts;
     private boolean ttsReady = false;
@@ -233,46 +232,78 @@ public class JarvisPlugin extends Plugin {
             requestPermissionForAlias("microphone", call, "micPermission");
             return;
         }
-        startListening(call, true);
+        startListening(call, 0);
     }
 
     @PermissionCallback
     private void micPermission(PluginCall call) {
-        if (getPermissionState("microphone") == PermissionState.GRANTED) startListening(call, true);
+        if (getPermissionState("microphone") == PermissionState.GRANTED) startListening(call, 0);
         else call.reject("Sin permiso de micrófono.", "not_granted");
     }
 
-    private void startListening(PluginCall call, boolean preferOnDevice) {
+    /**
+     * Etapas: 0 = reconocedor dentro del teléfono (sin internet); 1 = reconocedor normal prefiriendo sin internet;
+     * 2 = reconocedor normal con internet. Si una falla porque falta el idioma, se prueba la siguiente.
+     */
+    private void startListening(PluginCall call, int stage) {
         main.post(() -> {
             destroyRecognizer();
             Context ctx = getContext();
             listenCall = call;
-            triedFallback = !preferOnDevice;
-            boolean onDevice = preferOnDevice && Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(ctx);
-            if (onDevice) recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(ctx);
+            int st = stage;
+            if (st == 0 && !(Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(ctx))) st = 1;
+            if (st == 0) recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(ctx);
             else if (SpeechRecognizer.isRecognitionAvailable(ctx)) recognizer = SpeechRecognizer.createSpeechRecognizer(ctx);
             else { listenCall = null; call.reject("Este teléfono no tiene reconocimiento de voz.", "unavailable"); return; }
-            if (!onDevice) triedFallback = true;
-            recognizer.setRecognitionListener(new Listener(onDevice));
-            recognizer.startListening(recognizerIntent(call.getString("lang", "es-MX")));
+            Intent intent = recognizerIntent(lang(call), st < 2);
+            recognizer.setRecognitionListener(new Listener(st, intent));
+            recognizer.startListening(intent);
         });
     }
 
-    private Intent recognizerIntent(String lang) {
+    private static String lang(PluginCall call) {
+        String l = call.getString("lang", "");
+        if (l == null || !l.startsWith("es")) {
+            String def = Locale.getDefault().toLanguageTag();
+            l = def.startsWith("es") ? def : "es-MX";
+        }
+        return l;
+    }
+
+    /** Pide a Android que descargue el español sin conexión (Android 13+). */
+    @PluginMethod
+    public void downloadSpeechModel(PluginCall call) {
+        if (Build.VERSION.SDK_INT < 33 || !SpeechRecognizer.isOnDeviceRecognitionAvailable(getContext())) {
+            call.reject("Tu Android no permite descargarlo desde la app.", "unavailable");
+            return;
+        }
+        final String l = lang(call);
+        main.post(() -> {
+            try {
+                SpeechRecognizer r = SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext());
+                r.triggerModelDownload(recognizerIntent(l, true));
+                main.postDelayed(r::destroy, 5000);
+                call.resolve();
+            } catch (Exception e) { call.reject("No pude iniciar la descarga del idioma."); }
+        });
+    }
+
+    private Intent recognizerIntent(String lang, boolean preferOffline) {
         Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang);
         i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
-        i.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+        i.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, preferOffline);
         i.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L);
         i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
         return i;
     }
 
     private class Listener implements RecognitionListener {
-        private final boolean onDevice;
+        private final int stage;
+        private final Intent intent;
         private long lastLevel = 0;
-        Listener(boolean onDevice) { this.onDevice = onDevice; }
+        Listener(int stage, Intent intent) { this.stage = stage; this.intent = intent; }
 
         @Override public void onReadyForSpeech(Bundle b) { notifyListeners("listen", obj("state", "listening")); }
         @Override public void onBeginningOfSpeech() {}
@@ -291,10 +322,16 @@ public class JarvisPlugin extends Plugin {
             finishListen(r != null && !r.isEmpty() ? r.get(0) : "", null);
         }
         @Override public void onError(int error) {
-            // El reconocedor sin conexión no tiene el idioma: probar con el normal (que también prefiere sin conexión).
-            if (onDevice && !triedFallback && error != SpeechRecognizer.ERROR_NO_MATCH && error != SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                PluginCall c = listenCall;
-                if (c != null) { startListening(c, false); return; }
+            boolean noSpeech = error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT;
+            boolean langMissing = error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED || error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE;
+            // Falta el español sin conexión: pedir a Android que lo descargue para la próxima vez.
+            if (stage == 0 && langMissing && Build.VERSION.SDK_INT >= 33 && recognizer != null) {
+                try { recognizer.triggerModelDownload(intent); notifyListeners("speechModel", obj("state", "downloading")); } catch (Exception ignored) {}
+            }
+            PluginCall c = listenCall;
+            if (!noSpeech && stage < 2 && c != null && error != SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                startListening(c, stage + 1);
+                return;
             }
             if (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) finishListen("", null);
             else finishListen(null, "error_" + error);
@@ -315,7 +352,7 @@ public class JarvisPlugin extends Plugin {
     private static String errorText(String code) {
         switch (code) {
             case "error_9": return "Sin permiso de micrófono.";
-            case "error_12": case "error_13": return "Falta el paquete de voz en español sin conexión.";
+            case "error_12": case "error_13": return "Sin internet y sin el español sin conexión. Descárgalo en Ajustes de Jarvis → Voz.";
             case "error_2": case "error_4": case "error_11": return "El reconocimiento de voz necesita el paquete sin conexión o internet.";
             case "error_8": return "El reconocimiento de voz está ocupado; inténtalo otra vez.";
             default: return "No pude escucharte (" + code + ").";

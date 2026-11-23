@@ -51,6 +51,7 @@ async function boot() {
   J.addListener('level', ({ level }) => { if (listening) state.level = level; });
   J.addListener('listen', ({ state: s }) => { if (s === 'listening') setMode('listening'); });
   J.addListener('download', onDownload);
+  J.addListener('speechModel', () => { ui.you.textContent = 'Descargando español sin conexión; mientras tanto uso internet.'; });
   window.addEventListener('online', updateNet); window.addEventListener('offline', updateNet); updateNet();
 
   ui.continuous.checked = store.get('jarvis-continuous', '1') === '1';
@@ -199,7 +200,7 @@ async function listen() {
   ui.you.textContent = '…';
   setMode('listening');
   try {
-    const { text } = await J.listen({ lang: 'es-MX' });
+    const { text } = await J.listen({ lang: (navigator.language || '').startsWith('es') ? navigator.language : 'es-MX' });
     listening = false; ui.mic.classList.remove('live'); state.level = 0;
     if (text && text.trim()) return ask(text);
     ui.you.textContent = '';
@@ -272,12 +273,23 @@ function alertText(t) { ui.reply.textContent = t; ui.setupStatus.textContent = t
 
 /* ------------------------------------------------------------------ controles */
 canvas.addEventListener('click', () => (busy || listening ? stopAll() : listen()));
-ui.mic.addEventListener('click', () => (listening ? stopAll() : busy ? stopAll() : listen()));
-ui.form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const t = ui.text.value; ui.text.value = ''; ui.text.blur();
-  ask(t);
+// El botón es micrófono cuando la caja está vacía y "enviar" cuando hay texto escrito.
+function updateButton() {
+  const typing = ui.text.value.trim().length > 0;
+  $('icon-mic').toggleAttribute('hidden', typing);   // los SVG no tienen la propiedad .hidden
+  $('icon-send').toggleAttribute('hidden', !typing);
+  ui.mic.setAttribute('aria-label', typing ? 'Enviar' : 'Hablar');
+}
+ui.text.addEventListener('input', updateButton);
+ui.mic.addEventListener('click', () => {
+  if (ui.text.value.trim()) return sendTyped();
+  return listening || busy ? stopAll() : listen();
 });
+function sendTyped() {
+  const t = ui.text.value; ui.text.value = ''; ui.text.blur(); updateButton();
+  ask(t);
+}
+ui.form.addEventListener('submit', (e) => { e.preventDefault(); sendTyped(); });
 $('open-settings').addEventListener('click', () => { renderModels(); ui.settings.hidden = false; });
 $('close-settings').addEventListener('click', () => { ui.settings.hidden = true; });
 ui.settings.addEventListener('click', (e) => { if (e.target === ui.settings) ui.settings.hidden = true; });
@@ -286,6 +298,14 @@ ui.rate.addEventListener('change', () => store.set('jarvis-rate', ui.rate.value)
 ui.voice.addEventListener('change', () => { store.set('jarvis-voice', ui.voice.value); J.setVoice({ name: ui.voice.value }); });
 $('test-voice').addEventListener('click', () => J.speak({ text: 'Hola, soy Jarvis. Así sueno.', rate: Number(ui.rate.value) }));
 $('voice-settings').addEventListener('click', () => J.openVoiceSettings().catch(() => {}));
+$('speech-download').addEventListener('click', async () => {
+  try {
+    await J.downloadSpeechModel({ lang: (navigator.language || '').startsWith('es') ? navigator.language : 'es-MX' });
+    $('speech-download').textContent = 'Descarga iniciada (unos minutos, con Wi-Fi)';
+  } catch (e) {
+    $('speech-download').textContent = 'Hazlo en Ajustes del teléfono → Administración general → Idioma';
+  }
+});
 $('new-chat').addEventListener('click', async () => {
   if (!ready) return;
   await J.resetChat({ system: systemPrompt() });

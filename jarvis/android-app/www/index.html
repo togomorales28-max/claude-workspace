@@ -36,7 +36,8 @@
       <form id="form" autocomplete="off">
         <input id="text" type="text" placeholder="Escríbele a Jarvis…" aria-label="Mensaje para Jarvis" enterkeyhint="send">
         <button class="round" id="mic" type="button" aria-label="Hablar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <svg id="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          <svg id="icon-send" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
       </form>
     </section>
@@ -65,6 +66,7 @@
       <input type="range" id="rate" min="0.7" max="1.4" step="0.05" value="1">
       <button class="secondary" id="test-voice" type="button">Probar voz</button>
       <button class="secondary" id="voice-settings" type="button">Abrir ajustes de voz del teléfono</button>
+      <button class="secondary" id="speech-download" type="button">Descargar español para entenderte sin internet</button>
       <p class="muted">Para que funcione sin internet: en los ajustes de voz del teléfono descarga el idioma <strong>Español</strong> (motor de Google o Samsung). Para que te entienda sin internet: Ajustes → Administración general → Idioma → Reconocimiento de voz → descarga Español.</p>
 
       <h3>Google (cuando hay internet)</h3>
