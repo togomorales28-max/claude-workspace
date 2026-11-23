@@ -76,7 +76,7 @@ public final class WebSearch {
 
     static List<Result> sports(String league, String q) throws Exception {
         List<Result> out = new ArrayList<>();
-        JSONObject root = new JSONObject(get("https://site.api.espn.com/apis/site/v2/sports/" + league + "/scoreboard?lang=es&region=mx", null));
+        JSONObject root = new JSONObject(get("https://site.api.espn.com/apis/site/v2/sports/" + league + "/scoreboard", null));
         JSONArray events = root.optJSONArray("events");
         if (events == null) return out;
         String leagueName = root.optJSONArray("leagues") != null && root.getJSONArray("leagues").length() > 0
