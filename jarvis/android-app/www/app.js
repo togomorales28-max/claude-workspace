@@ -293,4 +293,7 @@ $('new-chat').addEventListener('click', async () => {
   ui.settings.hidden = true;
 });
 
-boot();
+boot().catch((e) => {
+  ui.status.textContent = 'ERROR AL INICIAR';
+  ui.reply.textContent = 'Algo falló al arrancar: ' + (e && e.message ? e.message : e) + '. Cierra y vuelve a abrir Jarvis.';
+});
