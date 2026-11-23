@@ -43,6 +43,12 @@ public final class WebSearch {
     private static final Pattern SPORTS = Pattern.compile(
         "\\b(partido|partidos|juego|juegan|jugo|juega|gano|ganaron|perdio|marcador|resultado|score|vs|contra|liga|nfl|nba|mlb|nhl|futbol|beisbol|basquet|americano|jornada|temporada|campeonato)\\b");
 
+    // Palabras comunes del español que también son nombres de equipos o ciudades: no cuentan como coincidencia.
+    private static final java.util.Set<String> COMMON = new java.util.HashSet<>(java.util.Arrays.asList(
+        "como", "cuando", "donde", "hoy", "real", "city", "united", "club", "atletico", "deportivo", "sporting", "nacional"));
+    private static final Pattern NEWS = Pattern.compile(
+        "\\b(noticia|noticias|hoy|ayer|ultim[oa]s?|actual|reciente|paso|sucedio|eleccion|presidente|gobierno|clima|precio|dolar|estreno)\\b");
+
     private WebSearch() {}
 
     public static List<Result> search(String query) {
@@ -50,10 +56,13 @@ public final class WebSearch {
         ExecutorService pool = Executors.newFixedThreadPool(4);
         List<Future<List<Result>>> jobs = new ArrayList<>();
         if (SPORTS.matcher(q).find()) for (String lg : LEAGUES) jobs.add(pool.submit(() -> sports(lg, q)));
+        Future<List<Result>> news = NEWS.matcher(q).find() ? pool.submit(() -> googleNews(query)) : null;
         Future<List<Result>> ddg = pool.submit(() -> duckduckgo(query));
         List<Result> out = new ArrayList<>();
         for (Future<List<Result>> f : jobs) out.addAll(safe(f));
+        if (news != null) out.addAll(safe(news));
         out.addAll(safe(ddg));
+        if (out.size() < 2 && news == null) out.addAll(safe(pool.submit(() -> googleNews(query))));
         if (out.size() < 2) out.addAll(safe(pool.submit(() -> wikipedia(query))));
         pool.shutdownNow();
         return out.size() > 8 ? out.subList(0, 8) : out;
@@ -83,7 +92,7 @@ public final class WebSearch {
                 JSONObject team = c.getJSONObject("team");
                 for (String key : new String[] { "name", "shortDisplayName", "displayName", "location" }) {
                     String n = norm(team.optString(key, ""));
-                    if (n.length() >= 4 && containsWord(q, n)) match = true;
+                    if (n.length() >= 4 && !COMMON.contains(n) && containsWord(q, n)) match = true;
                 }
                 if (t > 0) line.append(" - ");
                 line.append(team.optString("displayName")).append(' ').append(c.optString("score", ""));
@@ -95,6 +104,36 @@ public final class WebSearch {
         }
         return out;
     }
+
+    // ------------------------------------------------------------------ Google News (RSS público, sin llave)
+
+    private static final Pattern RSS_ITEM = Pattern.compile("<item>(.*?)</item>", Pattern.DOTALL);
+
+    static List<Result> googleNews(String query) throws Exception {
+        String url = "https://news.google.com/rss/search?hl=es-419&gl=MX&ceid=MX:es-419&q=" + URLEncoder.encode(query, "UTF-8");
+        return parseRss(get(url, null));
+    }
+
+    static List<Result> parseRss(String xml) {
+        List<Result> out = new ArrayList<>();
+        Matcher m = RSS_ITEM.matcher(xml);
+        while (m.find() && out.size() < 4) {
+            String item = m.group(1);
+            String title = text(cdata(tag(item, "title")));
+            String source = text(cdata(tag(item, "source")));
+            String date = tag(item, "pubDate");
+            if (!source.isEmpty() && title.endsWith(" - " + source)) title = title.substring(0, title.length() - source.length() - 3);
+            if (!title.isEmpty()) out.add(new Result(title, "publicado " + date, source.isEmpty() ? "Google News" : source));
+        }
+        return out;
+    }
+
+    private static String tag(String xml, String name) {
+        Matcher m = Pattern.compile("<" + name + "[^>]*>(.*?)</" + name + ">", Pattern.DOTALL).matcher(xml);
+        return m.find() ? m.group(1).trim() : "";
+    }
+
+    private static String cdata(String s) { return s.replace("<![CDATA[", "").replace("]]>", ""); }
 
     // ------------------------------------------------------------------ DuckDuckGo (HTML, sin llave)
 
@@ -195,5 +234,7 @@ public final class WebSearch {
         List<Result> r = search(q);
         System.out.println(r.size() + " resultados en " + (System.currentTimeMillis() - t) + " ms para: " + q);
         for (Result x : r) System.out.println("  " + x);
+        try { System.out.println("  (DuckDuckGo solo: " + duckduckgo(q).size() + " resultados)"); }
+        catch (Exception e) { System.out.println("  (DuckDuckGo falló: " + e.getMessage() + ")"); }
     }
 }
