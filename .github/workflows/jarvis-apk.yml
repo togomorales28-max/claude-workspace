@@ -44,6 +44,7 @@ jobs:
             keytool -genkeypair -v -keystore jarvis.keystore -alias jarvis -keyalg RSA -keysize 2048 \
               -validity 10000 -storepass jarvis-android -keypass jarvis-android -dname "CN=Jarvis"
           fi
+          echo "Huella para Google Cloud:"; keytool -list -v -keystore jarvis.keystore -storepass jarvis-android | grep -E "SHA1:"
           echo "JARVIS_KEYSTORE=$PWD/jarvis.keystore" >> "$GITHUB_ENV"
           echo "JARVIS_KEYSTORE_PASS=jarvis-android" >> "$GITHUB_ENV"
 

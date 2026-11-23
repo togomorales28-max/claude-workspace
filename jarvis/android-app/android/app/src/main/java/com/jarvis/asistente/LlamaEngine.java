@@ -6,6 +6,10 @@ public final class LlamaEngine {
 
     public interface TokenCallback { boolean onToken(byte[] piece); }
 
+    /** Estado compartido entre la app y el servicio de pantalla. */
+    static volatile boolean brainLoaded = false;
+    static volatile String visionLoaded = null;
+
     /** Devuelve null si cargó bien, o el mensaje de error. */
     static native String nativeLoad(String path, int nCtx, int nThreads);
     static native void nativeReset(String system);

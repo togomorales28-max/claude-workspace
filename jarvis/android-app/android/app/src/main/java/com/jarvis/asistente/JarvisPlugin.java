@@ -15,6 +15,29 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.Voice;
 
+import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.media.projection.MediaProjectionManager;
+import android.net.Uri;
+import android.provider.Settings;
+
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
+
+import com.getcapacitor.annotation.ActivityCallback;
+import com.google.android.gms.auth.api.identity.AuthorizationRequest;
+import com.google.android.gms.auth.api.identity.AuthorizationResult;
+import com.google.android.gms.auth.api.identity.Identity;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.Scope;
+
+import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.List;
+
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -45,7 +68,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @CapacitorPlugin(
     name = "Jarvis",
-    permissions = { @Permission(strings = { Manifest.permission.RECORD_AUDIO }, alias = "microphone") }
+    permissions = {
+        @Permission(strings = { Manifest.permission.RECORD_AUDIO }, alias = "microphone"),
+        @Permission(strings = { Manifest.permission.POST_NOTIFICATIONS }, alias = "notifications")
+    }
 )
 public class JarvisPlugin extends Plugin {
 
@@ -53,7 +79,6 @@ public class JarvisPlugin extends Plugin {
     private final ExecutorService ioThread = Executors.newSingleThreadExecutor();
     private final ExecutorService netThread = Executors.newSingleThreadExecutor();
     private final ExecutorService visionThread = Executors.newSingleThreadExecutor();
-    private String visionLoaded = null;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final AtomicBoolean cancelDownload = new AtomicBoolean(false);
 
@@ -67,8 +92,146 @@ public class JarvisPlugin extends Plugin {
     private final Map<String, PluginCall> speaking = new HashMap<>();
     private final ArrayList<PluginCall> waitingTts = new ArrayList<>();
 
+    // ---------------------------------------------------------------- Gmail (solo lectura, autorización de Google)
+
+    private static final String GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+    private interface TokenUser { void run(PluginCall call, String token); }
+    private ActivityResultLauncher<IntentSenderRequest> authLauncher;
+    private PluginCall authCall;
+    private TokenUser authUser;
+
+    private void authorize(PluginCall call, boolean interactive, TokenUser user) {
+        AuthorizationRequest req = AuthorizationRequest.builder()
+            .setRequestedScopes(Arrays.asList(new Scope(GMAIL_SCOPE))).build();
+        Identity.getAuthorizationClient(getActivity()).authorize(req)
+            .addOnSuccessListener(r -> {
+                if (r.hasResolution() && r.getPendingIntent() != null) {
+                    if (!interactive) { call.reject("Gmail no está conectado.", "not_connected"); return; }
+                    authCall = call; authUser = user;
+                    authLauncher.launch(new IntentSenderRequest.Builder(r.getPendingIntent().getIntentSender()).build());
+                } else {
+                    user.run(call, r.getAccessToken());
+                }
+            })
+            .addOnFailureListener(e -> {
+                int code = e instanceof ApiException ? ((ApiException) e).getStatusCode() : -1;
+                if (code == 10) call.reject("Falta registrar la app en tu proyecto de Google Cloud (mira la guía en Ajustes → Google).", "setup");
+                else call.reject("Google no autorizó el acceso (" + (code >= 0 ? code : e.getMessage()) + ").", "error");
+            });
+    }
+
+    @PluginMethod
+    public void gmailConnect(PluginCall call) {
+        authorize(call, true, (c, token) -> c.resolve(obj("connected", true)));
+    }
+
+    @PluginMethod
+    public void gmailUnread(PluginCall call) {
+        authorize(call, call.getBoolean("interactive", true), (c, token) -> netThread.execute(() -> {
+            try {
+                JSArray arr = new JSArray();
+                for (GmailReader.Mail m : GmailReader.unread(token, 20)) {
+                    JSObject o = new JSObject();
+                    o.put("from", m.from); o.put("subject", m.subject); o.put("snippet", m.snippet);
+                    o.put("score", m.score); o.put("category", m.category); o.put("important", m.important); o.put("date", m.date);
+                    arr.put(o);
+                }
+                c.resolve(obj("mails", arr));
+            } catch (Exception e) {
+                c.reject("No pude leer Gmail: " + e.getMessage());
+            }
+        }));
+    }
+
+    /** Huella SHA-1 de la firma de la app: hace falta para registrarla en Google Cloud. */
+    @PluginMethod
+    public void signingInfo(PluginCall call) {
+        try {
+            PackageManager pm = getContext().getPackageManager();
+            String pkg = getContext().getPackageName();
+            byte[] cert = Build.VERSION.SDK_INT >= 28
+                ? pm.getPackageInfo(pkg, PackageManager.GET_SIGNING_CERTIFICATES).signingInfo.getApkContentsSigners()[0].toByteArray()
+                : pm.getPackageInfo(pkg, PackageManager.GET_SIGNATURES).signatures[0].toByteArray();
+            byte[] d = MessageDigest.getInstance("SHA-1").digest(cert);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < d.length; i++) sb.append(i > 0 ? ":" : "").append(String.format("%02X", d[i]));
+            JSObject r = new JSObject();
+            r.put("package", getContext().getPackageName());
+            r.put("sha1", sb.toString());
+            call.resolve(r);
+        } catch (Exception e) { call.reject("No pude leer la firma."); }
+    }
+
+    // ---------------------------------------------------------------- ver la pantalla (burbuja flotante)
+
+    @PluginMethod
+    public void screenStatus(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("running", ScreenService.running);
+        r.put("overlay", Settings.canDrawOverlays(getContext()));
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void screenStart(PluginCall call) {
+        if (ScreenService.running) { call.resolve(); return; }
+        if (!Settings.canDrawOverlays(getContext())) {
+            Intent i = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getContext().getPackageName()));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(i);
+            call.reject("Activa «Mostrar sobre otras apps» para Jarvis y vuelve a tocar Ver pantalla.", "overlay");
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 33 && getPermissionState("notifications") != PermissionState.GRANTED) {
+            requestPermissionForAlias("notifications", call, "notifPermission");
+            return;
+        }
+        askProjection(call);
+    }
+
+    @PermissionCallback
+    private void notifPermission(PluginCall call) { askProjection(call); } // sigue aunque diga que no
+
+    private void askProjection(PluginCall call) {
+        MediaProjectionManager mpm = (MediaProjectionManager) getContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+        startActivityForResult(call, mpm.createScreenCaptureIntent(), "screenResult");
+    }
+
+    @ActivityCallback
+    private void screenResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null) {
+            call.reject("No diste permiso para ver la pantalla.", "denied");
+            return;
+        }
+        Intent s = new Intent(getContext(), ScreenService.class);
+        s.putExtra("code", result.getResultCode());
+        s.putExtra("data", result.getData());
+        s.putExtra("model", call.getString("model"));
+        s.putExtra("mmproj", call.getString("mmproj"));
+        ContextCompat.startForegroundService(getContext(), s);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void screenStop(PluginCall call) {
+        getContext().startService(new Intent(getContext(), ScreenService.class).setAction("stop"));
+        call.resolve();
+    }
+
     @Override
     public void load() {
+        authLauncher = getActivity().registerForActivityResult(new ActivityResultContracts.StartIntentSenderForResult(), res -> {
+            PluginCall c = authCall; TokenUser u = authUser;
+            authCall = null; authUser = null;
+            if (c == null) return;
+            try {
+                AuthorizationResult ar = Identity.getAuthorizationClient(getActivity()).getAuthorizationResultFromIntent(res.getData());
+                u.run(c, ar.getAccessToken());
+            } catch (Exception e) {
+                c.reject("No diste permiso a Gmail.", "denied");
+            }
+        });
         tts = new TextToSpeech(getContext(), status -> {
             ttsReady = status == TextToSpeech.SUCCESS;
             if (ttsReady) {
@@ -180,7 +343,7 @@ public class JarvisPlugin extends Plugin {
     @PluginMethod
     public void deleteModel(PluginCall call) {
         String name = call.getString("file", "");
-        if (name.equals(loadedModel)) { LlamaEngine.nativeUnload(); loadedModel = null; }
+        if (name.equals(loadedModel)) { LlamaEngine.nativeUnload(); loadedModel = null; LlamaEngine.brainLoaded = false; }
         new File(modelsDir(), name).delete();
         new File(modelsDir(), name + ".part").delete();
         call.resolve();
@@ -197,8 +360,9 @@ public class JarvisPlugin extends Plugin {
         llmThread.execute(() -> {
             int threads = Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors()));
             String err = LlamaEngine.nativeLoad(f.getAbsolutePath(), ctx, threads);
-            if (err != null) { loadedModel = null; call.reject(err); return; }
+            if (err != null) { loadedModel = null; LlamaEngine.brainLoaded = false; call.reject(err); return; }
             loadedModel = name;
+            LlamaEngine.brainLoaded = true;
             call.resolve(obj("file", name));
         });
     }
@@ -235,11 +399,11 @@ public class JarvisPlugin extends Plugin {
         final File mmproj = new File(modelsDir(), call.getString("mmproj", ""));
         if (!model.exists() || !mmproj.exists()) { call.reject("La visión no está descargada."); return; }
         visionThread.execute(() -> {
-            if (model.getName().equals(visionLoaded)) { call.resolve(); return; }
+            if (model.getName().equals(LlamaEngine.visionLoaded)) { call.resolve(); return; }
             int threads = Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors()));
             String err = LlamaEngine.nativeVisionLoad(model.getAbsolutePath(), mmproj.getAbsolutePath(), threads);
-            if (err != null) { visionLoaded = null; call.reject(err); return; }
-            visionLoaded = model.getName();
+            if (err != null) { LlamaEngine.visionLoaded = null; call.reject(err); return; }
+            LlamaEngine.visionLoaded = model.getName();
             call.resolve();
         });
     }
@@ -247,7 +411,10 @@ public class JarvisPlugin extends Plugin {
     @PluginMethod
     public void visionUnload(PluginCall call) {
         LlamaEngine.nativeVisionStop();
-        visionThread.execute(() -> { LlamaEngine.nativeVisionUnload(); visionLoaded = null; call.resolve(); });
+        visionThread.execute(() -> {
+            if (!ScreenService.running) { LlamaEngine.nativeVisionUnload(); LlamaEngine.visionLoaded = null; } // la pantalla también la usa
+            call.resolve();
+        });
     }
 
     @PluginMethod
@@ -259,7 +426,7 @@ public class JarvisPlugin extends Plugin {
         final String b64 = call.getString("image", "");
         final String prompt = call.getString("prompt", "Describe this image in detail.");
         final int max = call.getInt("maxTokens", 160);
-        if (visionLoaded == null) { call.reject("La visión no está cargada."); return; }
+        if (LlamaEngine.visionLoaded == null) { call.reject("La visión no está cargada."); return; }
         visionThread.execute(() -> {
             File img = new File(getContext().getCacheDir(), "vision.jpg");
             try (FileOutputStream out = new FileOutputStream(img)) {

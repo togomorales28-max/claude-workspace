@@ -108,3 +108,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 body.seeing #orb { opacity: .35; }
 .see { align-self: center; font-size: 12px; padding: 8px 14px; }
+
+.guide summary { color: var(--gold-hi); font-size: 14px; cursor: pointer; padding: 6px 0; }
+.guide ol { padding-left: 18px; display: flex; flex-direction: column; gap: 8px; margin: 6px 0 0; }
+.copy-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.copy-row code { font-family: var(--mono); font-size: 11px; color: var(--text); overflow-wrap: anywhere; }

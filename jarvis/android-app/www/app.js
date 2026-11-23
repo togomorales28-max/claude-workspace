@@ -38,9 +38,9 @@ function chip(el, text, ok) { el.textContent = text; el.className = 'chip ' + (o
 
 function systemPrompt() {
   const now = new Date().toLocaleString('es-MX', { dateStyle: 'full', timeStyle: 'short' });
-  return 'Eres Jarvis, el asistente personal por voz del usuario. Responde SIEMPRE en español, de forma breve ' +
-    '(1 a 3 frases), natural y amable, como si hablaras en voz alta. No uses listas, markdown, emojis ni símbolos. ' +
-    'Si no sabes algo con seguridad, dilo. Hoy es ' + now + '.';
+  return 'Eres Jarvis, asistente por voz. Responde SIEMPRE en español con UNA o DOS frases cortas. ' +
+    'Ve directo a la respuesta: sin saludos, sin repetir la pregunta, sin consejos ni frases de relleno. ' +
+    'No uses listas, markdown ni emojis. Si no lo sabes, dilo en pocas palabras. Hoy es ' + now + '.';
 }
 
 /* ------------------------------------------------------------------ arranque */
@@ -137,6 +137,7 @@ async function startModel(id) {
 
 /* ------------------------------------------------------------------ conversación */
 let sentenceBuf = '', speakChain = Promise.resolve(), fullReply = '';
+let sentences = 0, maxSentences = 2;   // Jarvis deja de pensar al llegar a este número de frases
 
 function clean(t) { return t.replace(/[*#_`>|~]/g, '').replace(/\s+/g, ' ').trim(); }
 
@@ -155,6 +156,7 @@ function onToken({ text }) {
     if (clean(head).length > 12) {
       queueSpeak(head);
       sentenceBuf = sentenceBuf.slice(m.index + 1);
+      if (++sentences >= maxSentences) { J.stopGenerate().catch(() => {}); sentenceBuf = ''; }
       break;
     }
   }
@@ -197,7 +199,7 @@ async function webContext(question) {
 function withWeb(question, ctx) {
   const today = new Date().toLocaleDateString('es-MX', { dateStyle: 'full' });
   return `Pregunta del usuario: ${question}\n\nResultados de internet de hoy (${today}):\n${ctx}\n` +
-    'Responde la pregunta usando solo estos resultados, en 1 a 3 frases. Si no aparece la respuesta, dilo. No inventes datos.';
+    'Responde usando solo estos resultados, en una o dos frases cortas y directas. Si no aparece la respuesta, dilo. No inventes datos.';
 }
 
 async function ask(text) {
@@ -206,21 +208,28 @@ async function ask(text) {
   if (!ready) { ui.reply.textContent = 'Primero descarga el cerebro.'; return; }
   busy = true; stopRequested = false;
   fullReply = ''; sentenceBuf = ''; speakChain = Promise.resolve();
+  sentences = 0; maxSentences = 2;
   ui.you.textContent = text; ui.reply.textContent = '…';
   setMode('thinking');
   try {
     let searched = false;
+    if (window.Gmail && Gmail.wants(text)) {
+      searched = true;
+      await Gmail.answer(text);
+    } else if (window.ScreenView && ScreenView.wants(text)) {
+      searched = true;
+      await ScreenView.start();
     // Visión: si la cámara está activa (o pides "qué ves"), Jarvis mira antes de contestar.
-    if (window.Vision && (Vision.active() || Vision.wantsToSee(text))) {
+    } else if (window.Vision && (Vision.active() || Vision.wantsToSee(text))) {
       searched = true;
       await Vision.answer(text);
     } else if (webEnabled() && NEEDS_WEB.test(norm(text))) {
       const ctx = await webContext(text);
       searched = true;
       setMode('thinking');
-      await J.generate({ text: ctx ? withWeb(text, ctx) : text, maxTokens: 300 });
+      await J.generate({ text: ctx ? withWeb(text, ctx) : text, maxTokens: 110 });
     } else {
-      await J.generate({ text, maxTokens: 300 });
+      await J.generate({ text, maxTokens: 110 });
     }
     // Si el cerebro dice que no sabe algo actual, buscar y volver a contestar una vez.
     if (!stopRequested && !searched && webEnabled() && NO_ACCESS.test(norm(fullReply))) {
@@ -228,7 +237,7 @@ async function ask(text) {
       speakChain = Promise.resolve(); sentenceBuf = ''; fullReply = '';
       ui.reply.textContent = 'Déjame buscarlo en internet…';
       const ctx = await webContext(text);
-      if (ctx) { setMode('thinking'); await J.generate({ text: withWeb(text, ctx), maxTokens: 300 }); }
+      if (ctx) { setMode('thinking'); await J.generate({ text: withWeb(text, ctx), maxTokens: 110 }); }
     }
     if (!stopRequested && sentenceBuf.trim()) queueSpeak(sentenceBuf);
     sentenceBuf = '';

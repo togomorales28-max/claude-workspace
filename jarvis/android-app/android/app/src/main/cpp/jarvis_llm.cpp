@@ -209,12 +209,11 @@ Java_com_jarvis_asistente_LlamaEngine_nativeGenerate(JNIEnv * env, jclass, jstri
         cur = &tok;
         n_cur = 1;
     }
-    // Si se cortó, la memoria no incluye el último token: se reinicia la siguiente vez desde el historial.
+    // Aunque se corte (límite de frases), la memoria se conserva: la siguiente pregunta no reprocesa todo.
     g_messages.push_back({dup("assistant"), dup(response)});
     const char * tmpl = llama_model_chat_template(g_model, nullptr);
     g_prev_len = llama_chat_apply_template(tmpl, g_messages.data(), g_messages.size(), false, nullptr, 0);
     if (g_prev_len < 0) g_prev_len = 0;
-    if (g_stop) { llama_memory_clear(llama_get_memory(g_ctx), true); g_prev_len = 0; }
     return bytes(env, response);
 }
 

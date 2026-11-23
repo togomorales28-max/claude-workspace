@@ -16,6 +16,7 @@
       <div class="chips">
         <span class="chip" id="chip-brain">IA · …</span>
         <span class="chip" id="chip-net">SIN INTERNET · OK</span>
+        <button class="chip" id="chip-screen" type="button">PANTALLA</button>
         <button class="chip ok" id="open-settings" type="button">AJUSTES</button>
       </div>
     </header>
@@ -95,13 +96,34 @@
       <label class="toggle"><input type="checkbox" id="web" checked> Buscar en internet cuando pregunte algo actual (partidos, noticias, clima, precios)</label>
       <p class="muted">Usa ESPN, DuckDuckGo y Wikipedia, gratis y sin cuenta. Solo se envía la pregunta; sin internet, Jarvis contesta con lo que sabe.</p>
 
-      <h3>Google</h3>
-      <p class="muted">Gmail, Calendar y Drive llegan en la próxima versión. Jarvis te pedirá permiso de solo lectura antes de conectarse.</p>
+      <h3>Ver la pantalla</h3>
+      <p class="muted">Aparece una burbuja dorada sobre cualquier app. Tócala y Jarvis te dice qué hay en tu pantalla, sin internet. Android te pedirá permiso para «mostrar sobre otras apps» y para capturar la pantalla, y verás una notificación mientras esté activo.</p>
+      <button class="secondary" id="screen-toggle" type="button">Ver pantalla (burbuja flotante)</button>
+
+      <h3>Gmail</h3>
+      <p class="muted"><span id="gmail-state">Sin conectar.</span> Permiso de <strong>solo lectura</strong>: Jarvis puede ver remitente, asunto y una vista previa; no puede enviar, borrar ni marcar como leído. Los correos se ordenan dentro del teléfono.</p>
+      <button class="primary" id="gmail-connect" type="button">Conectar Gmail</button>
+      <button class="secondary" id="gmail-summary" type="button">Resumir mis correos</button>
+      <details id="gmail-guide" class="guide">
+        <summary>Primera vez: registrar Jarvis en Google (5 minutos)</summary>
+        <ol class="muted">
+          <li>En el navegador abre <strong>console.cloud.google.com</strong> con tu cuenta de Gmail y crea un proyecto llamado «Jarvis».</li>
+          <li>Menú → <strong>APIs y servicios → Biblioteca</strong> → busca <strong>Gmail API</strong> → <strong>Habilitar</strong>.</li>
+          <li>Menú → <strong>Google Auth Platform</strong> (o «Pantalla de consentimiento de OAuth») → <strong>Comenzar</strong>: nombre «Jarvis», tu correo, tipo <strong>Externo</strong>. En <strong>Público → Usuarios de prueba</strong> añade tu propio Gmail.</li>
+          <li><strong>Clientes → Crear cliente</strong> → tipo <strong>Android</strong>. Pega estos dos datos:
+            <div class="copy-row"><span>Paquete: <code id="gmail-pkg">com.jarvis.asistente</code></span><button class="chip ok" type="button" data-copy="gmail-pkg">Copiar</button></div>
+            <div class="copy-row"><span>SHA-1: <code id="gmail-sha1">…</code></span><button class="chip ok" type="button" data-copy="gmail-sha1">Copiar</button></div>
+          </li>
+          <li>Guarda, vuelve aquí y toca <strong>Conectar Gmail</strong>. Google dirá que la app no está verificada: es normal porque la app eres tú; toca <strong>Continuar</strong>.</li>
+        </ol>
+      </details>
 
       <h3>Permisos que usa esta app</h3>
       <ul class="muted perms">
         <li><strong>Micrófono</strong>: solo mientras le hablas.</li>
         <li><strong>Cámara</strong>: solo con la visión activada; las imágenes no se guardan ni salen del teléfono.</li>
+        <li><strong>Pantalla y mostrar sobre otras apps</strong>: solo si activas «Ver pantalla»; se analiza al tocar la burbuja.</li>
+        <li><strong>Gmail</strong>: solo lectura, y solo si lo conectas. Los correos van de Google a tu teléfono, a nadie más.</li>
         <li><strong>Internet</strong>: para descargar el cerebro una vez y, si lo dejas activado, para buscar respuestas actuales.</li>
         <li>Tus conversaciones no salen del teléfono.</li>
       </ul>
@@ -112,5 +134,6 @@
   <script src="orb.js"></script>
   <script src="app.js"></script>
   <script src="vision.js"></script>
+  <script src="extras.js"></script>
 </body>
 </html>

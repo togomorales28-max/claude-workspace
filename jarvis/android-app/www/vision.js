@@ -85,18 +85,19 @@ const Vision = (() => {
     ui.reply.textContent = 'Mirando…';
     const wantsText = /\b(lee|leeme|texto|dice|letrero|etiqueta)\b/.test(norm(question));
     const prompt = wantsText
-      ? 'Describe this image in detail, and transcribe all the visible text exactly, word by word.'
-      : 'Describe this image in detail: the main objects, people, colors, any visible text, and where things are.';
-    const { text: desc } = await J.visionDescribe({ image: img, prompt, maxTokens: wantsText ? 200 : 150 });
+      ? 'Transcribe the visible text exactly, word by word, and say in a few words what the object is.'
+      : 'In one or two short sentences, say what is in this image. Mention any visible text.';
+    if (wantsText) maxSentences = 4;
+    const { text: desc } = await J.visionDescribe({ image: img, prompt, maxTokens: wantsText ? 120 : 60 });
     if (stopRequested) return;
     ui.status.textContent = 'PENSANDO';
     fullReply = ''; sentenceBuf = '';
     await J.generate({
       text: `[Lo que ve la cámara del usuario ahora mismo, descripción automática en inglés]: ${desc.trim()}\n\n` +
         `Pregunta del usuario: ${question}\n` +
-        'Responde en español, en 1 a 3 frases, solo con lo que aparece en la descripción. ' +
+        'Responde en español con una o dos frases cortas, solo con lo que aparece en la descripción. ' +
         'Si te piden leer un texto, léelo tal cual. Habla como si tú lo estuvieras viendo.',
-      maxTokens: 260,
+      maxTokens: wantsText ? 160 : 80,
     });
   }
 
@@ -186,7 +187,7 @@ const Vision = (() => {
   return {
     active: () => on,
     wantsToSee: (t) => SEE.test(norm(t)),
-    answer, onDownload, render, stop,
+    answer, onDownload, render, stop, current,
   };
 })();
 window.Vision = Vision;
