@@ -170,6 +170,35 @@ function queueSpeak(text) {
   });
 }
 
+/* ------------------------------------------------------------------ búsqueda en internet */
+const norm = (t) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+// Preguntas sobre cosas actuales: el cerebro local no las sabe, mejor buscar primero.
+const NEEDS_WEB = /\b(hoy|ayer|anoche|manana|ahora|actual|actualmente|ultim[oa]s?|reciente|noticias?|partido|juego|jugo|juega|juegan|gano|ganaron|perdio|marcador|resultado|clima|temperatura|llover|lluvia|precio|cuesta|cuanto vale|dolar|euro|bitcoin|eleccion|presidente|estreno|busca|buscar|investiga|internet|google|vs|contra|20[2-3][0-9])\b/;
+const NO_ACCESS = /(no tengo acceso|no puedo proporcionar|no dispongo|tiempo real|informacion actualizada|no tengo informacion|no estoy actualizado|mi conocimiento)/;
+
+function webEnabled() { return navigator.onLine && store.get('jarvis-web', '1') === '1'; }
+
+async function webContext(question) {
+  setMode('thinking'); ui.status.textContent = 'BUSCANDO EN INTERNET';
+  try {
+    const { results } = await J.webSearch({ q: question });
+    if (!results || !results.length) return '';
+    let ctx = '', n = 0;
+    for (const r of results) {
+      const line = `${++n}. ${r.title} (${r.source}): ${r.snippet}\n`;
+      if (ctx.length + line.length > 1400) break;
+      ctx += line;
+    }
+    return ctx;
+  } catch { return ''; }
+}
+
+function withWeb(question, ctx) {
+  const today = new Date().toLocaleDateString('es-MX', { dateStyle: 'full' });
+  return `Pregunta del usuario: ${question}\n\nResultados de internet de hoy (${today}):\n${ctx}\n` +
+    'Responde la pregunta usando solo estos resultados, en 1 a 3 frases. Si no aparece la respuesta, dilo. No inventes datos.';
+}
+
 async function ask(text) {
   text = text.trim();
   if (!text || busy) return;
@@ -179,7 +208,23 @@ async function ask(text) {
   ui.you.textContent = text; ui.reply.textContent = '…';
   setMode('thinking');
   try {
-    await J.generate({ text, maxTokens: 300 });
+    let searched = false;
+    if (webEnabled() && NEEDS_WEB.test(norm(text))) {
+      const ctx = await webContext(text);
+      searched = true;
+      setMode('thinking');
+      await J.generate({ text: ctx ? withWeb(text, ctx) : text, maxTokens: 300 });
+    } else {
+      await J.generate({ text, maxTokens: 300 });
+    }
+    // Si el cerebro dice que no sabe algo actual, buscar y volver a contestar una vez.
+    if (!stopRequested && !searched && webEnabled() && NO_ACCESS.test(norm(fullReply))) {
+      await J.stopSpeaking().catch(() => {});
+      speakChain = Promise.resolve(); sentenceBuf = ''; fullReply = '';
+      ui.reply.textContent = 'Déjame buscarlo en internet…';
+      const ctx = await webContext(text);
+      if (ctx) { setMode('thinking'); await J.generate({ text: withWeb(text, ctx), maxTokens: 300 }); }
+    }
     if (!stopRequested && sentenceBuf.trim()) queueSpeak(sentenceBuf);
     sentenceBuf = '';
     if (!clean(fullReply)) ui.reply.textContent = '…';
@@ -293,6 +338,8 @@ ui.form.addEventListener('submit', (e) => { e.preventDefault(); sendTyped(); });
 $('open-settings').addEventListener('click', () => { renderModels(); ui.settings.hidden = false; });
 $('close-settings').addEventListener('click', () => { ui.settings.hidden = true; });
 ui.settings.addEventListener('click', (e) => { if (e.target === ui.settings) ui.settings.hidden = true; });
+$('web').checked = store.get('jarvis-web', '1') === '1';
+$('web').addEventListener('change', (e) => store.set('jarvis-web', e.target.checked ? '1' : '0'));
 ui.continuous.addEventListener('change', () => store.set('jarvis-continuous', ui.continuous.checked ? '1' : '0'));
 ui.rate.addEventListener('change', () => store.set('jarvis-rate', ui.rate.value));
 ui.voice.addEventListener('change', () => { store.set('jarvis-voice', ui.voice.value); J.setVoice({ name: ui.voice.value }); });

@@ -57,6 +57,14 @@ jobs:
             case "$code" in 200|206) ;; *) echo "::warning::Modelo no accesible: $m ($code)";; esac
           done
 
+      - name: Probar la búsqueda en internet (informativo)
+        continue-on-error: true
+        run: |
+          curl -sL -o /tmp/json.jar https://repo1.maven.org/maven2/org/json/json/20240303/json-20240303.jar
+          mkdir -p /tmp/ws && javac -nowarn -cp /tmp/json.jar -d /tmp/ws android/app/src/main/java/com/jarvis/asistente/WebSearch.java
+          java -cp /tmp/ws:/tmp/json.jar com.jarvis.asistente.WebSearch "como quedo el partido de los 49ers y vikings"
+          java -cp /tmp/ws:/tmp/json.jar com.jarvis.asistente.WebSearch "noticias de hoy en Mexico"
+
       - name: Copiar la interfaz al proyecto Android
         run: npx cap sync android
 

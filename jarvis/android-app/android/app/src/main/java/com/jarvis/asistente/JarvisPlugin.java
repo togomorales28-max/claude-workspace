@@ -51,6 +51,7 @@ public class JarvisPlugin extends Plugin {
 
     private final ExecutorService llmThread = Executors.newSingleThreadExecutor();
     private final ExecutorService ioThread = Executors.newSingleThreadExecutor();
+    private final ExecutorService netThread = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
     private final AtomicBoolean cancelDownload = new AtomicBoolean(false);
 
@@ -223,6 +224,26 @@ public class JarvisPlugin extends Plugin {
 
     @PluginMethod
     public void stopGenerate(PluginCall call) { LlamaEngine.nativeStop(); call.resolve(); }
+
+    // ---------------------------------------------------------------- búsqueda en internet (gratis, sin llaves)
+
+    @PluginMethod
+    public void webSearch(PluginCall call) {
+        final String q = call.getString("q", "");
+        netThread.execute(() -> {
+            try {
+                JSArray arr = new JSArray();
+                for (WebSearch.Result r : WebSearch.search(q)) {
+                    JSObject o = new JSObject();
+                    o.put("title", r.title); o.put("snippet", r.snippet); o.put("source", r.source);
+                    arr.put(o);
+                }
+                call.resolve(obj("results", arr));
+            } catch (Exception e) {
+                call.reject("No pude buscar en internet.");
+            }
+        });
+    }
 
     // ---------------------------------------------------------------- oído: reconocimiento de voz de Android
 
