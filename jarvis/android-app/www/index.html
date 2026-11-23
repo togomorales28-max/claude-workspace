@@ -8,6 +8,7 @@
 </head>
 <body>
   <canvas id="orb" aria-label="Núcleo de Jarvis. Tócalo para hablar."></canvas>
+  <video id="cam" playsinline muted autoplay hidden aria-label="Lo que ve la cámara"></video>
 
   <div class="app">
     <header>
@@ -29,12 +30,29 @@
       <button class="primary" id="setup-download" type="button">Descargar cerebro</button>
     </section>
 
+    <!-- Visión: descarga del modelo la primera vez -->
+    <section class="card" id="vision-setup" hidden>
+      <h2>Visión</h2>
+      <p>Para que Jarvis vea por la cámara necesita un modelo de visión de código abierto (SmolVLM). Funciona sin internet una vez descargado.</p>
+      <p class="muted" id="vision-detail"></p>
+      <div class="progress" id="vision-progress" hidden><div id="vision-bar"></div></div>
+      <p class="muted" id="vision-status"></p>
+      <div class="model-actions">
+        <button class="primary" id="vision-download" type="button">Descargar visión</button>
+        <button class="secondary" id="vision-cancel" type="button">Ahora no</button>
+      </div>
+    </section>
+
     <section class="console">
+      <button class="chip ok see" id="see" type="button" hidden>¿QUÉ VES?</button>
       <div class="status" id="status" role="status">INICIANDO</div>
       <p class="line you" id="you"></p>
       <p class="line reply" id="reply"></p>
       <form id="form" autocomplete="off">
         <input id="text" type="text" placeholder="Escríbele a Jarvis…" aria-label="Mensaje para Jarvis" enterkeyhint="send">
+        <button class="round" id="cam-btn" type="button" aria-label="Activar visión" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        </button>
         <button class="round" id="mic" type="button" aria-label="Hablar">
           <svg id="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
           <svg id="icon-send" hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -69,6 +87,10 @@
       <button class="secondary" id="speech-download" type="button">Descargar español para entenderte sin internet</button>
       <p class="muted">Para que funcione sin internet: en los ajustes de voz del teléfono descarga el idioma <strong>Español</strong> (motor de Google o Samsung). Para que te entienda sin internet: Ajustes → Administración general → Idioma → Reconocimiento de voz → descarga Español.</p>
 
+      <h3>Visión (cámara)</h3>
+      <p class="muted">Toca el botón de la cámara y pregúntale «¿qué ves?», «léeme esto» o «¿qué es esto?». La foto se analiza dentro del teléfono y no se guarda.</p>
+      <div id="vision-models"></div>
+
       <h3>Internet</h3>
       <label class="toggle"><input type="checkbox" id="web" checked> Buscar en internet cuando pregunte algo actual (partidos, noticias, clima, precios)</label>
       <p class="muted">Usa ESPN, DuckDuckGo y Wikipedia, gratis y sin cuenta. Solo se envía la pregunta; sin internet, Jarvis contesta con lo que sabe.</p>
@@ -79,6 +101,7 @@
       <h3>Permisos que usa esta app</h3>
       <ul class="muted perms">
         <li><strong>Micrófono</strong>: solo mientras le hablas.</li>
+        <li><strong>Cámara</strong>: solo con la visión activada; las imágenes no se guardan ni salen del teléfono.</li>
         <li><strong>Internet</strong>: para descargar el cerebro una vez y, si lo dejas activado, para buscar respuestas actuales.</li>
         <li>Tus conversaciones no salen del teléfono.</li>
       </ul>
@@ -88,5 +111,6 @@
   <script src="capacitor.js"></script>
   <script src="orb.js"></script>
   <script src="app.js"></script>
+  <script src="vision.js"></script>
 </body>
 </html>

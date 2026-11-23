@@ -75,3 +75,37 @@ jobs:
         with:
           name: Jarvis-apk
           path: jarvis/android-app/android/app/build/outputs/apk/release/app-release.apk
+
+  # Prueba real de la visión (fuera de Android): compila el mismo puente nativo y describe una foto con SmolVLM.
+  vision-test:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: jarvis/android-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Compilar el puente nativo para Linux
+        run: |
+          git clone --depth 1 --branch "$LLAMA_CPP_TAG" https://github.com/ggml-org/llama.cpp android/app/src/main/cpp/llama.cpp
+          cmake -S android/app/src/main/cpp -B /tmp/b -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS="-I$JAVA_HOME/include -I$JAVA_HOME/include/linux"
+          cmake --build /tmp/b --target jarvis_llm -j4
+      - name: Comprobar los archivos de visión en Hugging Face
+        run: |
+          for r in SmolVLM-256M-Instruct-GGUF SmolVLM-500M-Instruct-GGUF; do
+            echo "== $r"; curl -s "https://huggingface.co/api/models/ggml-org/$r" | python3 -c "import sys,json; [print('  ', s['rfilename']) for s in json.load(sys.stdin).get('siblings',[])]"
+          done
+      - name: Describir una foto con SmolVLM-256M
+        run: |
+          B=https://huggingface.co/ggml-org/SmolVLM-256M-Instruct-GGUF/resolve/main
+          curl -sL -o /tmp/m.gguf $B/SmolVLM-256M-Instruct-Q8_0.gguf
+          curl -sL -o /tmp/p.gguf $B/mmproj-SmolVLM-256M-Instruct-Q8_0.gguf
+          ls -la /tmp/*.gguf
+          mkdir -p /tmp/j
+          javac -d /tmp/j android/app/src/main/java/com/jarvis/asistente/LlamaEngine.java test/VisionTest.java
+          java -Djava.library.path=/tmp/b -cp /tmp/j VisionTest /tmp/m.gguf /tmp/p.gguf android/app/src/main/cpp/llama.cpp/tools/mtmd/test-1.jpeg

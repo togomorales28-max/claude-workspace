@@ -13,5 +13,11 @@ public final class LlamaEngine {
     static native void nativeStop();
     static native void nativeUnload();
 
+    // Visión (SmolVLM): describe una imagen
+    static native String nativeVisionLoad(String model, String mmproj, int nThreads);
+    static native byte[] nativeVisionDescribe(String imagePath, String prompt, int maxTokens, TokenCallback cb);
+    static native void nativeVisionStop();
+    static native void nativeVisionUnload();
+
     private LlamaEngine() {}
 }

@@ -52,6 +52,8 @@ public class JarvisPlugin extends Plugin {
     private final ExecutorService llmThread = Executors.newSingleThreadExecutor();
     private final ExecutorService ioThread = Executors.newSingleThreadExecutor();
     private final ExecutorService netThread = Executors.newSingleThreadExecutor();
+    private final ExecutorService visionThread = Executors.newSingleThreadExecutor();
+    private String visionLoaded = null;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final AtomicBoolean cancelDownload = new AtomicBoolean(false);
 
@@ -224,6 +226,54 @@ public class JarvisPlugin extends Plugin {
 
     @PluginMethod
     public void stopGenerate(PluginCall call) { LlamaEngine.nativeStop(); call.resolve(); }
+
+    // ---------------------------------------------------------------- visión (SmolVLM, dentro del teléfono)
+
+    @PluginMethod
+    public void visionLoad(PluginCall call) {
+        final File model = new File(modelsDir(), call.getString("model", ""));
+        final File mmproj = new File(modelsDir(), call.getString("mmproj", ""));
+        if (!model.exists() || !mmproj.exists()) { call.reject("La visión no está descargada."); return; }
+        visionThread.execute(() -> {
+            if (model.getName().equals(visionLoaded)) { call.resolve(); return; }
+            int threads = Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors()));
+            String err = LlamaEngine.nativeVisionLoad(model.getAbsolutePath(), mmproj.getAbsolutePath(), threads);
+            if (err != null) { visionLoaded = null; call.reject(err); return; }
+            visionLoaded = model.getName();
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
+    public void visionUnload(PluginCall call) {
+        LlamaEngine.nativeVisionStop();
+        visionThread.execute(() -> { LlamaEngine.nativeVisionUnload(); visionLoaded = null; call.resolve(); });
+    }
+
+    @PluginMethod
+    public void visionStop(PluginCall call) { LlamaEngine.nativeVisionStop(); call.resolve(); }
+
+    /** image: JPEG en base64 (sin el prefijo data:). */
+    @PluginMethod
+    public void visionDescribe(PluginCall call) {
+        final String b64 = call.getString("image", "");
+        final String prompt = call.getString("prompt", "Describe this image in detail.");
+        final int max = call.getInt("maxTokens", 160);
+        if (visionLoaded == null) { call.reject("La visión no está cargada."); return; }
+        visionThread.execute(() -> {
+            File img = new File(getContext().getCacheDir(), "vision.jpg");
+            try (FileOutputStream out = new FileOutputStream(img)) {
+                out.write(android.util.Base64.decode(b64.replaceFirst("^data:[^,]+,", ""), android.util.Base64.DEFAULT));
+            } catch (Exception e) { call.reject("No pude guardar la foto."); return; }
+            byte[] res = LlamaEngine.nativeVisionDescribe(img.getAbsolutePath(), prompt, max, piece -> {
+                notifyListeners("visionToken", obj("text", new String(piece, StandardCharsets.UTF_8)));
+                return true;
+            });
+            img.delete();
+            if (res == null) { call.reject("No pude analizar la imagen."); return; }
+            call.resolve(obj("text", new String(res, StandardCharsets.UTF_8)));
+        });
+    }
 
     // ---------------------------------------------------------------- búsqueda en internet (gratis, sin llaves)
 
@@ -466,5 +516,6 @@ public class JarvisPlugin extends Plugin {
         main.post(this::destroyRecognizer);
         if (tts != null) tts.shutdown();
         LlamaEngine.nativeStop();
+        LlamaEngine.nativeVisionStop();
     }
 }

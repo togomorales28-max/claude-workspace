@@ -105,6 +105,7 @@ async function download(m, fromSetup) {
 
 function onDownload({ file, received, total }) {
   const pct = total > 0 ? Math.round((received / total) * 100) : 0;
+  if (window.Vision && Vision.onDownload(file, received, total, pct)) return;
   ui.setupBar.style.width = pct + '%';
   ui.setupStatus.textContent = `Descargando… ${(received / 1048576).toFixed(0)} de ${(total / 1048576).toFixed(0)} MB (${pct} %)`;
   const row = document.querySelector(`[data-model="${CSS.escape(file)}"] .model-progress`);
@@ -209,7 +210,11 @@ async function ask(text) {
   setMode('thinking');
   try {
     let searched = false;
-    if (webEnabled() && NEEDS_WEB.test(norm(text))) {
+    // Visión: si la cámara está activa (o pides "qué ves"), Jarvis mira antes de contestar.
+    if (window.Vision && (Vision.active() || Vision.wantsToSee(text))) {
+      searched = true;
+      await Vision.answer(text);
+    } else if (webEnabled() && NEEDS_WEB.test(norm(text))) {
       const ctx = await webContext(text);
       searched = true;
       setMode('thinking');

@@ -7,6 +7,8 @@
 #include <vector>
 
 #include "llama.h"
+#include "mtmd.h"
+#include "mtmd-helper.h"
 
 namespace {
 
@@ -214,6 +216,139 @@ Java_com_jarvis_asistente_LlamaEngine_nativeGenerate(JNIEnv * env, jclass, jstri
     if (g_prev_len < 0) g_prev_len = 0;
     if (g_stop) { llama_memory_clear(llama_get_memory(g_ctx), true); g_prev_len = 0; }
     return bytes(env, response);
+}
+
+}  // extern "C"
+
+// ============================================================================
+// Visión: modelo pequeño (SmolVLM) que describe una imagen. Contexto propio, separado del cerebro.
+// ============================================================================
+namespace {
+std::mutex v_mutex;
+llama_model * v_model = nullptr;
+llama_context * v_ctx = nullptr;
+mtmd_context * v_mtmd = nullptr;
+llama_sampler * v_smpl = nullptr;
+llama_batch_ext * v_batch = nullptr;
+std::atomic<bool> v_stop{false};
+
+void vision_unload_locked() {
+    if (v_batch) { llama_batch_ext_free(v_batch); v_batch = nullptr; }
+    if (v_smpl) { llama_sampler_free(v_smpl); v_smpl = nullptr; }
+    if (v_mtmd) { mtmd_free(v_mtmd); v_mtmd = nullptr; }
+    if (v_ctx) { llama_free(v_ctx); v_ctx = nullptr; }
+    if (v_model) { llama_model_free(v_model); v_model = nullptr; }
+}
+}  // namespace
+
+extern "C" {
+
+JNIEXPORT jstring JNICALL
+Java_com_jarvis_asistente_LlamaEngine_nativeVisionLoad(JNIEnv * env, jclass, jstring jmodel, jstring jmmproj, jint n_threads) {
+    std::lock_guard<std::mutex> lock(v_mutex);
+    vision_unload_locked();
+    llama_backend_init();
+    mtmd_helper_log_set([](enum ggml_log_level, const char *, void *) {}, nullptr);
+
+    llama_model_params mp = llama_model_default_params();
+    mp.n_gpu_layers = 0;
+    v_model = llama_model_load_from_file(jstr(env, jmodel).c_str(), mp);
+    if (!v_model) return env->NewStringUTF("No pude abrir el modelo de visión.");
+
+    llama_context_params cp = llama_context_default_params();
+    cp.n_ctx = 4096;
+    cp.n_batch = 2048;
+    cp.n_threads = n_threads;
+    cp.n_threads_batch = n_threads;
+    v_ctx = llama_init_from_model(v_model, cp);
+    if (!v_ctx) { vision_unload_locked(); return env->NewStringUTF("No hay memoria suficiente para la visión."); }
+
+    mtmd_context_params mparams = mtmd_context_params_default();
+    mparams.use_gpu = false;
+    mparams.n_threads = n_threads;
+    mparams.print_timings = false;
+    mparams.warmup = false;
+    v_mtmd = mtmd_init_from_file(jstr(env, jmmproj).c_str(), v_model, mparams);
+    if (!v_mtmd) { vision_unload_locked(); return env->NewStringUTF("No pude abrir el proyector de visión (mmproj)."); }
+
+    v_smpl = llama_sampler_chain_init(llama_sampler_chain_default_params());
+    llama_sampler_chain_add(v_smpl, llama_sampler_init_greedy());
+    v_batch = llama_batch_ext_init(v_ctx);
+    return nullptr;
+}
+
+JNIEXPORT void JNICALL
+Java_com_jarvis_asistente_LlamaEngine_nativeVisionUnload(JNIEnv *, jclass) {
+    std::lock_guard<std::mutex> lock(v_mutex);
+    vision_unload_locked();
+}
+
+JNIEXPORT void JNICALL
+Java_com_jarvis_asistente_LlamaEngine_nativeVisionStop(JNIEnv *, jclass) { v_stop = true; }
+
+// Describe la imagen (archivo JPG/PNG). Devuelve el texto en UTF-8, o null si falla.
+JNIEXPORT jbyteArray JNICALL
+Java_com_jarvis_asistente_LlamaEngine_nativeVisionDescribe(JNIEnv * env, jclass, jstring jimage, jstring jprompt, jint max_tokens, jobject callback) {
+    std::lock_guard<std::mutex> lock(v_mutex);
+    if (!v_mtmd) return nullptr;
+    v_stop = false;
+    jmethodID on_token = callback ? env->GetMethodID(env->GetObjectClass(callback), "onToken", "([B)Z") : nullptr;
+
+    llama_memory_clear(llama_get_memory(v_ctx), true);
+    llama_sampler_reset(v_smpl);
+
+    mtmd_helper_bitmap_wrapper bw = mtmd_helper_bitmap_init_from_file(v_mtmd, jstr(env, jimage).c_str(), false, mtmd_helper_init_opt_default());
+    if (!bw.bitmap) return nullptr;
+
+    // Mensaje del usuario con la imagen, formateado con la plantilla del modelo.
+    const std::string user = std::string(mtmd_default_marker()) + "\n" + jstr(env, jprompt);
+    llama_chat_message msg{"user", user.c_str()};
+    const char * tmpl = llama_model_chat_template(v_model, nullptr);
+    std::vector<char> buf(user.size() * 2 + 512);
+    int len = llama_chat_apply_template(tmpl, &msg, 1, true, buf.data(), buf.size());
+    if (len > (int) buf.size()) { buf.resize(len); len = llama_chat_apply_template(tmpl, &msg, 1, true, buf.data(), buf.size()); }
+    std::string prompt = len > 0 ? std::string(buf.data(), len) : user;
+
+    mtmd_input_text text{prompt.c_str(), prompt.size(), true, true};
+    mtmd_input_chunks * chunks = mtmd_input_chunks_init();
+    const mtmd_bitmap * bitmaps[] = { bw.bitmap };
+    const int32_t tok_res = mtmd_tokenize(v_mtmd, chunks, &text, bitmaps, 1);
+    mtmd_bitmap_free(bw.bitmap);
+    if (tok_res != 0) { mtmd_input_chunks_free(chunks); return nullptr; }
+
+    llama_pos n_past = 0;
+    const int32_t ev = mtmd_helper_eval_chunks(v_mtmd, v_ctx, chunks, 0, 0, 2048, true, &n_past);
+    mtmd_input_chunks_free(chunks);
+    if (ev != 0) return nullptr;
+
+    const llama_vocab * vocab = llama_model_get_vocab(v_model);
+    const int n_ctx = llama_n_ctx(v_ctx);
+    std::string out, pending;
+    for (int i = 0; i < max_tokens && !v_stop && n_past < n_ctx; ++i) {
+        llama_token tok = llama_sampler_sample(v_smpl, v_ctx, -1);
+        if (llama_vocab_is_eog(vocab, tok)) break;
+        char piece[256];
+        const int n = llama_token_to_piece(vocab, tok, piece, sizeof(piece), 0, false);
+        if (n > 0) {
+            pending.append(piece, n);
+            const size_t keep = incomplete_utf8_tail(pending);
+            const std::string ready = pending.substr(0, pending.size() - keep);
+            pending.erase(0, pending.size() - keep);
+            out += ready;
+            if (on_token && !ready.empty()) {
+                jbyteArray arr = bytes(env, ready);
+                if (!env->CallBooleanMethod(callback, on_token, arr)) v_stop = true;
+                env->DeleteLocalRef(arr);
+            }
+        }
+        llama_batch_ext_clear(v_batch);
+        const int32_t idx = llama_batch_ext_add_token(v_batch, 0, tok);
+        llama_batch_ext_set_pos(v_batch, idx, &n_past);
+        llama_batch_ext_set_output_logits(v_batch, 0, true);
+        if (llama_process(v_ctx, LLAMA_PROCESS_TYPE_DECODE, v_batch) != 0) break;
+        n_past++;
+    }
+    return bytes(env, out);
 }
 
 }  // extern "C"

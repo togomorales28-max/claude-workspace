@@ -18,12 +18,17 @@ set(BUILD_SHARED_LIBS    OFF CACHE BOOL "" FORCE)
 set(GGML_NATIVE          OFF CACHE BOOL "" FORCE)
 set(GGML_OPENMP          ON  CACHE BOOL "" FORCE)
 set(GGML_CPU_KLEIDIAI    OFF CACHE BOOL "" FORCE)
+# Visión: solo la librería mtmd de llama.cpp (sin video ni herramientas)
+set(LLAMA_BUILD_MTMD     ON  CACHE BOOL "" FORCE)
+set(MTMD_VIDEO           OFF CACHE BOOL "" FORCE)
+set(LLAMA_SUBPROCESS     OFF CACHE BOOL "" FORCE)
 
 # llama.cpp se descarga (versión fija) en el paso de compilación: ver .github/workflows/jarvis-apk.yml
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/llama.cpp build-llama)
 
 add_library(jarvis_llm SHARED jarvis_llm.cpp)
-target_link_libraries(jarvis_llm llama)
+target_link_libraries(jarvis_llm llama mtmd)
+target_include_directories(jarvis_llm PRIVATE ${CMAKE_CURRENT_LIST_DIR}/llama.cpp/tools/mtmd)
 if(ANDROID)
   target_link_libraries(jarvis_llm android log)
 endif()
