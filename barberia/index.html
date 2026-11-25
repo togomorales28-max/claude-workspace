@@ -1,0 +1,726 @@
+<title>El Filo Barbería</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: booking flow on the left, a receipt-style ticket on the right; barber-pole stripe as the one signature */
+:root {
+  --bg: #F3F4F2; --surface: #FFFFFF; --surface-2: #E8EBE8; --ink: #151A22; --muted: #5B6470; --line: #D4D9D5;
+  --accent: #B02A1F; --accent-ink: #FFFFFF; --accent-soft: #F6E3E0; --steel: #24467A; --steel-soft: #E1E8F3;
+  --ok: #1E7A4C; --ok-soft: #DDF0E5; --warn: #9A5B00; --warn-soft: #F7EBD6; --pole-white: #FFFFFF;
+  --f-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F1217; --surface: #171B22; --surface-2: #20262F; --ink: #ECEEF0; --muted: #98A1AD; --line: #2C333D;
+  --accent: #E2563F; --accent-ink: #160806; --accent-soft: #3A1D19; --steel: #85A6DB; --steel-soft: #1C2738;
+  --ok: #52C48E; --ok-soft: #15291F; --warn: #E3A440; --warn-soft: #2E2413; --pole-white: #D9DDE2; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0F1217; --surface: #171B22; --surface-2: #20262F; --ink: #ECEEF0; --muted: #98A1AD; --line: #2C333D;
+  --accent: #E2563F; --accent-ink: #160806; --accent-soft: #3A1D19; --steel: #85A6DB; --steel-soft: #1C2738;
+  --ok: #52C48E; --ok-soft: #15291F; --warn: #E3A440; --warn-soft: #2E2413; --pole-white: #D9DDE2; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+button, input, textarea, select { font: inherit; color: inherit }
+button { cursor: pointer }
+:focus-visible { outline: 2px solid var(--steel); outline-offset: 2px }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+
+.pole { height: 6px; background: repeating-linear-gradient(135deg, var(--accent) 0 14px, var(--pole-white) 14px 22px, var(--steel) 22px 36px, var(--pole-white) 36px 44px); background-size: 62px 6px }
+@media (prefers-reduced-motion: no-preference) { .pole.spin { animation: pole 1.6s linear infinite } }
+@keyframes pole { to { background-position: 62px 0 } }
+
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface) }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line) }
+.top .row { display: flex; align-items: center; gap: 16px; padding-block: 12px; flex-wrap: wrap }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto }
+.brand b { font: 900 30px/1 var(--f-display); letter-spacing: .02em; text-transform: uppercase }
+.brand b span { color: var(--accent) }
+.brand small { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase }
+nav.tabs { display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 999px }
+nav.tabs a { text-decoration: none; padding: 7px 14px; border-radius: 999px; font-weight: 600; font-size: 14px; color: var(--muted); white-space: nowrap }
+nav.tabs a[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12) }
+.badge-n { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-size: 11px }
+
+.banner { margin-top: 16px; padding: 10px 14px; border-radius: var(--r); background: var(--warn-soft); color: var(--warn); font-size: 14px; font-weight: 500 }
+main { padding-block: 24px 64px }
+
+h1, h2, h3 { text-wrap: balance; margin: 0 }
+.h-view { font: 800 clamp(34px, 6vw, 52px)/.95 var(--f-display); text-transform: uppercase; letter-spacing: .01em }
+.lede { color: var(--muted); margin: 8px 0 0; max-width: 60ch }
+.label { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted) }
+
+/* Booking */
+.book { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; margin-top: 24px; align-items: start }
+@media (max-width: 900px) { .book { grid-template-columns: minmax(0, 1fr) } }
+.steps { display: grid; gap: 28px; min-width: 0 }
+.steps > section { min-width: 0 }
+.step-h { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px }
+.step-h .n { font: 800 22px/1 var(--f-display); color: var(--accent) }
+.step-h h2 { font: 800 24px/1 var(--f-display); text-transform: uppercase; letter-spacing: .02em }
+.step-h .hint { margin-left: auto; color: var(--muted); font-size: 13px }
+
+.svc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px }
+.opt { text-align: left; background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 4px; transition: border-color .15s, background-color .15s }
+.opt:hover { border-color: var(--muted) }
+.opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft) }
+.opt .t { font-weight: 700 }
+.opt .d { color: var(--muted); font-size: 13px; line-height: 1.35 }
+.opt .m { display: flex; justify-content: space-between; margin-top: 4px; font-size: 13px }
+.opt .m .p { font-weight: 600; color: var(--ink) }
+
+.barbers { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px }
+.opt.barber { grid-template-columns: 40px 1fr; align-items: center; column-gap: 12px }
+.avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font: 800 18px/1 var(--f-display); background: var(--steel-soft); color: var(--steel) }
+.avatar.any { background: var(--surface-2); color: var(--muted) }
+
+.days { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin }
+.day { flex: 0 0 auto; width: 62px; padding: 8px 0; border-radius: var(--r); border: 1.5px solid var(--line); background: var(--surface); display: grid; justify-items: center; gap: 2px }
+.day .w { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.day .dn { font: 800 24px/1 var(--f-display) }
+.day .mo { font-size: 11px; color: var(--muted) }
+.day[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--bg) }
+.day[aria-pressed="true"] .w, .day[aria-pressed="true"] .mo { color: var(--bg); opacity: .8 }
+.day:disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through }
+
+.times { margin-top: 16px; display: grid; gap: 14px }
+.times .grp { display: grid; gap: 8px }
+.time-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px }
+.tm { padding: 9px 0; border-radius: 8px; border: 1.5px solid var(--line); background: var(--surface); font-family: var(--f-mono); font-size: 14px; font-weight: 600 }
+.tm:hover:not(:disabled) { border-color: var(--steel) }
+.tm[aria-pressed="true"] { background: var(--steel); border-color: var(--steel); color: var(--surface) }
+.tm:disabled { color: var(--muted); background: var(--surface-2); border-color: transparent; text-decoration: line-through; cursor: not-allowed }
+.empty { padding: 18px; border: 1.5px dashed var(--line); border-radius: var(--r); color: var(--muted); text-align: center }
+
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.fields .full { grid-column: 1 / -1 }
+@media (max-width: 560px) { .fields { grid-template-columns: 1fr } }
+.field { display: grid; gap: 6px }
+.field label { font-size: 13px; font-weight: 600 }
+.field input, .field textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--surface); font-size: 16px }
+.field input:focus, .field textarea:focus { border-color: var(--steel); outline: none }
+.field textarea { resize: vertical; min-height: 64px }
+.field .err { color: var(--accent); font-size: 12px }
+
+/* Ticket */
+.ticket { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 84px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden }
+@media (max-width: 900px) { .ticket { position: static } }
+.ticket .in { padding: 18px; display: grid; gap: 14px }
+.ticket h3 { font: 800 22px/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em }
+.kv { display: grid; gap: 8px; font-size: 14px }
+.kv div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dotted var(--line); padding-bottom: 6px }
+.kv dt { color: var(--muted) }
+.kv dd { margin: 0; font-weight: 600; text-align: right }
+.total { display: flex; justify-content: space-between; align-items: baseline }
+.total b { font: 800 34px/1 var(--f-display) }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: 999px; border: 0; font-weight: 700; text-decoration: none; transition: transform .1s, opacity .15s }
+.btn:active:not(:disabled) { transform: scale(.98) }
+.btn:disabled { opacity: .45; cursor: not-allowed }
+.btn.primary { background: var(--accent); color: var(--accent-ink) }
+.btn.dark { background: var(--ink); color: var(--bg) }
+.btn.ghost { background: transparent; border: 1.5px solid var(--line); color: var(--ink) }
+.btn.sm { padding: 7px 12px; font-size: 13px }
+.btn.block { width: 100% }
+.policy { font-size: 12px; color: var(--muted); line-height: 1.45 }
+.resch { padding: 10px 12px; border-radius: 8px; background: var(--steel-soft); color: var(--steel); font-size: 13px; font-weight: 600; display: flex; gap: 8px; justify-content: space-between; align-items: center }
+.resch button { background: none; border: 0; color: inherit; text-decoration: underline; font-weight: 600; padding: 0 }
+
+/* Confirmation */
+.confirm { margin-top: 24px; max-width: 560px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden }
+.confirm .in { padding: 24px; display: grid; gap: 16px }
+.code { font-family: var(--f-mono); font-size: 13px; padding: 4px 10px; border-radius: 6px; background: var(--surface-2); justify-self: start }
+.actions { display: flex; gap: 8px; flex-wrap: wrap }
+
+/* Mis citas */
+.mine { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; margin-top: 24px; align-items: start }
+@media (max-width: 900px) { .mine { grid-template-columns: minmax(0, 1fr) } }
+.appt-list { display: grid; gap: 10px }
+.appt { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 14px; align-items: center }
+@media (max-width: 560px) { .appt { grid-template-columns: 64px minmax(0, 1fr) } .appt .actions { grid-column: 1 / -1 } }
+.appt .when { text-align: center; border-right: 1px solid var(--line); padding-right: 12px }
+.appt .when .dn { font: 800 30px/1 var(--f-display) }
+.appt .when .w { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.appt .what { min-width: 0 }
+.appt .what b { display: block }
+.appt .what span { color: var(--muted); font-size: 13px }
+.appt.next { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent) }
+.chip { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted) }
+.chip.confirmada { background: var(--steel-soft); color: var(--steel) }
+.chip.completada { background: var(--ok-soft); color: var(--ok) }
+.chip.no-show { background: var(--warn-soft); color: var(--warn) }
+.chip.cancelada, .chip.reprogramada { background: var(--surface-2); color: var(--muted) }
+.ask { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; font-weight: 600 }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: grid; gap: 12px }
+.stamps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px }
+.stamp { aspect-ratio: 1; max-width: 100%; border-radius: 50%; border: 1.5px dashed var(--line); display: grid; place-items: center; color: var(--line) }
+.stamp.on { border: 0; background: var(--accent); color: var(--accent-ink) }
+.stamp.free { border-style: solid; border-color: var(--accent); color: var(--accent); font: 800 13px/1 var(--f-display) }
+.stamp svg { width: 55%; height: 55% }
+.section-t { font: 800 20px/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em; margin: 8px 0 4px }
+
+/* Panel */
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 20px }
+.toolbar .date-t { font: 800 24px/1 var(--f-display); text-transform: uppercase; margin-right: auto; min-width: 0 }
+.toolbar input[type=date] { padding: 7px 10px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--surface) }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px }
+@media (max-width: 700px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px }
+.stat b { display: block; font: 800 30px/1.1 var(--f-display) }
+.stat span { font-size: 12px; color: var(--muted); font-weight: 600 }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px }
+@media (max-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr) } }
+.col { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; min-width: 0 }
+.col-h { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line) }
+.col-h b { font-weight: 700 }
+.col-h .cnt { margin-left: auto; font-size: 12px; color: var(--muted) }
+.rows { display: grid }
+.r { display: grid; grid-template-columns: 54px minmax(0, 1fr); border-bottom: 1px solid var(--line); min-height: 44px }
+.r:last-child { border-bottom: 0 }
+.r .h { font-family: var(--f-mono); font-size: 12px; color: var(--muted); padding: 12px 0 0 12px }
+.r .c { padding: 6px 10px 6px 0; min-width: 0 }
+.slot-free { width: 100%; height: 100%; min-height: 32px; border: 0; background: none; border-radius: 6px; color: transparent; font-size: 12px; text-align: left; padding: 0 8px }
+.slot-free:hover, .slot-free:focus-visible { background: var(--surface-2); color: var(--muted) }
+.slot-free.past { cursor: default }
+.slot-free.past:hover { background: none; color: transparent }
+.blk { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; padding: 0 8px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--muted); background: repeating-linear-gradient(135deg, var(--surface-2) 0 6px, transparent 6px 12px) }
+.blk button { border: 0; background: none; color: var(--muted); text-decoration: underline; font-size: 12px; padding: 0 }
+.ev { border-radius: 6px; padding: 8px 10px; background: var(--steel-soft); border-left: 3px solid var(--steel); display: grid; gap: 4px; min-width: 0 }
+.ev.completada { background: var(--ok-soft); border-left-color: var(--ok) }
+.ev.no-show { background: var(--warn-soft); border-left-color: var(--warn) }
+.ev .who { font-weight: 700; overflow-wrap: anywhere }
+.ev .meta { font-size: 12px; color: var(--muted); overflow-wrap: anywhere }
+.ev .note { font-size: 12px; font-style: italic; color: var(--muted); overflow-wrap: anywhere }
+.ev .actions { gap: 6px }
+.ev .actions button, .ev .actions a { font-size: 12px; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); text-decoration: none; color: var(--ink); font-weight: 600 }
+.legend { margin-top: 10px; font-size: 12px; color: var(--muted) }
+
+#toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px); opacity: 0; background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20; max-width: calc(100% - 32px); text-align: center }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0) }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<header class="top">
+  <div class="pole"></div>
+  <div class="wrap row">
+    <div class="brand"><b>El <span>Filo</span></b><small>Barbería</small></div>
+    <nav class="tabs" id="tabs" aria-label="Secciones"></nav>
+  </div>
+</header>
+<div class="wrap"><div id="banner"></div></div>
+<main class="wrap" id="app"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- Catalog ---------- */
+const SERVICES = [
+  { id: 'clasico', name: 'Corte clásico', desc: 'Tijera y máquina, lavado y peinado', dur: 30, price: 15 },
+  { id: 'fade', name: 'Degradado (fade)', desc: 'Skin, low o mid fade con acabado a navaja', dur: 30, price: 18 },
+  { id: 'combo', name: 'Corte + barba', desc: 'Corte completo con perfilado de barba', dur: 60, price: 25 },
+  { id: 'barba', name: 'Arreglo de barba', desc: 'Perfilado, rebaje y aceite', dur: 30, price: 10 },
+  { id: 'toalla', name: 'Afeitado tradicional', desc: 'Toalla caliente, navaja y bálsamo', dur: 30, price: 14 },
+  { id: 'nino', name: 'Corte infantil', desc: 'Menores de 12 años', dur: 30, price: 12 },
+  { id: 'color', name: 'Color o mechas', desc: 'Incluye corte y lavado', dur: 60, price: 35 },
+];
+const BARBERS = [
+  { id: 'carlos', name: 'Carlos', spec: 'Degradados y diseños' },
+  { id: 'miguel', name: 'Miguel', spec: 'Barba y afeitado' },
+  { id: 'andres', name: 'Andrés', spec: 'Cortes clásicos' },
+];
+// Opening hours per weekday (0 = domingo): [open, close] in hours
+const HOURS = { 0: null, 1: [9, 19], 2: [9, 19], 3: [9, 19], 4: [9, 19], 5: [9, 20], 6: [9, 17] };
+const CANCEL_HOURS = 2, STAMPS = 6, DAYS_AHEAD = 21;
+const WD = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+const WDL = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const MO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const dstr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseD = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const fromMin = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+const addDays = (s, n) => { const d = parseD(s); d.setDate(d.getDate() + n); return dstr(d); };
+const todayStr = () => dstr(new Date());
+const nowMin = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
+const money = n => `$${Number(n).toFixed(0)}`;
+const svcById = id => SERVICES.find(s => s.id === id);
+const barberById = id => BARBERS.find(b => b.id === id);
+const slotId = (b, d, t) => `${b}_${d}_${t.replace(':', '')}`;
+const blocksFor = (t, dur) => Array.from({ length: dur / 30 }, (_, i) => fromMin(toMin(t) + 30 * i));
+const startMs = it => parseD(it.date).getTime() + toMin(it.time) * 60000;
+const prettyDate = s => { const d = parseD(s); return `${WDL[d.getDay()]} ${d.getDate()} de ${['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][d.getMonth()]}`; };
+const rel = it => {
+  const days = Math.round((parseD(it.date) - parseD(todayStr())) / 864e5);
+  if (days === 0) return 'Hoy'; if (days === 1) return 'Mañana'; if (days > 1) return `En ${days} días`; return '';
+};
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2800); }
+const lsGet = (k, f) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; } catch { return f; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+function startsFor(date) {
+  const h = HOURS[parseD(date).getDay()]; if (!h) return [];
+  const out = []; for (let m = h[0] * 60; m < h[1] * 60; m += 30) out.push(fromMin(m)); return out;
+}
+function fitsHours(date, t, dur) { const h = HOURS[parseD(date).getDay()]; return !!h && toMin(t) + dur <= h[1] * 60; }
+function isPast(date, t) { const td = todayStr(); return date < td || (date === td && toMin(t) <= nowMin() + 15); }
+
+/* ---------- Store (shared db, or this browser in demo mode) ---------- */
+const Store = {
+  mode: 'loading', uid: null, isAdmin: false, canWrite: true, ready: false, stale: false,
+  slots: new Map(), mine: [], profile: {}, all: [], db: null, q: Promise.resolve(),
+};
+const taken = (b, d, t) => Store.slots.has(slotId(b, d, t));
+const barberFree = (b, d, t, dur) => fitsHours(d, t, dur) && blocksFor(t, dur).every(x => !taken(b, d, x));
+function pickBarber(sel, d, t, dur) {
+  if (isPast(d, t)) return null;
+  if (sel !== 'any') return barberFree(sel, d, t, dur) ? sel : null;
+  // "Sin preferencia": the barber with the fewest bookings that day gets it
+  const load = b => [...Store.slots.values()].filter(s => s.barber === b.id && s.date === d).length;
+  const free = BARBERS.filter(b => barberFree(b.id, d, t, dur)).sort((a, b) => load(a) - load(b));
+  return free[0]?.id || null;
+}
+
+const Local = {
+  key: 'elfilo-demo-v1',
+  load() { return lsGet(this.key, { slots: {}, items: [], profile: {} }); },
+  save(s) { lsSet(this.key, s); },
+  sync() { const s = this.load(); Store.slots = new Map(Object.entries(s.slots)); Store.mine = s.items; Store.all = s.items.map(i => ({ ...i, owner: 'local' })); Store.profile = s.profile; render(); },
+  async book(item, blocks) {
+    const s = this.load();
+    for (const t of blocks) if (s.slots[slotId(item.barber, item.date, t)]) throw new Error('Ese horario se acaba de ocupar. Elige otro.');
+    item.slots = blocks.map(t => { const id = slotId(item.barber, item.date, t); s.slots[id] = { barber: item.barber, date: item.date, time: t, bid: item.id, by: 'local' }; return id; });
+    s.items.push(item); s.profile = { name: item.name, phone: item.phone }; this.save(s); this.sync();
+  },
+  async setStatus(owner, bid, status) {
+    const s = this.load(); const it = s.items.find(i => i.id === bid); if (!it) return;
+    it.status = status; if (status === 'cancelada' || status === 'reprogramada') (it.slots || []).forEach(id => delete s.slots[id]);
+    this.save(s); this.sync();
+  },
+  async block(b, d, t) { const s = this.load(); s.slots[slotId(b, d, t)] = { barber: b, date: d, time: t, blocked: true, by: 'local' }; this.save(s); this.sync(); },
+  async unblock(id) { const s = this.load(); delete s.slots[id]; this.save(s); this.sync(); },
+};
+
+const Shared = {
+  async claim(id, body) {
+    const ref = Store.db.doc('slots/' + id);
+    const lease = await ref.acquire({ holder: Store.uid, ttlMs: 5000 });
+    if (!lease.acquired) return false;
+    const cur = await ref.get();
+    if (cur.exists && cur.data().by) return false;
+    await ref.set(body); return true;
+  },
+  // One write at a time per booking document
+  writeDoc(owner, fn) {
+    Store.q = Store.q.catch(() => {}).then(async () => {
+      const ref = Store.db.doc('bookings/' + owner);
+      const cur = await ref.get();
+      const d = cur.exists ? JSON.parse(JSON.stringify(cur.data())) : {};
+      d.items = fn(d.items || []); d.updated = Date.now();
+      await ref.set(d);
+    });
+    return Store.q;
+  },
+  async book(item, blocks) {
+    const claimed = [];
+    for (const t of blocks) {
+      const id = slotId(item.barber, item.date, t);
+      const ok = await this.claim(id, { barber: item.barber, date: item.date, time: t, bid: item.id, by: Store.uid, owner: Store.uid });
+      if (!ok) { for (const c of claimed) await Store.db.doc('slots/' + c).delete().catch(() => {}); throw new Error('Ese horario se acaba de ocupar. Elige otro.'); }
+      claimed.push(id);
+    }
+    item.slots = claimed;
+    await this.writeDoc(Store.uid, items => { items.push(item); return items; });
+    await Store.db.doc('bookings/' + Store.uid).update({ name: item.name, phone: item.phone });
+  },
+  async setStatus(owner, bid, status) {
+    let slots = [];
+    await this.writeDoc(owner, items => items.map(i => { if (i.id !== bid) return i; slots = i.slots || []; return { ...i, status }; }));
+    if (status === 'cancelada' || status === 'reprogramada') for (const id of slots) await Store.db.doc('slots/' + id).delete();
+  },
+  async block(b, d, t) { const ok = await this.claim(slotId(b, d, t), { barber: b, date: d, time: t, blocked: true, by: Store.uid }); if (!ok) throw new Error('Ese horario ya está ocupado.'); },
+  async unblock(id) { await Store.db.doc('slots/' + id).delete(); },
+};
+const api = () => (Store.mode === 'shared' ? Shared : Local);
+
+/* ---------- UI state ---------- */
+const saved = lsGet('elfilo-me', {});
+function firstOpenDay() { let d = todayStr(); for (let i = 0; i < 8; i++) { const ok = startsFor(d).some(t => !isPast(d, t)); if (ok) return d; d = addDays(d, 1); } return d; }
+const S = {
+  view: 'reservar', svc: 'clasico', barber: 'any', date: firstOpenDay(), time: null,
+  name: saved.name || '', phone: saved.phone || '', notes: '', errors: {}, busy: false,
+  reschedule: null, lastBooked: null, ask: null,
+  pDate: todayStr(), pFilter: 'all',
+};
+const VIEWS = ['reservar', 'mis-citas', 'panel'];
+function route() { const h = location.hash.slice(1); S.view = VIEWS.includes(h) ? h : 'reservar'; if (S.view === 'panel' && !Store.isAdmin && Store.ready) S.view = 'reservar'; render(); window.scrollTo(0, 0); }
+window.addEventListener('hashchange', route);
+
+/* ---------- Render ---------- */
+function render() {
+  renderTabs(); renderBanner();
+  const app = $('#app');
+  const focusId = document.activeElement?.id; const sel = focusId && document.activeElement.selectionStart;
+  if (S.view === 'mis-citas') app.innerHTML = viewMine();
+  else if (S.view === 'panel' && Store.isAdmin) app.innerHTML = viewPanel();
+  else app.innerHTML = S.lastBooked ? viewDone() : viewBook();
+  if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (sel != null && el.setSelectionRange) try { el.setSelectionRange(sel, sel); } catch {} } }
+}
+function upcoming() { const now = Date.now(); return Store.mine.filter(i => i.status === 'confirmada' && startMs(i) + 30 * 60000 > now).sort((a, b) => startMs(a) - startMs(b)); }
+function renderTabs() {
+  const n = upcoming().length;
+  const tabs = [['reservar', 'Reservar'], ['mis-citas', 'Mis citas' + (n ? `<span class="badge-n">${n}</span>` : '')]];
+  if (Store.isAdmin) tabs.push(['panel', 'Agenda']);
+  $('#tabs').innerHTML = tabs.map(([k, l]) => `<a href="#${k}" ${S.view === k ? 'aria-current="page"' : ''}>${l}</a>`).join('');
+}
+function renderBanner() {
+  let m = '';
+  if (Store.mode === 'local') m = 'Modo demostración: las reservas se guardan solo en este navegador. Ábrelo en Claude con tu cuenta para compartir la agenda en tiempo real.';
+  else if (Store.mode === 'shared' && !Store.canWrite) m = 'Tienes acceso de solo lectura. Pide acceso de colaborador para poder reservar.';
+  else if (Store.stale) m = 'No se pudo conectar con la agenda todavía. La disponibilidad puede no estar al día.';
+  $('#banner').innerHTML = m ? `<div class="banner">${esc(m)}</div>` : '';
+}
+
+function viewBook() {
+  const svc = svcById(S.svc);
+  const days = Array.from({ length: DAYS_AHEAD }, (_, i) => addDays(todayStr(), i));
+  const starts = startsFor(S.date);
+  const groups = [['Mañana', t => toMin(t) < 780], ['Tarde', t => toMin(t) >= 780]];
+  const avail = starts.map(t => ({ t, b: pickBarber(S.barber, S.date, t, svc.dur) }));
+  const anyFree = avail.some(a => a.b);
+  if (S.time && !avail.find(a => a.t === S.time && a.b)) S.time = null;
+  const assigned = S.time ? pickBarber(S.barber, S.date, S.time, svc.dur) : null;
+  const canBook = Store.ready && Store.canWrite && S.time && assigned && !S.busy;
+
+  return `
+  <h1 class="h-view">Reserva tu silla</h1>
+  <p class="lede">Elige servicio, barbero y hora. La disponibilidad se actualiza al instante.</p>
+  <div class="book">
+    <div class="steps">
+      <section>
+        <div class="step-h"><span class="n">1</span><h2>Servicio</h2></div>
+        <div class="svc-grid">${SERVICES.map(s => `
+          <button class="opt" data-act="svc" data-id="${s.id}" aria-pressed="${S.svc === s.id}">
+            <span class="t">${esc(s.name)}</span><span class="d">${esc(s.desc)}</span>
+            <span class="m mono"><span>${s.dur} min</span><span class="p">${money(s.price)}</span></span>
+          </button>`).join('')}</div>
+      </section>
+      <section>
+        <div class="step-h"><span class="n">2</span><h2>Barbero</h2></div>
+        <div class="barbers">
+          <button class="opt barber" data-act="barber" data-id="any" aria-pressed="${S.barber === 'any'}">
+            <span class="avatar any">✶</span><span><span class="t">Sin preferencia</span><br><span class="d">Primer barbero libre</span></span></button>
+          ${BARBERS.map(b => `
+          <button class="opt barber" data-act="barber" data-id="${b.id}" aria-pressed="${S.barber === b.id}">
+            <span class="avatar">${esc(b.name[0])}</span><span><span class="t">${esc(b.name)}</span><br><span class="d">${esc(b.spec)}</span></span></button>`).join('')}
+        </div>
+      </section>
+      <section>
+        <div class="step-h"><span class="n">3</span><h2>Fecha y hora</h2><span class="hint">${esc(prettyDate(S.date))}</span></div>
+        <div class="days" role="group" aria-label="Día">${days.map(d => {
+          const dt = parseD(d), closed = !HOURS[dt.getDay()] || !startsFor(d).some(t => !isPast(d, t));
+          return `<button class="day" data-act="date" data-id="${d}" aria-pressed="${S.date === d}" ${closed ? 'disabled' : ''} aria-label="${esc(prettyDate(d))}${closed ? ', cerrado' : ''}">
+            <span class="w">${WD[dt.getDay()]}</span><span class="dn">${dt.getDate()}</span><span class="mo">${MO[dt.getMonth()]}</span></button>`;
+        }).join('')}</div>
+        <div class="times">${!starts.length ? `<div class="empty">Los domingos estamos cerrados.</div>`
+          : !anyFree ? `<div class="empty">No quedan horas libres este día${S.barber !== 'any' ? ' con ' + esc(barberById(S.barber).name) + '. Prueba con “Sin preferencia”' : ''}. Elige otra fecha.</div>`
+          : groups.map(([label, f]) => {
+            const g = avail.filter(a => f(a.t)); if (!g.length) return '';
+            return `<div class="grp"><span class="label">${label}</span><div class="time-row">${g.map(a =>
+              `<button class="tm" data-act="time" data-id="${a.t}" aria-pressed="${S.time === a.t}" ${a.b ? '' : 'disabled'} aria-label="${a.t}${a.b ? '' : ', ocupado'}">${a.t}</button>`).join('')}</div></div>`;
+          }).join('')}
+        </div>
+      </section>
+      <section>
+        <div class="step-h"><span class="n">4</span><h2>Tus datos</h2></div>
+        <form class="fields" id="f" novalidate>
+          <div class="field"><label for="name">Nombre</label><input id="name" autocomplete="name" value="${esc(S.name)}" placeholder="Tu nombre">${S.errors.name ? `<span class="err">${S.errors.name}</span>` : ''}</div>
+          <div class="field"><label for="phone">Teléfono / WhatsApp</label><input id="phone" type="tel" autocomplete="tel" inputmode="tel" value="${esc(S.phone)}" placeholder="+34 600 123 456">${S.errors.phone ? `<span class="err">${S.errors.phone}</span>` : ''}</div>
+          <div class="field full"><label for="notes">Notas para el barbero (opcional)</label><textarea id="notes" maxlength="300" placeholder="Ej.: degradado bajo, no tocar la parte de arriba">${esc(S.notes)}</textarea></div>
+        </form>
+      </section>
+    </div>
+    <aside class="ticket" aria-label="Resumen de la reserva">
+      <div class="pole ${S.busy ? 'spin' : ''}"></div>
+      <div class="in">
+        ${S.reschedule ? `<div class="resch"><span>Reprogramando tu cita del ${esc(S.reschedule.date.slice(8))}/${esc(S.reschedule.date.slice(5, 7))} a las ${esc(S.reschedule.time)}</span><button data-act="stop-resch">Anular</button></div>` : ''}
+        <h3>Tu reserva</h3>
+        <dl class="kv">
+          <div><dt>Servicio</dt><dd>${esc(svc.name)}</dd></div>
+          <div><dt>Duración</dt><dd class="mono">${svc.dur} min</dd></div>
+          <div><dt>Barbero</dt><dd>${assigned ? esc(barberById(assigned).name) + (S.barber === 'any' ? ' <span class="chip">asignado</span>' : '') : S.barber === 'any' ? 'Sin preferencia' : esc(barberById(S.barber).name)}</dd></div>
+          <div><dt>Día</dt><dd>${esc(prettyDate(S.date))}</dd></div>
+          <div><dt>Hora</dt><dd class="mono">${S.time ? `${S.time}–${fromMin(toMin(S.time) + svc.dur)}` : '—'}</dd></div>
+        </dl>
+        <div class="total"><span class="label">Total en barbería</span><b class="mono">${money(svc.price)}</b></div>
+        <button class="btn primary block" data-act="confirm" ${canBook ? '' : 'disabled'}>${S.busy ? 'Reservando…' : !Store.ready ? 'Cargando agenda…' : !S.time ? 'Elige una hora' : S.reschedule ? 'Confirmar nuevo horario' : 'Confirmar reserva'}</button>
+        <p class="policy">Pagas en la barbería. Puedes cancelar o cambiar la hora gratis hasta ${CANCEL_HOURS} h antes desde “Mis citas”.</p>
+      </div>
+    </aside>
+  </div>`;
+}
+
+function calLink(it) {
+  const svc = svcById(it.service) || { name: it.service, dur: 30 };
+  const f = (d, t) => d.replace(/-/g, '') + 'T' + t.replace(':', '') + '00';
+  const end = fromMin(toMin(it.time) + svc.dur);
+  const p = new URLSearchParams({ action: 'TEMPLATE', text: `${svc.name} · El Filo Barbería`, dates: `${f(it.date, it.time)}/${f(it.date, end)}`, details: `Con ${barberById(it.barber)?.name || ''}. Código ${it.id.slice(-6).toUpperCase()}` });
+  return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+
+function viewDone() {
+  const it = S.lastBooked, svc = svcById(it.service);
+  return `
+  <div class="confirm">
+    <div class="pole"></div>
+    <div class="in">
+      <span class="label">Reserva confirmada</span>
+      <h1 class="h-view">${esc(rel(it) || 'Listo')}, a las <span class="mono">${esc(it.time)}</span></h1>
+      <p class="lede" style="margin:0">${esc(svc.name)} con ${esc(barberById(it.barber).name)} el ${esc(prettyDate(it.date))}. Te esperamos ${esc(it.name.split(' ')[0])}.</p>
+      <span class="code">Código ${esc(it.id.slice(-6).toUpperCase())}</span>
+      <div class="actions">
+        <a class="btn dark" href="${esc(calLink(it))}" target="_blank" rel="noopener">Añadir a Google Calendar</a>
+        <a class="btn ghost" href="#mis-citas" data-act="done">Ver mis citas</a>
+        <button class="btn ghost" data-act="again">Reservar otra</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+const scissors = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg>';
+
+function apptCard(it, opts = {}) {
+  const d = parseD(it.date), svc = svcById(it.service) || { name: it.service, dur: 30, price: it.price };
+  const canChange = it.status === 'confirmada' && startMs(it) - Date.now() > CANCEL_HOURS * 3600000;
+  const asking = S.ask === it.id;
+  return `<article class="appt ${opts.next ? 'next' : ''}">
+    <div class="when"><div class="w">${WD[d.getDay()]}</div><div class="dn">${d.getDate()}</div><div class="w">${MO[d.getMonth()]}</div></div>
+    <div class="what"><b>${esc(svc.name)} · <span class="mono">${esc(it.time)}</span></b>
+      <span>con ${esc(barberById(it.barber)?.name || '')} · <span class="mono">${money(it.price)}</span> ${opts.next ? '· ' + esc(rel(it)) : ''}</span>
+      ${it.status !== 'confirmada' ? `<div><span class="chip ${esc(it.status)}">${esc(it.status === 'no-show' ? 'no asistió' : it.status)}</span></div>` : ''}</div>
+    ${opts.actions ? `<div class="actions">${asking ? `<div class="ask">¿Cancelar esta cita? <button class="btn primary sm" data-act="cancel-yes" data-id="${it.id}">Sí, cancelar</button><button class="btn ghost sm" data-act="cancel-no">No</button></div>`
+      : canChange ? `<a class="btn ghost sm" href="${esc(calLink(it))}" target="_blank" rel="noopener">Calendario</a><button class="btn ghost sm" data-act="resch" data-id="${it.id}">Cambiar hora</button><button class="btn ghost sm" data-act="cancel" data-id="${it.id}">Cancelar</button>`
+      : it.status === 'confirmada' ? `<span class="policy">Faltan menos de ${CANCEL_HOURS} h: llama a la barbería para cambios.</span>` : ''}</div>` : ''}
+  </article>`;
+}
+
+function viewMine() {
+  const up = upcoming();
+  const past = Store.mine.filter(i => !up.includes(i)).sort((a, b) => startMs(b) - startMs(a));
+  const done = Store.mine.filter(i => i.status === 'completada').length;
+  const inCard = done % STAMPS, freeNext = inCard === STAMPS - 1;
+  return `
+  <h1 class="h-view">Mis citas</h1>
+  <p class="lede">Cambia la hora o cancela con al menos ${CANCEL_HOURS} horas de antelación.</p>
+  <div class="mine">
+    <div style="min-width:0">
+      <h2 class="section-t">Próximas</h2>
+      <div class="appt-list">${!Store.ready ? '<div class="empty">Cargando tus citas…</div>' : up.length ? up.map((it, i) => apptCard(it, { next: i === 0, actions: true })).join('')
+        : `<div class="empty">No tienes citas próximas. <a href="#reservar">Reserva una</a> en menos de un minuto.</div>`}</div>
+      ${past.length ? `<h2 class="section-t" style="margin-top:24px">Historial</h2><div class="appt-list">${past.slice(0, 20).map(it => apptCard(it)).join('')}</div>` : ''}
+    </div>
+    <aside class="card" aria-label="Tarjeta de fidelidad">
+      <span class="label">Tarjeta de fidelidad</span>
+      <h3 class="section-t" style="margin:0">${freeNext ? 'Tu próximo corte es gratis' : `${STAMPS - 1 - inCard} visitas para un corte gratis`}</h3>
+      <div class="stamps">${Array.from({ length: STAMPS }, (_, i) => i === STAMPS - 1
+        ? `<div class="stamp free" title="Corte gratis">GRATIS</div>`
+        : `<div class="stamp ${i < inCard ? 'on' : ''}">${scissors}</div>`).join('')}</div>
+      <p class="policy">Cada cita completada suma un sello. Al llenar ${STAMPS - 1}, el siguiente corte clásico no se cobra. Llevas ${done} ${done === 1 ? 'visita' : 'visitas'} en total.</p>
+    </aside>
+  </div>`;
+}
+
+function viewPanel() {
+  const d = S.pDate, starts = startsFor(d);
+  const items = Store.all.filter(i => i.date === d && i.status !== 'cancelada' && i.status !== 'reprogramada');
+  const byBid = new Map(items.map(i => [i.id, i]));
+  const active = items.filter(i => i.status !== 'no-show');
+  const revenue = items.filter(i => i.status !== 'no-show').reduce((s, i) => s + (i.price || 0), 0);
+  const capacity = starts.length * BARBERS.length;
+  const used = [...Store.slots.values()].filter(s => s.date === d && !s.blocked).length;
+  const noShows = items.filter(i => i.status === 'no-show').length;
+  const shown = S.pFilter === 'all' ? BARBERS : BARBERS.filter(b => b.id === S.pFilter);
+  const isToday = d === todayStr();
+
+  const col = b => {
+    let skip = 0; const rows = [];
+    const count = items.filter(i => i.barber === b.id).length;
+    for (const t of starts) {
+      if (skip) { skip--; continue; }
+      const sid = slotId(b.id, d, t), s = Store.slots.get(sid);
+      let c;
+      if (s && s.blocked) c = `<div class="blk"><span>Bloqueado</span><button data-act="unblock" data-id="${esc(sid)}">Liberar</button></div>`;
+      else if (s) {
+        const it = byBid.get(s.bid);
+        if (!it) c = `<div class="blk"><span>Reservado</span></div>`;
+        else {
+          const svc = svcById(it.service) || { name: it.service, dur: 30 }; skip = svc.dur / 30 - 1;
+          const wa = String(it.phone || '').replace(/\D/g, '');
+          c = `<div class="ev ${esc(it.status)}">
+            <span class="who">${esc(it.name)}</span>
+            <span class="meta"><span class="mono">${esc(it.time)}–${fromMin(toMin(it.time) + svc.dur)}</span> · ${esc(svc.name)} · <span class="mono">${money(it.price)}</span></span>
+            <span class="meta mono">${esc(it.phone)}</span>
+            ${it.notes ? `<span class="note">“${esc(it.notes)}”</span>` : ''}
+            ${it.status !== 'confirmada' ? `<span><span class="chip ${esc(it.status)}">${it.status === 'no-show' ? 'no asistió' : esc(it.status)}</span></span>` : ''}
+            <div class="actions">
+              ${it.status === 'confirmada' ? `<button data-act="st" data-st="completada" data-id="${it.id}" data-owner="${esc(it.owner)}">✓ Atendido</button><button data-act="st" data-st="no-show" data-id="${it.id}" data-owner="${esc(it.owner)}">No vino</button>` : `<button data-act="st" data-st="confirmada" data-id="${it.id}" data-owner="${esc(it.owner)}">Deshacer</button>`}
+              ${wa.length >= 7 ? `<a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
+              <button data-act="copy" data-txt="${esc(it.phone)}">Copiar tel.</button>
+              ${S.ask === it.id ? `<button data-act="st" data-st="cancelada" data-id="${it.id}" data-owner="${esc(it.owner)}" style="color:var(--accent)">Confirmar cancelación</button>` : `<button data-act="cancel" data-id="${it.id}">Cancelar</button>`}
+            </div></div>`;
+        }
+      } else {
+        const past = isPast(d, t);
+        c = `<button class="slot-free ${past ? 'past' : ''}" ${past ? 'disabled' : `data-act="block" data-b="${b.id}" data-t="${t}"`} aria-label="${t} libre${past ? '' : ', bloquear'}">${past ? '' : 'Libre · bloquear'}</button>`;
+      }
+      rows.push(`<div class="r"><span class="h">${t}</span><div class="c">${c}</div></div>`);
+    }
+    return `<section class="col"><div class="col-h"><span class="avatar">${esc(b.name[0])}</span><b>${esc(b.name)}</b><span class="cnt">${count} ${count === 1 ? 'cita' : 'citas'}</span></div><div class="rows">${rows.join('')}</div></section>`;
+  };
+
+  return `
+  <h1 class="h-view">Agenda</h1>
+  <p class="lede">Vista de la barbería: marca asistencias, contacta clientes y bloquea huecos para descansos o citas por teléfono.</p>
+  <div class="toolbar">
+    <span class="date-t">${esc(prettyDate(d))}${isToday ? ' · hoy' : ''}</span>
+    <button class="btn ghost sm" data-act="pday" data-n="-1" aria-label="Día anterior">←</button>
+    <button class="btn ghost sm" data-act="ptoday">Hoy</button>
+    <button class="btn ghost sm" data-act="pday" data-n="1" aria-label="Día siguiente">→</button>
+    <input type="date" id="pdate" value="${d}" aria-label="Ir a fecha">
+  </div>
+  <div class="stats">
+    <div class="stat"><b class="mono">${active.length}</b><span>Citas</span></div>
+    <div class="stat"><b class="mono">${money(revenue)}</b><span>Ingresos previstos</span></div>
+    <div class="stat"><b class="mono">${capacity ? Math.round(used / capacity * 100) : 0}%</b><span>Ocupación</span></div>
+    <div class="stat"><b class="mono">${noShows}</b><span>No asistieron</span></div>
+  </div>
+  <div class="toolbar">
+    <span class="label">Barbero</span>
+    ${[['all', 'Todos'], ...BARBERS.map(b => [b.id, b.name])].map(([k, l]) => `<button class="btn sm ${S.pFilter === k ? 'dark' : 'ghost'}" data-act="pfilter" data-id="${k}">${esc(l)}</button>`).join('')}
+  </div>
+  ${!starts.length ? `<div class="empty" style="margin-top:16px">La barbería está cerrada este día.</div>`
+    : `<div class="cols" style="${shown.length === 1 ? 'grid-template-columns:minmax(0,1fr)' : ''}">${shown.map(col).join('')}</div>
+       <p class="legend">Toca un hueco libre para bloquearlo. Los bloqueos no aparecen como disponibles para los clientes.</p>`}`;
+}
+
+/* ---------- Events ---------- */
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const a = el.dataset.act, id = el.dataset.id;
+  if (a === 'svc') { S.svc = id; }
+  else if (a === 'barber') { S.barber = id; }
+  else if (a === 'date') { S.date = id; S.time = null; }
+  else if (a === 'time') { S.time = id; }
+  else if (a === 'confirm') { e.preventDefault(); return confirmBooking(); }
+  else if (a === 'again') { S.lastBooked = null; }
+  else if (a === 'done') { S.lastBooked = null; return; }
+  else if (a === 'stop-resch') { S.reschedule = null; }
+  else if (a === 'cancel') { S.ask = id; }
+  else if (a === 'cancel-no') { S.ask = null; }
+  else if (a === 'cancel-yes') {
+    S.ask = null;
+    try { await api().setStatus(Store.uid, id, 'cancelada'); toast('Cita cancelada'); } catch (err) { toast(errMsg(err)); }
+  }
+  else if (a === 'resch') {
+    const it = Store.mine.find(i => i.id === id); if (!it) return;
+    S.reschedule = it; S.svc = it.service; S.barber = it.barber; S.date = it.date; S.time = null; S.lastBooked = null;
+    location.hash = '#reservar'; toast('Elige el nuevo día y hora'); return;
+  }
+  else if (a === 'st') {
+    S.ask = null;
+    try { await api().setStatus(el.dataset.owner, id, el.dataset.st); toast(el.dataset.st === 'cancelada' ? 'Cita cancelada' : 'Agenda actualizada'); } catch (err) { toast(errMsg(err)); }
+  }
+  else if (a === 'block') { try { await api().block(el.dataset.b, S.pDate, el.dataset.t); toast(`${el.dataset.t} bloqueado`); } catch (err) { toast(errMsg(err)); } }
+  else if (a === 'unblock') { try { await api().unblock(id); toast('Hueco liberado'); } catch (err) { toast(errMsg(err)); } }
+  else if (a === 'pday') { S.pDate = addDays(S.pDate, Number(el.dataset.n)); }
+  else if (a === 'ptoday') { S.pDate = todayStr(); }
+  else if (a === 'pfilter') { S.pFilter = id; }
+  else if (a === 'copy') {
+    const txt = el.dataset.txt;
+    try { await navigator.clipboard.writeText(txt); toast('Teléfono copiado'); } catch { toast(txt); }
+    return;
+  }
+  render();
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'name' || t.id === 'phone' || t.id === 'notes') { S[t.id] = t.value; if (S.errors[t.id]) { S.errors[t.id] = null; } }
+});
+document.addEventListener('change', e => { if (e.target.id === 'pdate' && e.target.value) { S.pDate = e.target.value; render(); } });
+document.addEventListener('submit', e => e.preventDefault());
+
+function errMsg(err) {
+  if (err && err.code === 'quota_exceeded') return 'La agenda está llena de registros antiguos. Avisa a la barbería.';
+  if (err && err.code === 'invalid_argument') return 'No tienes permiso para hacer este cambio.';
+  return (err && err.message) || 'No se pudo guardar. Inténtalo de nuevo.';
+}
+
+async function confirmBooking() {
+  const svc = svcById(S.svc);
+  S.errors = {};
+  if (S.name.trim().length < 2) S.errors.name = 'Escribe tu nombre.';
+  if (S.phone.replace(/\D/g, '').length < 7) S.errors.phone = 'Escribe un teléfono válido (mínimo 7 dígitos).';
+  if (S.errors.name || S.errors.phone) { render(); document.getElementById(S.errors.name ? 'name' : 'phone')?.focus(); return; }
+  const barber = pickBarber(S.barber, S.date, S.time, svc.dur);
+  if (!barber) { toast('Esa hora ya no está libre. Elige otra.'); S.time = null; return render(); }
+  const item = {
+    id: 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    service: svc.id, barber, date: S.date, time: S.time, price: svc.price,
+    name: S.name.trim().slice(0, 60), phone: S.phone.trim().slice(0, 30), notes: S.notes.trim().slice(0, 300),
+    status: 'confirmada', createdAt: Date.now(),
+  };
+  S.busy = true; render();
+  try {
+    await api().book(item, blocksFor(S.time, svc.dur));
+    if (S.reschedule) { await api().setStatus(Store.uid, S.reschedule.id, 'reprogramada'); S.reschedule = null; }
+    lsSet('elfilo-me', { name: item.name, phone: item.phone });
+    S.lastBooked = item; S.time = null; S.notes = '';
+    window.scrollTo(0, 0);
+  } catch (err) { toast(errMsg(err)); S.time = null; }
+  S.busy = false; render();
+}
+
+/* ---------- Boot ---------- */
+function startLocal() { Store.mode = 'local'; Store.uid = 'local'; Store.isAdmin = true; Store.canWrite = true; Store.ready = true; Local.sync(); route(); }
+
+async function boot() {
+  route();
+  if (!window.claude || !window.claude.use) return startLocal();
+  let db = null, user = null;
+  try { [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch {}
+  const uid = db && user ? await user.id().catch(() => null) : null;
+  if (!db || !uid) return startLocal();
+  Store.mode = 'shared'; Store.db = db; Store.uid = uid;
+  Store.isAdmin = !!(await user.canEdit().catch(() => false));
+  const w = await user.can('data.write').catch(() => null);
+  Store.canWrite = w !== false;
+
+  let pending = Store.isAdmin ? 3 : 2;
+  const timer = setTimeout(() => { Store.stale = true; Store.ready = true; render(); }, 10000);
+  const arrived = snap => { if (!snap.metadata.fromCache && pending > 0 && --pending === 0) { clearTimeout(timer); Store.stale = false; } Store.ready = true; };
+  const fail = () => { clearTimeout(timer); Store.ready = true; render(); };
+
+  db.collection('slots').where('date', '>=', addDays(todayStr(), -7)).onSnapshot(snap => {
+    Store.slots = new Map(snap.docs.map(d => [d.id, d.data()])); arrived(snap); render();
+  }, fail);
+  db.doc('bookings/' + uid).onSnapshot(snap => {
+    const d = snap.exists ? snap.data() : {};
+    Store.mine = (d.items || []).map(i => ({ ...i, owner: uid }));
+    if (!S.name && d.name) S.name = d.name; if (!S.phone && d.phone) S.phone = d.phone;
+    if (!Store.isAdmin) Store.all = Store.mine;
+    arrived(snap); render();
+  }, fail);
+  if (Store.isAdmin) db.collection('bookings').onSnapshot(snap => {
+    Store.all = snap.docs.flatMap(d => (d.data().items || []).map(i => ({ ...i, owner: d.id }))); arrived(snap); render();
+  }, fail);
+  route();
+}
+boot();
+</script>
