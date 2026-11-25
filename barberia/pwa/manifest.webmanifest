@@ -1,0 +1,21 @@
+{
+  "name": "El Filo Barbería",
+  "short_name": "El Filo",
+  "description": "Reserva tu cita en la barbería",
+  "lang": "es",
+  "start_url": "./#reservar",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F4F2",
+  "theme_color": "#1B2B45",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "Reservar", "url": "./#reservar" },
+    { "name": "Mis citas", "url": "./#mis-citas" }
+  ]
+}
