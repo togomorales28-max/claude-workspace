@@ -254,6 +254,10 @@ h1, h2, h3 { text-wrap: balance; margin: 0 }
 .hrow select { padding: 6px 8px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--surface); font-family: var(--f-mono) }
 @media (max-width: 480px) { .hrow { grid-template-columns: 1fr } }
 
+.link-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding-block: 12px; border-top: 1px solid var(--line) }
+.link-row b { display: block }
+.link-row input { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--surface-2); font-size: 13px; min-width: 0 }
+.seg { margin-top: 16px }
 .install-card { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: center }
 .install-card .ic { width: 56px; height: 56px; border-radius: 14px; overflow: hidden; display: block }
 
@@ -362,7 +366,7 @@ function fitsHours(date, t, dur) { const h = hoursOf(parseD(date).getDay()); ret
 function isPast(date, t) { const td = todayStr(); return date < td || (date === td && toMin(t) <= nowMin() + 15); }
 
 /* ---------- Store (shared db, or this device in standalone/demo mode) ---------- */
-const Store = { mode: 'loading', uid: null, isAdmin: false, canWrite: true, ready: false, stale: false, slots: new Map(), mine: [], all: [], db: null, assets: null, q: Promise.resolve() };
+const Store = { cfgLoaded: false, mode: 'loading', uid: null, isAdmin: false, canWrite: true, ready: false, stale: false, slots: new Map(), mine: [], all: [], db: null, assets: null, q: Promise.resolve() };
 const taken = (b, d, t) => Store.slots.has(slotId(b, d, t));
 const barberFree = (b, d, t, dur) => fitsHours(d, t, dur) && blocksFor(t, dur).every(x => !taken(b, d, x));
 function pickBarber(sel, d, t, dur) {
@@ -474,16 +478,18 @@ function firstOpenDay() { let d = todayStr(); for (let i = 0; i < 8; i++) { if (
 const S = {
   view: 'reservar', svc: 'clasico', barber: 'any', date: firstOpenDay(), time: null,
   name: saved.name || '', phone: saved.phone || '', notes: '', errors: {}, busy: false,
-  reschedule: null, lastBooked: null, ask: null, pDate: todayStr(), pFilter: 'all',
+  reschedule: null, lastBooked: null, ask: null, pDate: todayStr(), pFilter: 'all', pTab: 'agenda',
   edit: null, shopDraft: null, hoursDraft: null, uploading: false, saving: false,
 };
-const VIEWS = ['reservar', 'mis-citas', 'agenda', 'gestion'];
-const ADMIN_VIEWS = ['agenda', 'gestion'];
+// Links: #reservar (cliente), #con-<barbero> (reservar con ese barbero), #barbero (panel), #panel-<barbero> (panel filtrado)
 function route() {
   const h = location.hash.slice(1);
-  S.view = VIEWS.includes(h) ? h : 'reservar';
-  if (ADMIN_VIEWS.includes(S.view) && Store.ready && !Store.isAdmin) S.view = 'reservar';
-  if (S.view === 'gestion') { S.shopDraft = { ...CFG.shop }; S.hoursDraft = JSON.parse(JSON.stringify(CFG.hours)); }
+  S.view = 'reservar';
+  if (h.startsWith('con-')) { S.barber = h.slice(4); S.lastBooked = null; }
+  else if (h === 'barbero' || h === 'agenda' || h === 'gestion') S.view = 'barbero';
+  else if (h.startsWith('panel-')) { S.view = 'barbero'; S.pFilter = h.slice(6); S.pTab = 'agenda'; }
+  if (S.view === 'barbero' && Store.ready && !Store.isAdmin) S.view = 'reservar';
+  S.shopDraft = { ...CFG.shop }; S.hoursDraft = JSON.parse(JSON.stringify(CFG.hours));
   render(); window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);
@@ -491,7 +497,7 @@ window.addEventListener('hashchange', route);
 /* ---------- Render ---------- */
 const ICONS = {
   reservar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>',
-  'mis-citas': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+  barbero: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
   agenda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
   gestion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg>',
 };
@@ -499,9 +505,7 @@ function render() {
   renderHeader(); renderBanner();
   const app = $('#app');
   const ae = document.activeElement, focusId = ae && ae.id, sel = focusId && ae.selectionStart;
-  if (S.view === 'mis-citas') app.innerHTML = viewMine();
-  else if (S.view === 'agenda' && Store.isAdmin) app.innerHTML = viewPanel();
-  else if (S.view === 'gestion' && Store.isAdmin) app.innerHTML = viewManage();
+  if (S.view === 'barbero' && Store.isAdmin) app.innerHTML = viewBarber();
   else app.innerHTML = S.lastBooked ? viewDone() : viewBook();
   if (focusId) { const el = document.getElementById(focusId); if (el && el !== document.activeElement) { el.focus({ preventScroll: true }); if (sel != null && el.setSelectionRange) try { el.setSelectionRange(sel, sel); } catch {} } }
 }
@@ -511,15 +515,14 @@ function renderHeader() {
   const last = words.pop();
   $('#brand').innerHTML = (words.length ? esc(words.join(' ')) + ' ' : '') + `<span>${esc(last)}</span>`;
   $('#brand').parentElement.querySelector('small').textContent = CFG.shop.tagline || '';
-  const n = upcoming().length;
-  const tabs = [['reservar', 'Reservar'], ['mis-citas', 'Mis citas']];
-  if (Store.isAdmin) tabs.push(['agenda', 'Agenda'], ['gestion', 'Gestión']);
-  $('#tabs').innerHTML = tabs.map(([k, l]) => `<a href="#${k}" ${S.view === k ? 'aria-current="page"' : ''}>${ICONS[k]}<span>${l}</span>${k === 'mis-citas' && n ? `<span class="badge-n">${n}</span>` : ''}</a>`).join('');
+  const tabs = Store.isAdmin ? [['reservar', 'Cliente'], ['barbero', 'Barbero']] : [];
+  $('#tabs').hidden = !tabs.length;
+  $('#tabs').innerHTML = tabs.map(([k, l]) => `<a href="#${k}" ${S.view === k ? 'aria-current="page"' : ''}>${ICONS[k]}<span>${l}</span></a>`).join('');
   $('#install').innerHTML = Install.can() ? `<button class="btn dark sm" data-act="install">Instalar app</button>` : '';
 }
 function renderBanner() {
   let m = '';
-  if (Store.mode === 'local') m = Install.standalone() ? '' : 'Modo independiente: las reservas se guardan en este dispositivo. Ábrela en Claude con tu cuenta para compartir la agenda en tiempo real.';
+  if (Store.mode === 'local') m = Install.standalone() ? '' : 'Modo de prueba: las reservas se guardan solo en este dispositivo.';
   else if (Store.mode === 'shared' && !Store.canWrite) m = 'Tienes acceso de solo lectura. Pide acceso de colaborador para poder reservar.';
   else if (Store.stale) m = 'No se pudo conectar con la agenda todavía. La disponibilidad puede no estar al día.';
   $('#banner').innerHTML = m ? `<div class="banner">${esc(m)}</div>` : '';
@@ -531,7 +534,7 @@ function viewBook() {
   const list = svcList(); if (!list.find(s => s.id === S.svc)) S.svc = list[0]?.id;
   const svc = svcById(S.svc);
   if (!svc) return `<h1 class="h-view">Reserva tu silla</h1><div class="empty" style="margin-top:20px">Todavía no hay servicios disponibles.</div>`;
-  if (S.barber !== 'any' && !barberList().find(b => b.id === S.barber)) S.barber = 'any';
+  if (Store.cfgLoaded && S.barber !== 'any' && !barberList().find(b => b.id === S.barber)) S.barber = 'any';
   const days = Array.from({ length: DAYS_AHEAD }, (_, i) => addDays(todayStr(), i));
   const starts = startsFor(S.date);
   const avail = starts.map(t => ({ t, b: pickBarber(S.barber, S.date, t, svc.dur) }));
@@ -606,10 +609,11 @@ function viewBook() {
         </dl>
         <div class="total"><span class="label">Total en barbería</span><b class="mono">${money(svc.price)}</b></div>
         <button class="btn primary block" data-act="confirm" ${canBook ? '' : 'disabled'}>${S.busy ? 'Reservando…' : !Store.ready ? 'Cargando agenda…' : !S.time ? 'Elige una hora' : S.reschedule ? 'Confirmar nuevo horario' : 'Confirmar reserva'}</button>
-        <p class="policy">Pagas en la barbería. Puedes cancelar o cambiar la hora gratis hasta ${CANCEL_HOURS} h antes desde “Mis citas”.</p>
+        <p class="policy">Pagas en la barbería. Puedes cancelar o cambiar la hora gratis hasta ${CANCEL_HOURS} h antes más abajo.</p>
       </div>
     </aside>
-  </div>`;
+  </div>
+  ${myAppointments()}`;
 }
 
 function calLink(it) {
@@ -632,8 +636,7 @@ function viewDone() {
       <span class="code">Código ${esc(it.id.slice(-6).toUpperCase())}</span>
       <div class="actions">
         <a class="btn dark" href="${esc(calLink(it))}" target="_blank" rel="noopener">Añadir a Google Calendar</a>
-        <a class="btn ghost" href="#mis-citas" data-act="done">Ver mis citas</a>
-        <button class="btn ghost" data-act="again">Reservar otra</button>
+        <button class="btn ghost" data-act="again">Listo</button>
       </div>
     </div>
   </div>`;
@@ -656,39 +659,10 @@ function apptCard(it, opts = {}) {
   </article>`;
 }
 
-function viewMine() {
-  const up = upcoming();
-  const past = Store.mine.filter(i => !up.includes(i)).sort((a, b) => startMs(b) - startMs(a));
-  const done = Store.mine.filter(i => i.status === 'completada').length;
-  const inCard = done % STAMPS, freeNext = inCard === STAMPS - 1;
-  return `
-  <h1 class="h-view">Mis citas</h1>
-  <p class="lede">Cambia la hora o cancela con al menos ${CANCEL_HOURS} horas de antelación.</p>
-  <div class="mine">
-    <div style="min-width:0">
-      <h2 class="section-t">Próximas</h2>
-      <div class="appt-list">${!Store.ready ? '<div class="empty">Cargando tus citas…</div>' : up.length ? up.map((it, i) => apptCard(it, { next: i === 0, actions: true })).join('')
-        : `<div class="empty">No tienes citas próximas. <a href="#reservar">Reserva una</a> en menos de un minuto.</div>`}</div>
-      ${past.length ? `<h2 class="section-t" style="margin-top:24px">Historial</h2><div class="appt-list">${past.slice(0, 20).map(it => apptCard(it)).join('')}</div>` : ''}
-    </div>
-    <div style="display:grid;gap:16px;min-width:0">
-      <aside class="card" aria-label="Tarjeta de fidelidad">
-        <span class="label">Tarjeta de fidelidad</span>
-        <h3 class="section-t" style="margin:0">${freeNext ? 'Tu próximo corte es gratis' : `${STAMPS - 1 - inCard} visitas para un corte gratis`}</h3>
-        <div class="stamps">${Array.from({ length: STAMPS }, (_, i) => i === STAMPS - 1 ? `<div class="stamp free" title="Corte gratis">GRATIS</div>` : `<div class="stamp ${i < inCard ? 'on' : ''}">${scissorsIcon}</div>`).join('')}</div>
-        <p class="policy">Cada cita completada suma un sello. Al llenar ${STAMPS - 1}, el siguiente corte clásico no se cobra. Llevas ${done} ${done === 1 ? 'visita' : 'visitas'} en total.</p>
-      </aside>
-      ${installCard()}
-    </div>
-  </div>`;
-}
-
-function installCard() {
-  if (Install.standalone()) return '';
-  const how = Install.can() ? `<button class="btn dark sm" data-act="install">Instalar app</button>`
-    : Install.ios() ? `<p class="policy">En iPhone: toca <b>Compartir</b> y luego <b>Añadir a pantalla de inicio</b>.</p>`
-    : `<p class="policy">En el móvil, abre el menú del navegador y elige <b>Añadir a pantalla de inicio</b>. En el ordenador, ábrela en la app de escritorio de Claude y elige <b>Instalar como app</b>.</p>`;
-  return `<aside class="card"><div class="install-card"><img class="ic" src="${esc(artUrl('poste'))}" alt=""><div><b>Llévala en el móvil</b><p class="policy">Abre la reserva desde tu pantalla de inicio, como una app.</p></div></div>${how}</aside>`;
+function myAppointments() {
+  const up = upcoming(); if (!up.length) return '';
+  return `<section id="mis" style="margin-top:32px"><h2 class="section-t">Tus próximas citas</h2>
+    <div class="appt-list" style="max-width:760px">${up.map((it, i) => apptCard(it, { next: i === 0, actions: true })).join('')}</div></section>`;
 }
 
 function viewPanel() {
@@ -741,8 +715,6 @@ function viewPanel() {
   };
 
   return `
-  <h1 class="h-view">Agenda</h1>
-  <p class="lede">Marca asistencias, contacta clientes y bloquea huecos para descansos o citas por teléfono.</p>
   <div class="toolbar">
     <span class="date-t">${esc(prettyDate(d))}${isToday ? ' · hoy' : ''}</span>
     <button class="btn ghost sm" data-act="pday" data-n="-1" aria-label="Día anterior">←</button>
@@ -808,8 +780,6 @@ function viewManage() {
   const hourOpts = (sel, from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i).map(h => `<option value="${h}" ${h === sel ? 'selected' : ''}>${pad(h)}:00</option>`).join('');
   const editing = k => S.edit && S.edit.kind === k;
   return `
-  <h1 class="h-view">Gestión</h1>
-  <p class="lede">Cambia servicios, precios, fotos, barberos y horario. Los cambios se ven al momento en la página de reservas.</p>
   <div class="mgr">
     <section class="card span">
       <div class="card-h"><h2>Servicios</h2>${editing('svc') && S.edit.isNew ? '' : `<button class="btn dark sm" data-act="add" data-kind="svc">+ Añadir servicio</button>`}</div>
@@ -835,6 +805,41 @@ function viewManage() {
         ${h ? `<div class="sel"><select id="h-from-${d}" data-hour="${d}:0" aria-label="Apertura ${WDL[d]}">${hourOpts(h[0], 6, 22)}</select><span>a</span><select id="h-to-${d}" data-hour="${d}:1" aria-label="Cierre ${WDL[d]}">${hourOpts(h[1], 7, 23)}</select></div>` : `<span class="policy">Cerrado</span>`}</div>`; }).join('')}
       </div>
       <div class="actions"><button class="btn primary sm" data-act="shop-save" ${S.saving ? 'disabled' : ''}>Guardar datos y horario</button></div>
+    </section>
+  </div>`;
+}
+
+const ARTIFACT_URL = 'https://claude.ai/artifact/VmSsWgW4Pcx6YqaW6zGech';
+function baseUrl() { return Store.mode === 'shared' ? ARTIFACT_URL : location.href.split('#')[0]; }
+function viewBarber() {
+  const tabs = [['agenda', 'Agenda'], ['catalogo', 'Servicios y horario'], ['enlaces', 'Enlaces para tu web']];
+  return `
+  <h1 class="h-view">Panel del barbero</h1>
+  <div class="toolbar seg" role="tablist">${tabs.map(([k, l]) => `<button class="btn sm ${S.pTab === k ? 'dark' : 'ghost'}" role="tab" aria-selected="${S.pTab === k}" data-act="ptab" data-id="${k}">${l}</button>`).join('')}</div>
+  ${S.pTab === 'catalogo' ? viewManage() : S.pTab === 'enlaces' ? viewLinks() : viewPanel()}`;
+}
+function linkRow(i, title, desc, url) {
+  const snippet = `<a href="${url}" target="_blank" rel="noopener">${title}</a>`;
+  return `<div class="link-row">
+    <div><b>${esc(title)}</b><span class="policy">${esc(desc)}</span></div>
+    <input id="lk-${i}" class="mono" readonly value="${esc(url)}" aria-label="Enlace: ${esc(title)}" onfocus="this.select()">
+    <div class="actions"><button class="btn dark sm" data-act="copy" data-txt="${esc(url)}" data-msg="Enlace copiado">Copiar enlace</button><button class="btn ghost sm" data-act="copy" data-txt="${esc(snippet)}" data-msg="Código para tu web copiado">Copiar botón HTML</button></div>
+  </div>`;
+}
+function viewLinks() {
+  const base = baseUrl(); let i = 0;
+  return `<div class="mgr">
+    <section class="card span">
+      <div class="card-h"><h2>Para tus clientes</h2></div>
+      <p class="policy">Pon estos enlaces en tu web, Instagram o Google. El cliente entra directo a reservar.</p>
+      ${linkRow(i++, 'Reservar cita', 'Página de reservas con todos los barberos', base + '#reservar')}
+      ${barberList().map(b => linkRow(i++, 'Reservar con ' + b.name, 'Entra con ' + b.name + ' ya elegido', base + '#con-' + b.id)).join('')}
+    </section>
+    <section class="card span">
+      <div class="card-h"><h2>Para el barbero</h2></div>
+      <p class="policy">Abren directo este panel. Solo funcionan para quien tenga permiso de editor; un cliente que los abra verá la página de reservas.</p>
+      ${linkRow(i++, 'Panel del barbero', 'Agenda de todos', base + '#barbero')}
+      ${barberList().map(b => linkRow(i++, 'Agenda de ' + b.name, 'Solo las citas de ' + b.name, base + '#panel-' + b.id)).join('')}
     </section>
   </div>`;
 }
@@ -898,7 +903,8 @@ document.addEventListener('click', async e => {
   else if (a === 'pday') S.pDate = addDays(S.pDate, Number(el.dataset.n));
   else if (a === 'ptoday') S.pDate = todayStr();
   else if (a === 'pfilter') S.pFilter = id;
-  else if (a === 'copy') { const txt = el.dataset.txt; try { await navigator.clipboard.writeText(txt); toast('Teléfono copiado'); } catch { toast(txt); } return; }
+  else if (a === 'copy') { const txt = el.dataset.txt; try { await navigator.clipboard.writeText(txt); toast(el.dataset.msg || 'Teléfono copiado'); } catch { toast('No se pudo copiar: selecciona el texto y cópialo'); } return; }
+  else if (a === 'ptab') { S.pTab = id; S.edit = null; S.ask = null; }
   else if (a === 'install') { return Install.run(); }
   // Gestión
   else if (a === 'add') { S.errors = {}; S.edit = { kind, isNew: true, data: kind === 'svc' ? { id: '', name: '', desc: '', dur: 30, price: 15, img: 'art:poste' } : { id: '', name: '', spec: '', img: '' } }; }
@@ -980,7 +986,7 @@ async function confirmBooking() {
 }
 
 /* ---------- Boot ---------- */
-function startLocal() { Store.mode = 'local'; Store.uid = 'local'; Store.isAdmin = true; Store.canWrite = true; Store.ready = true; Local.sync(); route(); }
+function startLocal() { Store.cfgLoaded = true; Store.mode = 'local'; Store.uid = 'local'; Store.isAdmin = true; Store.canWrite = true; Store.ready = true; Local.sync(); route(); }
 
 async function boot() {
   route();
@@ -1003,7 +1009,7 @@ async function boot() {
   const arrived = snap => { if (!snap.metadata.fromCache && pending > 0 && --pending === 0) { clearTimeout(timer); Store.stale = false; } Store.ready = true; };
   const fail = () => { clearTimeout(timer); Store.ready = true; render(); };
 
-  db.doc('config/shop').onSnapshot(snap => { CFG = normCfg(snap.exists ? snap.data() : null); arrived(snap); render(); }, fail);
+  db.doc('config/shop').onSnapshot(snap => { CFG = normCfg(snap.exists ? snap.data() : null); Store.cfgLoaded = true; arrived(snap); render(); }, fail);
   db.collection('slots').where('date', '>=', addDays(todayStr(), -7)).onSnapshot(snap => { Store.slots = new Map(snap.docs.map(d => [d.id, d.data()])); arrived(snap); render(); }, fail);
   db.doc('bookings/' + uid).onSnapshot(snap => {
     const d = snap.exists ? snap.data() : {};
