@@ -1,0 +1,149 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --color-ink-950: #0e0e0f;
+  --color-ink-900: #141415;
+  --color-ink-850: #19191b;
+  --color-ink-800: #1f1f22;
+  --color-ink-750: #26262a;
+  --color-ink-700: #2e2e33;
+  --color-ink-600: #3c3c42;
+  --color-ink-500: #5a5a62;
+  --color-ink-400: #85858d;
+  --color-ink-300: #a9a9b0;
+  --color-ink-200: #cfcfd4;
+  --color-ink-100: #ececef;
+
+  --color-ember-300: #f6b07a;
+  --color-ember-400: #f0914a;
+  --color-ember-500: #e8792b;
+  --color-ember-600: #c8611a;
+  --color-ember-900: #3a2414;
+
+  --color-ok: #6cbf8a;
+  --color-warn: #e3b448;
+  --color-bad: #e6675a;
+  --color-info: #7fa9d9;
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-ink-900 text-ink-100 font-sans antialiased;
+    font-feature-settings: 'ss01';
+  }
+  ::selection {
+    background: var(--color-ember-500);
+    color: #111;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px; /* evita zoom en iOS */
+  }
+  @media (min-width: 768px) {
+    input,
+    select,
+    textarea {
+      font-size: 14px;
+    }
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ember-500);
+    outline-offset: 2px;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.anim-rise {
+  animation: rise 260ms var(--ease-out-quart) both;
+}
+.anim-fade {
+  animation: fade 180ms ease-out both;
+}
+.anim-pop {
+  animation: pop 220ms var(--ease-out-quart) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-rise,
+  .anim-fade,
+  .anim-pop {
+    animation: none;
+  }
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  @page {
+    size: letter;
+    margin: 12mm;
+  }
+}
