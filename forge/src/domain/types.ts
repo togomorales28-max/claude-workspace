@@ -1,3 +1,5 @@
+import type { WebEstimatorConfig } from './webEstimator';
+
 // Modelos de dominio de FORGE.
 // Todos los montos se guardan en MXN como números (pesos con centavos).
 // Los IDs son strings (UUID) para facilitar una futura sincronización con Supabase.
@@ -140,6 +142,8 @@ export interface Settings {
   defaultDeliveryTime: string;
   quoteFooter: string;
   onboarded: boolean;
+  /** Configuración del estimador público para la web del taller. */
+  web: WebEstimatorConfig;
 }
 
 /** Precio de referencia de un trabajo ya cobrado (para el estimador por escala). */

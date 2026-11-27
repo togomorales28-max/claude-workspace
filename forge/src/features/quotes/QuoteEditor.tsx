@@ -76,12 +76,19 @@ function QuoteEditor({ initial, isNew }: { initial: Quote; isNew: boolean }) {
   const navigate = useNavigate();
   const clients = useClients();
   const materials = useMaterials();
-  const [q, setQ] = useState<Quote>(initial);
+  const [q, setQ] = useState<Quote>(() => {
+    const { webEstimate: _omit, ...rest } = initial as Quote & { webEstimate?: string };
+    return rest;
+  });
   const [step, setStep] = useState(0);
   const [dirty, setDirty] = useState(isNew && !!initial.lines.length);
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
-  const [newClient, setNewClient] = useState<NewClient | null>(null);
+  // Cliente aún no registrado (p. ej. solicitud del estimador web): se registra al guardar.
+  const [newClient, setNewClient] = useState<NewClient | null>(
+    isNew && initial.clientId === null && initial.clientName ? { name: initial.clientName, phone: initial.clientPhone } : null,
+  );
+  const webEstimate = (initial as Quote & { webEstimate?: string }).webEstimate;
   const [picker, setPicker] = useState<null | 'material' | 'consumable'>(null);
   const [sheet, setSheet] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
@@ -209,6 +216,13 @@ function QuoteEditor({ initial, isNew }: { initial: Quote; isNew: boolean }) {
           </Button>
         </div>
       </div>
+
+      {webEstimate && (
+        <div className="mb-4 rounded-lg border border-info/30 bg-info/10 px-4 py-3 text-sm text-info">
+          Solicitud del estimador web. Tu cliente vio un estimado de {webEstimate}; el precio quedó fijado en el punto medio. Agrega materiales y
+          mano de obra para confirmar tu ganancia, o quita el precio manual en el paso Ganancia.
+        </div>
+      )}
 
       {/* Pasos */}
       <nav aria-label="Pasos" className="scrollbar-none -mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">

@@ -14,6 +14,35 @@ Funciona **sin servidor**: todos los datos se guardan en el navegador (IndexedDB
 - **Clientes** con su historial de cotizaciones y trabajos realizados.
 - **Configuración**: datos del taller, logotipo, mano de obra por hora, ganancia, desperdicio, imprevistos, IVA, folios, condiciones y respaldo/restauración en JSON. Incluye un modo de demostración que se puede eliminar.
 
+## Instalar como app
+
+FORGE es una app web instalable (PWA): se instala desde el navegador, queda con su ícono en la pantalla de inicio o en el escritorio y funciona **sin internet** después de la primera visita.
+
+- **Android / Chrome / Edge (Windows, Mac):** botón **Instalar app** en el menú lateral (o en el ícono ⬇ de la barra superior en celular), o el ícono de instalar en la barra de direcciones.
+- **iPhone / iPad:** abrir en Safari → Compartir → **Agregar a inicio** (FORGE muestra estas instrucciones).
+
+## Estimador para la página web del taller
+
+En **Estimador web** el taller define un precio por metro lineal, metro cuadrado o pieza para cada tipo de trabajo, más un precio mínimo y un rango (±%). FORGE genera:
+
+- **Código para insertar** (`<iframe>` que se ajusta solo a su altura) para WordPress, Wix, Google Sites o cualquier HTML.
+- **Enlace directo** para Facebook, Instagram, Google Maps o el estado de WhatsApp.
+
+El cliente elige el trabajo, escribe las medidas (metros o pies) y ve un rango de precio. Con **Enviar por WhatsApp** le llega al taller un mensaje con los datos y un enlace **Abrir en FORGE** que crea la cotización ya llenada (cliente, tipo de trabajo, medidas y precio estimado); al guardarla se registra el cliente.
+
+Las tarifas viajan dentro del enlace (no hay servidor ni base de datos pública): si cambian los precios, se copia el código otra vez.
+
+## Publicar gratis en GitHub Pages
+
+El repositorio incluye `.github/workflows/forge-pages.yml`, que prueba, compila y publica `forge/dist`.
+
+1. En GitHub: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. Fusiona estos cambios a `main` (o ejecuta el flujo **Publicar FORGE en GitHub Pages** desde la pestaña Actions).
+3. La app queda en `https://<usuario>.github.io/<repositorio>/` y el widget en `.../widget.html`.
+4. En FORGE → Estimador web, escribe esa dirección en "Dirección donde está publicado FORGE" y copia el código.
+
+También funciona en Netlify, Vercel o Cloudflare Pages (directorio `forge`, comando `npm run build`, salida `dist`).
+
 ## Fórmulas
 
 ```
@@ -54,7 +83,9 @@ src/
   data/       IndexedDB (Dexie), repositorios, fábrica de cotizaciones, demo y respaldo.
   lib/        Hooks de datos en vivo, PDF (jsPDF), documento del cliente, compartir, utilidades.
   components/ Sistema de UI propio (botones, campos, modales, layout).
-  features/   Pantallas: dashboard, quotes, estimator, materials, clients, settings.
+  features/   Pantallas: dashboard, quotes, estimator, web (estimador público), materials, clients, settings.
+  widget/     Estimador público (widget.html): solo React + cálculos, sin base de datos ni datos privados.
+public/       Manifiesto PWA, íconos y service worker (sw.js).
 tests/        Pruebas de cálculos.
 ```
 

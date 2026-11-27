@@ -40,7 +40,9 @@ export function ClientsPage() {
           </Button>
         }
       />
-      {clients && clients.length === 0 ? (
+      {!clients ? (
+        <div className="h-40" />
+      ) : clients.length === 0 ? (
         <div className="rounded-xl border border-ink-750 bg-ink-850">
           <EmptyState
             icon={Users}

@@ -13,6 +13,8 @@ import { ClientDetail } from '@/features/clients/ClientDetail';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 import { EstimatorPage } from '@/features/estimator/EstimatorPage';
 import { EmptyState, Button } from '@/components/ui';
+import { WebEstimatorPage } from '@/features/web/WebEstimatorPage';
+import { RequestImport } from '@/features/web/RequestImport';
 
 function RouteError() {
   const err = useRouteError() as Error | { statusText?: string } | undefined;
@@ -43,6 +45,8 @@ const router = createHashRouter([
       { path: 'cotizaciones/:id/editar', element: <QuoteEditorPage /> },
       { path: 'cotizaciones/:id', element: <QuoteView /> },
       { path: 'estimador', element: <EstimatorPage /> },
+      { path: 'web', element: <WebEstimatorPage /> },
+      { path: 'solicitud', element: <RequestImport /> },
       { path: 'materiales', element: <MaterialsPage /> },
       { path: 'clientes', element: <ClientsPage /> },
       { path: 'clientes/:id', element: <ClientDetail /> },

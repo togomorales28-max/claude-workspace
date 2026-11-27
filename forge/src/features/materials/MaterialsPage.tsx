@@ -87,7 +87,9 @@ export function MaterialsPage() {
         </div>
       )}
 
-      {materials && materials.length === 0 ? (
+      {!materials ? (
+        <div className="h-40" />
+      ) : materials.length === 0 ? (
         <div className="rounded-xl border border-ink-750 bg-ink-850">
           <EmptyState
             icon={Package}

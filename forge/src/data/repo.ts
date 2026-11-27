@@ -1,7 +1,7 @@
 import { db } from './db';
 import type { Client, Material, Quote, QuoteStatus, ReferencePrice, Settings } from '@/domain/types';
 import { calculate } from '@/domain/calc';
-import { CATEGORY_KIND, STARTER_MATERIALS } from '@/domain/constants';
+import { CATEGORY_KIND, JOB_TYPES, STARTER_MATERIALS } from '@/domain/constants';
 
 /**
  * Capa de acceso a datos. La UI solo usa estas funciones (nunca Dexie directamente para escribir),
@@ -41,13 +41,26 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultDeliveryTime: '10 días hábiles a partir del anticipo',
   quoteFooter: 'Precios sujetos a cambio sin previo aviso después de la vigencia. No incluye trabajos de albañilería salvo que se indique.',
   onboarded: false,
+  web: {
+    shopName: '',
+    whatsapp: '',
+    title: 'Calcula el precio aproximado de tu trabajo',
+    intro: 'Elige el tipo de trabajo, escribe las medidas y recibe un estimado al instante. Después te confirmamos el precio exacto.',
+    disclaimer: 'Precio estimado de referencia. El precio final se confirma después de medir en sitio y elegir materiales y acabados.',
+    rangePct: 10,
+    roundTo: 50,
+    accent: '#e8792b',
+    theme: 'light',
+    appUrl: '',
+    items: JOB_TYPES.map((j) => ({ jobType: j.id, label: j.label, enabled: false, method: j.scale, rate: 0, minimum: 0 })),
+  },
 };
 
 // ---------- Settings ----------
 export const settingsRepo = {
   async get(): Promise<Settings> {
     const s = await db.settings.get('settings');
-    return { ...DEFAULT_SETTINGS, ...(s ?? {}) };
+    return { ...DEFAULT_SETTINGS, ...(s ?? {}), web: { ...DEFAULT_SETTINGS.web, ...(s?.web ?? {}) } };
   },
   async save(patch: Partial<Settings>) {
     const current = await settingsRepo.get();

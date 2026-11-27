@@ -83,7 +83,9 @@ export function QuotesList() {
         </div>
       </div>
 
-      {quotes && filtered.length === 0 ? (
+      {!quotes ? (
+        <div className="h-40" />
+      ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-ink-750 bg-ink-850">
           <EmptyState
             icon={FileText}

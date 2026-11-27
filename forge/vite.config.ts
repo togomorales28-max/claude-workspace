@@ -7,5 +7,13 @@ export default defineConfig({
   base: './',
   plugins: [react(), tailwindcss()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  build: {
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        widget: fileURLToPath(new URL('./widget.html', import.meta.url)),
+      },
+    },
+  },
   test: { environment: 'node' },
 });

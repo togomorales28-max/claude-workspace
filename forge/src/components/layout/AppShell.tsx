@@ -1,13 +1,15 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { LayoutDashboard, FileText, Package, Users, Settings as Cog, Plus, Ruler } from 'lucide-react';
+import { LayoutDashboard, FileText, Package, Users, Settings as Cog, Plus, Ruler, Globe } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useSettings } from '@/lib/hooks';
+import { InstallButton } from './InstallButton';
 
 const NAV = [
   { to: '/', label: 'Panel', icon: LayoutDashboard, end: true },
   { to: '/cotizaciones', label: 'Cotizaciones', icon: FileText },
   { to: '/estimador', label: 'Estimador', icon: Ruler },
+  { to: '/web', label: 'Estimador web', icon: Globe },
   { to: '/materiales', label: 'Materiales', icon: Package },
   { to: '/clientes', label: 'Clientes', icon: Users },
   { to: '/configuracion', label: 'Configuración', icon: Cog },
@@ -34,7 +36,7 @@ export function AppShell() {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  const hideFab = pathname.startsWith('/cotizaciones/') || pathname === '/configuracion';
+  const hideFab = pathname.startsWith('/cotizaciones/') || pathname === '/configuracion' || pathname === '/web';
 
   return (
     <div className="min-h-dvh lg:pl-60">
@@ -71,6 +73,9 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
+        <div className="px-3 pb-2">
+          <InstallButton />
+        </div>
         <div className="border-t border-ink-750 px-5 py-4 text-[11px] leading-relaxed text-ink-500">
           Datos guardados en este dispositivo.
           <br />
@@ -81,9 +86,15 @@ export function AppShell() {
       {/* Barra superior móvil */}
       <header className="no-print sticky top-0 z-30 flex h-14 items-center justify-between border-b border-ink-750 bg-ink-900/90 px-4 backdrop-blur lg:hidden">
         <Logo />
-        <NavLink to="/configuracion" aria-label="Configuración" className="grid size-9 place-items-center rounded-lg text-ink-300 hover:bg-ink-800">
-          <Cog className="size-5" />
-        </NavLink>
+        <div className="flex items-center gap-1">
+          <InstallButton compact />
+          <NavLink to="/web" aria-label="Estimador web" className="grid size-9 place-items-center rounded-lg text-ink-300 hover:bg-ink-800">
+            <Globe className="size-5" />
+          </NavLink>
+          <NavLink to="/configuracion" aria-label="Configuración" className="grid size-9 place-items-center rounded-lg text-ink-300 hover:bg-ink-800">
+            <Cog className="size-5" />
+          </NavLink>
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-[1320px] px-4 pb-28 pt-5 sm:px-6 lg:px-10 lg:pb-12 lg:pt-8">
@@ -95,7 +106,7 @@ export function AppShell() {
         aria-label="Principal móvil"
         className="no-print fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-ink-750 bg-ink-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       >
-        {NAV.slice(0, 5).map(({ to, label, icon: Icon, end }) => (
+        {NAV.filter((n) => n.to !== '/web' && n.to !== '/configuracion').map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}

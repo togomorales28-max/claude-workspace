@@ -5,7 +5,10 @@ import type { Settings } from '@/domain/types';
 
 /** Configuración en vivo. `undefined` mientras carga. */
 export function useSettings(): Settings | undefined {
-  return useLiveQuery(async () => ({ ...DEFAULT_SETTINGS, ...((await db.settings.get('settings')) ?? {}) }), []);
+  return useLiveQuery(async () => {
+    const s = await db.settings.get('settings');
+    return { ...DEFAULT_SETTINGS, ...(s ?? {}), web: { ...DEFAULT_SETTINGS.web, ...(s?.web ?? {}) } };
+  }, []);
 }
 
 export const useMaterials = () => useLiveQuery(() => db.materials.orderBy('name').toArray(), []);
