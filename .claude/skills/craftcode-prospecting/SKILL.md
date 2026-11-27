@@ -66,9 +66,14 @@ descartes un lead por no tener correo.
    cd ~/.claude/skills/local-lead-finder
    ~/.venvs/local-lead-finder/bin/python setup_check.py
    ~/.venvs/local-lead-finder/bin/python find_leads.py "barbería" "Nogales, Sonora" \
-     --country mx --language es --limit 30 --no-sheet --no-crm \
+     --country mx --language es --limit 30 --no-sheet --no-crm --fast --no-verify-emails \
      --output "$OLDPWD/leads/craftcode-barberia-nogales-$(date +%F)/apify.csv"
    ```
+   **En Claude Code en la nube, `--fast --no-verify-emails` es obligatorio**: el contenedor no
+   resuelve DNS ni abre webs arbitrarias, así que la comprobación local marcaría todas las webs
+   como "rotas" y vaciaría todos los correos. Después audita cada web con WebFetch y aplica la
+   tabla de `website_status` de abajo. En un equipo local con internet completo puedes quitar
+   esas dos opciones.
    No uses `--email` (envío masivo) sin aprobación explícita.
 4. **Alternativa a Apify: `google-maps-lead-generation`** (ScrapeGraphAI + Playwright).
    Requiere una API key de LLM (`GEMINI_API_KEY` tiene nivel gratuito; OpenAI/Anthropic son de
@@ -78,6 +83,9 @@ descartes un lead por no tener correo.
    ~/.venvs/gmaps-leads/bin/python tu_script.py
    # en el script: p.chromium.launch(executable_path="/opt/pw-browsers/chromium")
    ```
+   En la nube no funciona tal cual: la red del entorno no permite abrir Google Maps ni webs
+   arbitrarias desde el contenedor. Úsala en un equipo local o en un entorno con acceso a red
+   sin restricciones.
    Su generador de consultas (`query`) produce sectores genéricos ("Cantonment", "IT
    Corridor") que no existen en Nogales: sustitúyelos por las colonias reales.
 
