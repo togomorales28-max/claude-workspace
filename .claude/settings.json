@@ -1,0 +1,20 @@
+{
+  "enabledPlugins": {
+    "rea@rea": true,
+    "ecc@ecc": true
+  },
+  "extraKnownMarketplaces": {
+    "rea": {
+      "source": {
+        "source": "github",
+        "repo": "morluto/rea"
+      }
+    },
+    "ecc": {
+      "source": {
+        "source": "github",
+        "repo": "affaan-m/ECC"
+      }
+    }
+  }
+}
