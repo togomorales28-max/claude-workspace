@@ -3,87 +3,87 @@
   "files": {
     "01_intro_a": {
       "file": "01_intro_a.wav",
-      "durationInFrames": 57
+      "durationInFrames": 60
     },
     "02_intro_b": {
       "file": "02_intro_b.wav",
-      "durationInFrames": 47
+      "durationInFrames": 50
     },
     "03_objetivo_a": {
       "file": "03_objetivo_a.wav",
-      "durationInFrames": 73
+      "durationInFrames": 75
     },
     "04_objetivo_b": {
       "file": "04_objetivo_b.wav",
-      "durationInFrames": 58
+      "durationInFrames": 59
     },
     "05_rey": {
       "file": "05_rey.wav",
-      "durationInFrames": 67
+      "durationInFrames": 69
     },
     "06_dama": {
       "file": "06_dama.wav",
-      "durationInFrames": 64
+      "durationInFrames": 67
     },
     "07_torre": {
       "file": "07_torre.wav",
-      "durationInFrames": 58
+      "durationInFrames": 60
     },
     "08_alfil": {
       "file": "08_alfil.wav",
-      "durationInFrames": 46
+      "durationInFrames": 47
     },
     "09_caballo": {
       "file": "09_caballo.wav",
-      "durationInFrames": 82
+      "durationInFrames": 83
     },
     "10_peon_a": {
       "file": "10_peon_a.wav",
-      "durationInFrames": 84
+      "durationInFrames": 88
     },
     "11_peon_b": {
       "file": "11_peon_b.wav",
-      "durationInFrames": 41
+      "durationInFrames": 47
     },
     "12_jaque": {
       "file": "12_jaque.wav",
-      "durationInFrames": 75
+      "durationInFrames": 77
     },
     "13_jaque_mate": {
       "file": "13_jaque_mate.wav",
-      "durationInFrames": 90
+      "durationInFrames": 91
     },
     "14_enroque": {
       "file": "14_enroque.wav",
-      "durationInFrames": 84
+      "durationInFrames": 86
     },
     "15_promocion": {
       "file": "15_promocion.wav",
-      "durationInFrames": 77
+      "durationInFrames": 84
     },
     "16_partida_intro": {
       "file": "16_partida_intro.wav",
-      "durationInFrames": 38
+      "durationInFrames": 40
     },
     "17_e4": {
       "file": "17_e4.wav",
-      "durationInFrames": 32
+      "durationInFrames": 34
     },
     "18_e5": {
       "file": "18_e5.wav",
-      "durationInFrames": 32
+      "durationInFrames": 35
     },
     "19_cf3": {
       "file": "19_cf3.wav",
-      "durationInFrames": 37
+      "durationInFrames": 39
     },
     "20_cc6": {
       "file": "20_cc6.wav",
-      "durationInFrames": 33
+      "durationInFrames": 34
     },
     "21_ac4": {
       "file": "21_ac4.wav",
-      "durationInFrames": 36
+      "durationInFrames": 38
     },
     "22_centro": {
       "file": "22_centro.wav",
@@ -91,11 +91,11 @@
     },
     "23_final_a": {
       "file": "23_final_a.wav",
-      "durationInFrames": 40
+      "durationInFrames": 43
     },
     "24_final_b": {
       "file": "24_final_b.wav",
-      "durationInFrames": 69
+      "durationInFrames": 70
     }
   }
 }

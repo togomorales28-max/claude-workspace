@@ -54,10 +54,10 @@ Si Remotion no puede descargar su navegador (red restringida), indícale uno loc
 
 La voz está generada con **Kokoro**, un sistema de texto a voz neuronal, gratuito y de código abierto (licencia Apache-2.0). Sus archivos de modelo se publican en GitHub: [thewh1teagle/kokoro-onnx](https://github.com/thewh1teagle/kokoro-onnx).
 
-- La voz por defecto es `ef_dora`, femenina y juvenil. Las alternativas masculinas son `em_alex` y `em_santa`.
+- La voz es `em_alex`, masculina y juvenil. Otras opciones: `ef_dora` (femenina) y `em_santa` (masculina, más grave).
 - El acento es latinoamericano: la pronunciación se genera con la variante `es-419` de espeak-ng, que usa *seseo* (s en lugar de θ) y *yeísmo* (y en lugar de ll).
 - Las casillas se leen en voz alta ("e cuatro", "efe tres", "ce seis").
-- Cada toma se ajusta a su tiempo (solo `10_peon_a` se aceleró, a 1,27×) y se normaliza.
+- Cada toma se ajusta a su tiempo (solo `10_peon_a` se aceleró, a 1,23×) y se normaliza.
 - Los subtítulos se sincronizan con la duración real de cada toma.
 - La música baja unos 11 dB mientras habla la voz. Así la voz queda unos 9 dB por encima de la música y los efectos.
 
@@ -65,7 +65,7 @@ Para regenerarla (por ejemplo, con otra voz o tras cambiar el guion):
 
 ```bash
 pip install kokoro-onnx soundfile
-python3 scripts/generate_voice.py --voice em_alex   # descarga el modelo (~350 MB) la primera vez
+python3 scripts/generate_voice.py --voice ef_dora   # descarga el modelo (~350 MB) la primera vez
 npm run ajedrez:voz                                  # registra las tomas
 npm run ajedrez:render
 ```

@@ -69,15 +69,15 @@
     {
       "id": "10_peon_a",
       "scene": "piezas",
-      "start": 825,
-      "end": 908,
+      "start": 822,
+      "end": 914,
       "text": "El *peón* avanza | una casilla, | o *dos* en su | primera jugada."
     },
     {
       "id": "11_peon_b",
       "scene": "piezas",
-      "start": 912,
-      "end": 955,
+      "start": 916,
+      "end": 958,
       "text": "Y *captura* en diagonal."
     },
     {

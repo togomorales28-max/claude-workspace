@@ -35,11 +35,11 @@ El alfil: solo en diagonal.
 El caballo se mueve en L… ¡y salta otras piezas!
 
 10
-00:00:27,500 --> 00:00:30,267
+00:00:27,400 --> 00:00:30,467
 El peón avanza una casilla, o dos en su primera jugada.
 
 11
-00:00:30,400 --> 00:00:31,833
+00:00:30,533 --> 00:00:31,933
 Y captura en diagonal.
 
 12

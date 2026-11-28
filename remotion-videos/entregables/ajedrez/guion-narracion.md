@@ -33,9 +33,9 @@ en su ventana ("Duración máx."). Después ejecuta `npm run ajedrez:voz` y vuel
 | `06_dama` | 15,2 s | 3,1 s | La **dama**: recta o diagonal, sin límite. |
 | `07_torre` | 18,3 s | 2,7 s | La **torre**: horizontal y vertical. |
 | `08_alfil` | 21,0 s | 2,5 s | El **alfil**: solo en diagonal. |
-| `09_caballo` | 23,5 s | 4,0 s | El **caballo** se mueve en **L**… ¡y salta otras piezas! |
-| `10_peon_a` | 27,5 s | 2,9 s | El **peón** avanza una casilla, o **dos** en su primera jugada. |
-| `11_peon_b` | 30,4 s | 1,8 s | Y **captura** en diagonal. |
+| `09_caballo` | 23,5 s | 3,9 s | El **caballo** se mueve en **L**… ¡y salta otras piezas! |
+| `10_peon_a` | 27,4 s | 3,1 s | El **peón** avanza una casilla, o **dos** en su primera jugada. |
+| `11_peon_b` | 30,5 s | 1,7 s | Y **captura** en diagonal. |
 
 ## Escena 4 — Reglas importantes (32,0–47,0 s)
 

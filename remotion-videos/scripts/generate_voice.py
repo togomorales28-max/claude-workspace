@@ -5,8 +5,8 @@ open-source neural TTS (Apache-2.0) whose model files are published on GitHub:
 https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0
 
   pip install kokoro-onnx soundfile
-  python3 scripts/generate_voice.py                 # voz por defecto: ef_dora
-  python3 scripts/generate_voice.py --voice em_alex # voz masculina
+  python3 scripts/generate_voice.py                 # voz por defecto: em_alex (masculina)
+  python3 scripts/generate_voice.py --voice ef_dora # voz femenina
 
 The model (~350 MB) is downloaded once into .tts-models/ (git-ignored).
 Each line of src/ajedrez/data/narration.json becomes
@@ -88,7 +88,7 @@ def finish(audio, sr, target_rms_db=-19.0):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--voice", default="ef_dora", help="ef_dora | em_alex | em_santa")
+    ap.add_argument("--voice", default="em_alex", help="ef_dora | em_alex | em_santa")
     ap.add_argument("--speed", type=float, default=1.05)
     ap.add_argument("--max-speed", type=float, default=1.35)
     args = ap.parse_args()
