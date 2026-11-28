@@ -114,6 +114,10 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
 .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 9px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
 .copybox { width: 100%; min-height: 160px; font-family: var(--mono); font-size: 12.5px; }
+.metal-head, .metal-row { display: grid; grid-template-columns: minmax(0, 1fr) 140px 84px; gap: 8px; align-items: center; }
+.sub-h { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); margin-bottom: 6px; }
+.rate b { color: var(--ink); }
+@media (max-width: 480px) { .metal-head, .metal-row { grid-template-columns: minmax(0, 1fr) 104px 70px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -121,23 +125,143 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
 
 <script type="application/json" id="mw-config">{
   "business": "Mi Herrería",
-  "whatsapp": "",
+  "whatsapp": "+526313029172",
   "countryCode": "1",
   "currency": "USD",
   "unit": "ft",
   "rangePct": 15,
-  "roundTo": 10,
+  "roundTo": 17,
+  "wastePct": 10,
+  "labor": {
+    "payPerDay": 40,
+    "minPerPerson": 40,
+    "maxPersons": 2
+  },
   "disclaimer": "Este es un estimado automático. El precio final puede variar según las medidas exactas, el diseño, los materiales y la instalación. Te confirmamos el precio después de revisar tu proyecto.",
+  "metals": [
+    {
+      "id": "tc2",
+      "name": "Tubo cuadrado 2\" × 2\" cal. 14",
+      "price": 0
+    },
+    {
+      "id": "tc15",
+      "name": "Tubo cuadrado 1½\" × 1½\" cal. 16",
+      "price": 0
+    },
+    {
+      "id": "tc1",
+      "name": "Tubo cuadrado 1\" × 1\" cal. 16",
+      "price": 0
+    },
+    {
+      "id": "tc34",
+      "name": "Tubo cuadrado ¾\" × ¾\" cal. 18",
+      "price": 0
+    },
+    {
+      "id": "bc12",
+      "name": "Barra cuadrada maciza ½\"",
+      "price": 0
+    },
+    {
+      "id": "ang",
+      "name": "Ángulo 1½\" × 1½\" × ⅛\"",
+      "price": 0
+    }
+  ],
   "types": [
-    { "id": "porton", "name": "Portón", "mode": "area", "refA": 10, "refB": 24, "material": 200, "labor": 0, "min": 0, "active": true },
-    { "id": "reja", "name": "Reja / protección de ventana", "mode": "area", "refA": 4, "refB": 4, "material": 0, "labor": 0, "min": 0, "active": true },
-    { "id": "barandal", "name": "Barandal", "mode": "lineal", "refA": 10, "refB": 0, "material": 0, "labor": 0, "min": 0, "active": true },
-    { "id": "puerta", "name": "Puerta de herrería", "mode": "pieza", "refA": 1, "refB": 0, "material": 0, "labor": 0, "min": 0, "active": true }
+    {
+      "id": "porton",
+      "name": "Portón",
+      "mode": "area",
+      "frameMetal": "tc2",
+      "barMetal": "tc1",
+      "rails": 2,
+      "height": 0,
+      "postEvery": 0,
+      "material": 0,
+      "refA": 10,
+      "refB": 24,
+      "refPersons": 2,
+      "refDays": 1,
+      "min": 280,
+      "active": true
+    },
+    {
+      "id": "reja",
+      "name": "Reja / protección de ventana",
+      "mode": "area",
+      "frameMetal": "tc1",
+      "barMetal": "bc12",
+      "rails": 1,
+      "height": 0,
+      "postEvery": 0,
+      "material": 0,
+      "refA": 4,
+      "refB": 4,
+      "refPersons": 1,
+      "refDays": 0.5,
+      "min": 400,
+      "active": false
+    },
+    {
+      "id": "barandal",
+      "name": "Barandal",
+      "mode": "lineal",
+      "frameMetal": "tc15",
+      "barMetal": "tc34",
+      "rails": 2,
+      "height": 3,
+      "postEvery": 6,
+      "material": 0,
+      "refA": 10,
+      "refB": 0,
+      "refPersons": 1,
+      "refDays": 1,
+      "min": 200,
+      "active": false
+    },
+    {
+      "id": "puerta",
+      "name": "Puerta de herrería",
+      "mode": "area",
+      "frameMetal": "tc15",
+      "barMetal": "tc1",
+      "rails": 2,
+      "height": 0,
+      "postEvery": 0,
+      "material": 0,
+      "refA": 3,
+      "refB": 7,
+      "refPersons": 1,
+      "refDays": 1,
+      "min": 0,
+      "active": true
+    }
   ],
   "designs": [
-    { "id": "sencillo", "name": "Sencillo", "desc": "Líneas rectas, barrotes lisos", "pct": 0 },
-    { "id": "medio", "name": "Con detalles", "desc": "Remates, combinación de perfiles", "pct": 25 },
-    { "id": "decorado", "name": "Decorado", "desc": "Forja, figuras, lámina cortada", "pct": 60 }
+    {
+      "id": "sencillo",
+      "name": "Sencillo",
+      "desc": "Líneas rectas, barrotes lisos",
+      "spacing": 5,
+      "pct": 0
+    },
+    {
+      "id": "medio",
+      "name": "Con detalles",
+      "desc": "Remates, combinación de perfiles",
+      "spacing": 4,
+      "pct": 25
+    },
+    {
+      "id": "decorado",
+      "name": "Decorado",
+      "desc": "Forja, figuras, lámina cortada",
+      "spacing": 4,
+      "pct": 60
+    }
   ]
 }</script>
 
@@ -147,9 +271,9 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
 
   /* ───────── Configuración ───────── */
   const PUBLISHED = JSON.parse(document.getElementById('mw-config').textContent);
-  const DRAFT_KEY = 'estimador.borrador.v1';
+  const DRAFT_KEY = 'estimador.borrador.v2';
   const clone = (o) => JSON.parse(JSON.stringify(o));
-  let cfg = clone(PUBLISHED);           // lo que se usa para calcular (borrador del dueño o lo publicado)
+  let cfg = clone(PUBLISHED);
   let dirty = false;
 
   const $app = document.getElementById('app');
@@ -157,44 +281,117 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
   const num = (v) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
   const uid = () => Math.random().toString(36).slice(2, 9);
 
-  const U = () => cfg.unit === 'm' ? { len: 'm', area: 'm²', lenLong: 'metros' } : { len: 'pies', area: 'pies²', lenLong: 'pies' };
+  const U = () => cfg.unit === 'm'
+    ? { len: 'm', one: 'metro', area: 'm²', sub: 'cm', subPer: 100 }
+    : { len: 'pies', one: 'pie', area: 'pies²', sub: 'pulg', subPer: 12 };
   const money = (n, dec = 0) => new Intl.NumberFormat(cfg.currency === 'MXN' ? 'es-MX' : 'en-US', { style: 'currency', currency: cfg.currency, minimumFractionDigits: dec, maximumFractionDigits: dec }).format(n || 0);
   const fmt = (n, d = 2) => new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(n || 0);
 
-  /* ───────── Cálculo (el «cerebro») ───────── */
-  // Precio por unidad = precio del ejemplo ÷ unidades del ejemplo. Ej.: 10 × 24 = 240 pies² → $200 → $0.83 por pie².
-  const roundUp = (n) => { const r = num(cfg.roundTo); return r > 0 ? Math.ceil(n / r) * r : Math.round(n); };
+  /* ───────── Cálculo (el «cerebro») ─────────
+     MATERIAL: pies de metal según la forma del trabajo × precio por pie del proveedor × (1 + desperdicio).
+       Área (portón, reja, puerta): marco = 2·(ancho + alto); travesaños = n × ancho;
+         barrotes verticales cada S pulgadas = (⌈ancho·12 / S⌉ − 1) × alto.
+       Largo (barandal): pasamanos/soleras = n × largo; postes cada P pies = (⌈largo / P⌉ + 1) × alto;
+         barrotes = (⌈largo·12 / S⌉ − 1) × alto.
+       Pieza: material fijo por pieza.
+     MANO DE OBRA: el ejemplo del dueño fija la carga (personas × días para el tamaño del ejemplo).
+       Carga del cliente = carga del ejemplo × (tamaño / tamaño del ejemplo).
+       Personas = 1 si la carga cabe en un día de una persona; si no, hasta el máximo (2).
+       Días = carga ÷ personas, redondeado a medio día. Cada persona cobra días × pago diario, con mínimo por persona.
+     DISEÑO: cambia la separación de barrotes y suma un % por detalles.
+  */
+  const roundUp = (n) => { const r = num(cfg.roundTo); return r > 0 ? Math.ceil(n / r - 1e-9) * r : Math.round(n); };
   const roundDown = (n) => { const r = num(cfg.roundTo); return r > 0 ? Math.floor(n / r) * r : Math.round(n); };
-  function refUnits(t) { return t.mode === 'area' ? num(t.refA) * num(t.refB) : t.mode === 'lineal' ? num(t.refA) : 1; }
-  function rates(t) {
-    const u = refUnits(t);
-    if (u <= 0) return { mat: 0, lab: 0, total: 0 };
-    const mat = num(t.material) / u, lab = num(t.labor) / u;
-    return { mat, lab, total: mat + lab };
+  const metal = (id) => cfg.metals.find((m) => m.id === id) || null;
+  const metalPrice = (id) => num(metal(id)?.price);
+
+  function sizeOf(t, a, b) { return t.mode === 'area' ? num(a) * num(b) : t.mode === 'lineal' ? num(a) : 1; }
+
+  /** Pies de metal por pieza, separados por metal. */
+  function metalFeet(t, a, b, spacing) {
+    const u = U(), A = num(a), B = num(b), S = num(spacing);
+    const parts = [];
+    if (t.mode === 'area') {
+      if (A <= 0 || B <= 0) return parts;
+      parts.push({ id: t.frameMetal, what: 'marco y travesaños', len: 2 * (A + B) + Math.max(0, Math.floor(num(t.rails))) * A });
+      if (S > 0 && t.barMetal) {
+        const bars = Math.max(0, Math.ceil((A * u.subPer) / S) - 1);
+        if (bars) parts.push({ id: t.barMetal, what: `${bars} barrotes`, len: bars * B });
+      }
+    } else if (t.mode === 'lineal') {
+      const H = num(t.height), P = num(t.postEvery);
+      if (A <= 0) return parts;
+      const posts = P > 0 ? Math.ceil(A / P) + 1 : 2;
+      parts.push({ id: t.frameMetal, what: `pasamanos y ${posts} postes`, len: Math.max(0, Math.floor(num(t.rails))) * A + posts * H });
+      if (S > 0 && t.barMetal && H > 0) {
+        const bars = Math.max(0, Math.ceil((A * u.subPer) / S) - 1);
+        if (bars) parts.push({ id: t.barMetal, what: `${bars} barrotes`, len: bars * H });
+      }
+    }
+    return parts;
   }
-  const priced = (t) => t.active && rates(t).total > 0;
-  function itemUnits(it, t) { return (t.mode === 'area' ? num(it.a) * num(it.b) : t.mode === 'lineal' ? num(it.a) : 1) * Math.max(1, Math.floor(num(it.qty) || 1)); }
+
+  function materialCost(t, a, b, spacing) {
+    if (t.mode === 'pieza') return { cost: num(t.material), parts: [], missing: !(num(t.material) > 0) };
+    const parts = metalFeet(t, a, b, spacing);
+    let missing = false, cost = 0;
+    for (const p of parts) {
+      const price = metalPrice(p.id);
+      if (!(price > 0)) missing = true;
+      cost += p.len * price;
+    }
+    return { cost: cost * (1 + num(cfg.wastePct) / 100), parts, missing };
+  }
+
+  function laborFor(t, sizeTotal) {
+    const L = cfg.labor;
+    const refSize = sizeOf(t, t.refA, t.refB);
+    const refLoad = num(t.refPersons) * num(t.refDays);
+    if (!(refSize > 0) || !(refLoad > 0) || !(sizeTotal > 0)) return { persons: 0, days: 0, cost: 0 };
+    const load = refLoad * (sizeTotal / refSize);                      // personas·día
+    const max = Math.max(1, Math.floor(num(L.maxPersons) || 1));
+    const persons = load <= 1 ? 1 : Math.min(max, Math.ceil(load));
+    const days = Math.max(0.5, Math.ceil((load / persons) * 2 - 1e-9) / 2);
+    const perPerson = Math.max(num(L.minPerPerson), days * num(L.payPerDay));
+    return { persons, days, perPerson, cost: persons * perPerson };
+  }
+
+  /** ¿El trabajo se puede cotizar? (tiene precio de metal o de material, y ejemplo de mano de obra) */
+  function priced(t) {
+    if (!t.active) return false;
+    const refOk = sizeOf(t, t.refA, t.refB) > 0 && num(t.refPersons) > 0 && num(t.refDays) > 0;
+    if (t.mode === 'pieza') return refOk && num(t.material) > 0;
+    return refOk && metalPrice(t.frameMetal) > 0 && (!t.barMetal || metalPrice(t.barMetal) > 0);
+  }
+
   function itemCalc(it) {
     const t = cfg.types.find((x) => x.id === it.typeId);
     const d = cfg.designs.find((x) => x.id === it.designId) || cfg.designs[0];
     if (!t) return null;
-    const r = rates(t), units = itemUnits(it, t), qty = Math.max(1, Math.floor(num(it.qty) || 1));
-    const mat = r.mat * units, lab = r.lab * units;
-    const designExtra = (mat + lab) * (num(d?.pct) / 100);
-    let total = mat + lab + designExtra;
+    const qty = Math.max(1, Math.floor(num(it.qty) || 1));
+    const complete = t.mode === 'area' ? num(it.a) > 0 && num(it.b) > 0 : t.mode === 'lineal' ? num(it.a) > 0 : true;
+    const m = materialCost(t, it.a, it.b, d?.spacing);
+    const material = m.cost * qty;
+    const labor = laborFor(t, sizeOf(t, it.a, it.b) * qty);
+    const base = material + labor.cost;
+    const designExtra = base * (num(d?.pct) / 100);
+    let total = base + designExtra;
     const minTotal = num(t.min) * qty;
     const minApplied = total > 0 && total < minTotal;
     if (minApplied) total = minTotal;
-    if (total > 0) total = roundUp(total); // cada partida ya redondeada: las partidas suman el total exacto
-    const complete = t.mode === 'area' ? num(it.a) > 0 && num(it.b) > 0 : t.mode === 'lineal' ? num(it.a) > 0 : true;
-    return { t, d, units, qty, mat, lab, designExtra, total, minApplied, complete };
+    if (total > 0) total = roundUp(total);
+    return { t, d, qty, complete, parts: m.parts, material, labor, designExtra, total, minApplied, size: sizeOf(t, it.a, it.b) };
   }
+
   function estimate(items) {
     const calcs = items.map(itemCalc).filter((c) => c && c.complete && c.total > 0);
     const total = calcs.reduce((s, c) => s + c.total, 0);
     const p = num(cfg.rangePct) / 100;
-    return { calcs, total: roundUp(total), low: roundDown(total * (1 - p)), high: roundUp(total * (1 + p)) };
+    return { calcs, total, low: roundDown(total * (1 - p)), high: roundUp(total * (1 + p)) };
   }
+
+  const laborText = (l) => l.persons ? `${l.persons} ${l.persons === 1 ? 'persona' : 'personas'} × ${fmt(l.days, 1)} ${l.days === 1 ? 'día' : 'días'}` : '';
+  const partsText = (parts, qty) => parts.map((p) => `${fmt(p.len * qty, 1)} ${U().len} de ${metal(p.id)?.name || 'metal'} (${p.what})`).join('; ');
 
   /* ───────── Estado ───────── */
   let view = 'cliente';
@@ -207,23 +404,17 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
   let client = { items: [newItem()], name: '', phone: '', via: 'whatsapp', address: '', notes: '', tried: false };
   let sent = null;
 
-
-  /* ───────── Helpers de teléfono y mensaje ───────── */
+  /* ───────── Teléfono y mensaje ───────── */
   const digits = (s) => String(s || '').replace(/\D/g, '');
-  function intlPhone(raw) {
-    let d = digits(raw);
-    if (d.length === 10) d = digits(cfg.countryCode) + d;  // número local: se agrega el código de país del taller
-    return d;
-  }
+  function intlPhone(raw) { let d = digits(raw); if (d.length === 10) d = digits(cfg.countryCode) + d; return d; }
   const phoneOk = (raw) => { const d = digits(raw); return d.length >= 10 && d.length <= 15; };
   function folio() {
-    const t = new Date();
-    const p = (n) => String(n).padStart(2, '0');
+    const t = new Date(), p = (n) => String(n).padStart(2, '0');
     return `C${String(t.getFullYear()).slice(2)}${p(t.getMonth() + 1)}${p(t.getDate())}-${p(t.getHours())}${p(t.getMinutes())}${String(Math.floor(Math.random() * 90) + 10)}`;
   }
   function describeItem(c, it) {
     const u = U();
-    const m = c.t.mode === 'area' ? `${fmt(num(it.a))} × ${fmt(num(it.b))} ${u.len} (${fmt(c.units / c.qty)} ${u.area})`
+    const m = c.t.mode === 'area' ? `${fmt(num(it.a))} × ${fmt(num(it.b))} ${u.len} (${fmt(c.size)} ${u.area})`
       : c.t.mode === 'lineal' ? `${fmt(num(it.a))} ${u.len} de largo` : 'por pieza';
     return `${c.t.name} — ${m}${c.qty > 1 ? ` × ${c.qty}` : ''} — diseño ${c.d ? c.d.name.toLowerCase() : ''}`;
   }
@@ -235,7 +426,14 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       s.via === 'whatsapp' ? `Abrir chat: https://wa.me/${s.phone}` : null,
       s.address ? `Ubicación: ${s.address}` : null,
       '',
-      ...s.items.map((x, i) => `${i + 1}) ${x.text}\n   Estimado: ${money(x.total)}`),
+      ...s.items.map((x, i) => [
+        `${i + 1}) ${x.text}`,
+        x.metal ? `   Metal: ${x.metal}` : null,
+        `   Material: ${money(x.material)} · Mano de obra: ${money(x.labor)} (${x.laborText})`,
+        x.extra ? `   Diseño: +${money(x.extra)}` : null,
+        x.minApplied ? '   (se aplicó el precio mínimo)' : null,
+        `   Estimado: ${money(x.total)}`,
+      ].filter((l) => l !== null).join('\n')),
       '',
       `*Estimado total: ${money(s.total)}*`,
       `Rango: ${money(s.low)} – ${money(s.high)}`,
@@ -322,28 +520,34 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     </section>`;
   }
 
-  // Dibujo a escala del claro con sus cotas (ancho × alto) o del tramo lineal.
+  // Dibujo a escala: el claro con sus barrotes reales según el diseño elegido, o el tramo de barandal con sus postes.
   function sketch(it, t) {
     const u = U();
+    const d = cfg.designs.find((x) => x.id === it.designId) || cfg.designs[0];
+    const S = num(d?.spacing);
     if (t.mode === 'lineal') {
-      const L = num(it.a);
-      return `<svg viewBox="0 0 120 84" aria-hidden="true"><path d="M8 52h104" stroke="var(--ink-2)" stroke-width="3"/>${[0, 1, 2, 3, 4, 5, 6].map((k) => `<path d="M${10 + k * 16.6} 52V26" stroke="var(--accent)" stroke-width="1.6"/>`).join('')}<path d="M8 26h104" stroke="var(--accent)" stroke-width="2.4"/><path d="M8 66h104" stroke="var(--mute)" stroke-width=".8"/><text x="60" y="80" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-2)">${L ? fmt(L) + ' ' + u.len : 'largo'}</text></svg>
-      <div class="small"><div class="muted">Medida a cotizar</div><div class="num">${L ? `${fmt(L * Math.max(1, num(it.qty)))} ${u.len} lineales` : 'Escribe el largo'}</div></div>`;
+      const L = num(it.a), P = num(t.postEvery);
+      const posts = L > 0 && P > 0 ? Math.min(12, Math.ceil(L / P) + 1) : 4;
+      return `<svg viewBox="0 0 120 84" aria-hidden="true"><path d="M8 58h104M8 24h104" stroke="var(--accent)" stroke-width="2.4"/>${Array.from({ length: posts }, (_, k) => `<path d="M${8 + (104 / (posts - 1)) * k} 60V22" stroke="var(--ink-2)" stroke-width="2.6"/>`).join('')}${Array.from({ length: 20 }, (_, k) => `<path d="M${10 + k * 5.2} 56V26" stroke="var(--accent)" stroke-width=".8" opacity=".5"/>`).join('')}<path d="M8 70h104" stroke="var(--mute)" stroke-width=".8"/><text x="60" y="81" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-2)">${L ? fmt(L) + ' ' + u.len : 'largo'}</text></svg>
+      <div class="small"><div class="muted">Medida a cotizar</div><div class="num">${L ? `${fmt(L * Math.max(1, num(it.qty)))} ${u.len} lineales` : 'Escribe el largo'}</div>${L ? `<div class="muted">${posts} postes</div>` : ''}</div>`;
     }
     const A = num(it.a), B = num(it.b);
     const W = 92, H = 56;
     let w = W, h = H;
     if (A > 0 && B > 0) { const k = Math.min(W / A, H / B); w = Math.max(10, A * k); h = Math.max(10, B * k); }
     const x = 14 + (W - w) / 2, y = 6 + (H - h) / 2;
-    const bars = Math.max(2, Math.min(9, Math.round(w / 12)));
+    const realBars = A > 0 && S > 0 ? Math.max(0, Math.ceil((A * u.subPer) / S) - 1) : 6;
+    const drawBars = Math.min(realBars, 40);
+    const rails = Math.max(0, Math.floor(num(t.rails)));
     return `<svg viewBox="0 0 120 84" aria-hidden="true">
       <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
-      ${Array.from({ length: bars - 1 }, (_, k) => `<path d="M${x + (w / bars) * (k + 1)} ${y}v${h}" stroke="var(--accent)" stroke-width="1" opacity=".55"/>`).join('')}
+      ${Array.from({ length: drawBars }, (_, k) => `<path d="M${x + (w / (drawBars + 1)) * (k + 1)} ${y}v${h}" stroke="var(--accent)" stroke-width=".8" opacity=".6"/>`).join('')}
+      ${Array.from({ length: rails }, (_, k) => `<path d="M${x} ${y + (h / (rails + 1)) * (k + 1)}h${w}" stroke="var(--accent)" stroke-width="1.6"/>`).join('')}
       <path d="M${x} 72h${w}" stroke="var(--mute)" stroke-width=".8"/><path d="M${x} 69v6M${x + w} 69v6" stroke="var(--mute)" stroke-width=".8"/>
       <text x="${x + w / 2}" y="82" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">${A ? fmt(A) : 'ancho'}</text>
       <text x="${x + w + 4}" y="${y + h / 2 + 3}" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">${B ? fmt(B) : 'alto'}</text>
     </svg>
-    <div class="small"><div class="muted">Superficie</div><div class="num">${A && B ? `${fmt(A * B * Math.max(1, num(it.qty)))} ${u.area}` : 'Escribe ancho y alto'}</div></div>`;
+    <div class="small"><div class="muted">Superficie</div><div class="num">${A && B ? `${fmt(A * B * Math.max(1, num(it.qty)))} ${u.area}` : 'Escribe ancho y alto'}</div>${A && B && S ? `<div class="muted">${realBars} barrotes cada ${fmt(S)} ${u.sub}</div>` : ''}</div>`;
   }
 
   function refreshEstimate() {
@@ -355,7 +559,8 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       <div class="eyebrow">Tu estimado</div>
       <div class="big" style="margin-top:6px">${money(e.total)}</div>
       <div class="range">Entre ${money(e.low)} y ${money(e.high)}</div>
-      <div class="lines">${e.calcs.map((c) => `<div><span>${esc(c.t.name)}${c.qty > 1 ? ` × ${c.qty}` : ''} <span class="muted">· ${esc(c.d ? c.d.name : '')}</span></span><span class="num">${money(c.total)}</span></div>`).join('')}
+      <div class="lines">${e.calcs.map((c) => `<div style="display:grid;gap:2px"><div><span>${esc(c.t.name)}${c.qty > 1 ? ` × ${c.qty}` : ''} <span class="muted">· ${esc(c.d ? c.d.name : '')}</span></span><span class="num">${money(c.total)}</span></div>
+          <div class="muted small"><span>Material y mano de obra (${esc(laborText(c.labor))})</span></div></div>`).join('')}
         ${pending ? `<div class="muted small"><span>Completa las medidas que faltan</span></div>` : ''}</div>
       <p class="notice">${esc(cfg.disclaimer)}</p>
       <button class="btn primary block" style="margin-top:14px" type="button" data-act="submit">Obtener mi cotización</button>
@@ -382,7 +587,10 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     sent = {
       folio: folio(), name: client.name.trim(), phone: intlPhone(client.phone), via: client.via,
       address: client.address.trim(), notes: client.notes.trim(),
-      items: client.items.map((it) => ({ it, c: itemCalc(it) })).filter((x) => x.c && x.c.complete && x.c.total > 0).map((x) => ({ text: describeItem(x.c, x.it), total: x.c.total })),
+      items: client.items.map((it) => ({ it, c: itemCalc(it) })).filter((x) => x.c && x.c.complete && x.c.total > 0).map((x) => ({
+        text: describeItem(x.c, x.it), total: x.c.total, material: x.c.material, labor: x.c.labor.cost,
+        laborText: laborText(x.c.labor), metal: partsText(x.c.parts, x.c.qty), extra: x.c.designExtra, minApplied: x.c.minApplied,
+      })),
       total: e.total, low: e.low, high: e.high,
     };
     render();
@@ -416,12 +624,52 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
   /* ───────── Vista del dueño ───────── */
   function ownerView() {
     const u = U();
+    const L = cfg.labor;
     return `<div class="stack">
       <section class="card stack">
         <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between">
-          <div><h2>Cómo funciona</h2><p class="muted small" style="margin-top:4px;max-width:520px">Pon un ejemplo de lo que cobras por cada trabajo. El estimador calcula el precio por ${u.area} o por ${u.len} y lo aplica a las medidas del cliente, más el extra del diseño. Cuando el cliente termina, te manda la cotización a tu WhatsApp con su número para que le contestes.</p></div>
+          <div><h2>Cómo funciona</h2><p class="muted small" style="margin-top:4px;max-width:520px">1) Pon el precio por ${u.one} de cada metal según tu proveedor. 2) Di qué metal lleva cada trabajo. El estimador calcula los ${u.len} de metal con las medidas del cliente (marco, travesaños y barrotes) y suma la mano de obra según cuántas personas van. Te llega la cotización a tu WhatsApp con el número del cliente.</p></div>
           <div class="checklist" id="checklist">${checklist()}</div>
         </div>
+      </section>
+
+      <section class="card stack">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2>Metal de tu proveedor</h2><button class="btn sm" type="button" data-act="add-metal">+ Metal</button></div>
+        <p class="muted small">Precio por ${u.one}. Si te lo venden por tramo, divide: un tramo de 20 ${u.len} a $60 = $3 por ${u.one}.</p>
+        <div class="metal-head small muted"><span>Metal</span><span>Precio por ${u.one}</span><span></span></div>
+        ${cfg.metals.map((m) => `<div class="metal-row">
+          <input class="in" id="mn-${esc(m.id)}" data-m="${esc(m.id)}" data-k="name" value="${esc(m.name)}" aria-label="Nombre del metal">
+          <input class="in num ${!(num(m.price) > 0) && metalUsed(m.id) ? 'bad' : ''}" id="mp-${esc(m.id)}" data-m="${esc(m.id)}" data-k="price" value="${num(m.price) > 0 ? esc(m.price) : ''}" inputmode="decimal" placeholder="$ ${cfg.currency}" aria-label="Precio por ${u.one}">
+          <button class="btn sm ghost" type="button" data-act="del-metal" data-v="${esc(m.id)}" ${metalUsed(m.id) ? 'disabled title="Lo usa un trabajo"' : ''}>Quitar</button>
+        </div>`).join('')}
+        <label class="f" style="max-width:220px">Desperdicio de material <span class="u">%</span><input class="in" id="o-waste" data-o="wastePct" value="${esc(cfg.wastePct)}" inputmode="decimal"></label>
+      </section>
+
+      <section class="card stack">
+        <h2>Mano de obra</h2>
+        <p class="muted small">Cada persona que va al trabajo cobra los días que tarda, con un mínimo por persona.</p>
+        <div class="row">
+          <label class="f">Pago por persona por día <span class="u">${cfg.currency}</span><input class="in" id="o-pay" data-l="payPerDay" value="${esc(L.payPerDay)}" inputmode="decimal"></label>
+          <label class="f">Mínimo por persona <span class="u">${cfg.currency}</span><input class="in" id="o-minp" data-l="minPerPerson" value="${esc(L.minPerPerson)}" inputmode="decimal"></label>
+          <label class="f">Máximo de personas<input class="in" id="o-maxp" data-l="maxPersons" value="${esc(L.maxPersons)}" inputmode="numeric"></label>
+        </div>
+      </section>
+
+      <section class="card stack">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2>Trabajos</h2><button class="btn sm" type="button" data-act="add-type">+ Trabajo</button></div>
+        <p class="muted small">Los trabajos sin precio de metal o sin ejemplo de mano de obra no se le muestran al cliente.</p>
+        ${cfg.types.map((t) => typeEditor(t)).join('')}
+      </section>
+
+      <section class="card stack">
+        <h2>Diseño</h2>
+        <p class="muted small">La separación de barrotes cambia cuánto metal lleva; el extra cubre detalles y adornos.</p>
+        ${cfg.designs.map((d) => `<div class="row" style="align-items:end">
+          <label class="f">Nombre<input class="in" id="dn-${esc(d.id)}" data-d="${esc(d.id)}" data-k="name" value="${esc(d.name)}"></label>
+          <label class="f">Descripción<input class="in" id="dd-${esc(d.id)}" data-d="${esc(d.id)}" data-k="desc" value="${esc(d.desc)}"></label>
+          <label class="f">Barrote cada <span class="u">${u.sub}</span><input class="in" id="ds-${esc(d.id)}" data-d="${esc(d.id)}" data-k="spacing" value="${esc(d.spacing)}" inputmode="decimal"></label>
+          <label class="f">Extra <span class="u">%</span><input class="in" id="dp-${esc(d.id)}" data-d="${esc(d.id)}" data-k="pct" value="${esc(d.pct)}" inputmode="decimal"></label>
+        </div>`).join('')}
       </section>
 
       <section class="card stack">
@@ -440,22 +688,6 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
         <label class="f">Aviso de que el precio puede variar<textarea class="in" id="o-disc" data-o="disclaimer">${esc(cfg.disclaimer)}</textarea></label>
       </section>
 
-      <section class="card stack">
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2>Trabajos y precios</h2><button class="btn sm" type="button" data-act="add-type">+ Trabajo</button></div>
-        <p class="muted small">Ejemplo: un portón de 10 × 24 = $200 de material + la mano de obra. Los trabajos sin precio no se le muestran al cliente.</p>
-        ${cfg.types.map((t) => typeEditor(t)).join('')}
-      </section>
-
-      <section class="card stack">
-        <h2>Diseño</h2>
-        <p class="muted small">Cuánto sube el precio según el diseño que elija el cliente.</p>
-        ${cfg.designs.map((d) => `<div class="row" style="align-items:end">
-          <label class="f">Nombre<input class="in" id="dn-${esc(d.id)}" data-d="${esc(d.id)}" data-k="name" value="${esc(d.name)}"></label>
-          <label class="f">Descripción<input class="in" id="dd-${esc(d.id)}" data-d="${esc(d.id)}" data-k="desc" value="${esc(d.desc)}"></label>
-          <label class="f">Extra <span class="u">%</span><input class="in" id="dp-${esc(d.id)}" data-d="${esc(d.id)}" data-k="pct" value="${esc(d.pct)}" inputmode="decimal"></label>
-        </div>`).join('')}
-      </section>
-
       <div class="savebar">
         <span class="small ${dirty ? '' : 'muted'}" id="save-state">${dirty ? 'Tienes cambios sin publicar. Tus clientes siguen viendo los precios anteriores.' : 'Tus clientes ven estos precios.'}</span>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -466,59 +698,90 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     </div>`;
   }
 
+  const metalUsed = (id) => cfg.types.some((t) => t.mode !== 'pieza' && (t.frameMetal === id || t.barMetal === id));
+
   function checklist() {
+    const usedIds = [...new Set(cfg.types.filter((t) => t.active && t.mode !== 'pieza').flatMap((t) => [t.frameMetal, t.barMetal]).filter(Boolean))];
     const checks = [
-      { ok: !!cfg.business.trim(), t: 'Nombre del taller' },
-      { ok: phoneOk(cfg.whatsapp), t: 'Tu número de WhatsApp (ahí llegan las cotizaciones)' },
-      { ok: cfg.types.some(priced), t: 'Al menos un trabajo con precio' },
-      { ok: !cfg.types.some((t) => priced(t) && !num(t.labor)), t: 'Mano de obra en los trabajos con precio' },
+      { ok: phoneOk(cfg.whatsapp), t: 'Tu número de WhatsApp' },
+      { ok: usedIds.length > 0 && usedIds.every((id) => metalPrice(id) > 0), t: 'Precio de los metales que usan tus trabajos' },
+      { ok: num(cfg.labor.payPerDay) > 0 && num(cfg.labor.maxPersons) >= 1, t: 'Pago por persona' },
+      { ok: cfg.types.some(priced), t: 'Al menos un trabajo listo para el cliente' },
     ];
     return checks.map((c) => `<span><i class="dot" style="background:${c.ok ? 'var(--ok)' : 'var(--warn)'}"></i>${esc(c.t)}${c.ok ? '' : ' <span class="muted">(falta)</span>'}</span>`).join('');
   }
-  function refreshOwnerHints() {
-    const cl = document.getElementById('checklist');
-    if (cl) cl.innerHTML = checklist();
-    cfg.types.forEach((t) => { document.getElementById(`tlab-${t.id}`)?.classList.toggle('bad', priced(t) && !num(t.labor)); });
-    document.getElementById('o-whatsapp')?.classList.toggle('bad', !!cfg.whatsapp && !phoneOk(cfg.whatsapp));
+
+  function metalOptions(sel, allowNone) {
+    return (allowNone ? `<option value="" ${!sel ? 'selected' : ''}>Sin barrotes</option>` : '') +
+      cfg.metals.map((m) => `<option value="${esc(m.id)}" ${m.id === sel ? 'selected' : ''}>${esc(m.name)}${num(m.price) > 0 ? ` — ${money(num(m.price), 2)}` : ' — sin precio'}</option>`).join('');
   }
 
   function typeEditor(t) {
-    const u = U(), r = rates(t);
-    const unitName = t.mode === 'area' ? u.area : t.mode === 'lineal' ? u.len : 'pieza';
-    const ex = t.mode === 'area'
-      ? `<label class="f">Ancho <span class="u">${u.len}</span><input class="in" id="ta-${esc(t.id)}" data-t="${esc(t.id)}" data-k="refA" value="${esc(t.refA)}" inputmode="decimal"></label><span class="op">×</span>
-         <label class="f">Alto <span class="u">${u.len}</span><input class="in" id="tb-${esc(t.id)}" data-t="${esc(t.id)}" data-k="refB" value="${esc(t.refB)}" inputmode="decimal"></label><span class="op">=</span>`
+    const u = U();
+    const id = esc(t.id);
+    const refShape = t.mode === 'area'
+      ? `<label class="f">Ancho <span class="u">${u.len}</span><input class="in" id="ta-${id}" data-t="${id}" data-k="refA" value="${esc(t.refA)}" inputmode="decimal"></label><span class="op">×</span>
+         <label class="f">Alto <span class="u">${u.len}</span><input class="in" id="tb-${id}" data-t="${id}" data-k="refB" value="${esc(t.refB)}" inputmode="decimal"></label>`
       : t.mode === 'lineal'
-      ? `<label class="f">Largo <span class="u">${u.len}</span><input class="in" id="ta-${esc(t.id)}" data-t="${esc(t.id)}" data-k="refA" value="${esc(t.refA)}" inputmode="decimal"></label><span class="op">=</span>`
-      : `<span class="op">1 pieza =</span>`;
+      ? `<label class="f">Largo <span class="u">${u.len}</span><input class="in" id="ta-${id}" data-t="${id}" data-k="refA" value="${esc(t.refA)}" inputmode="decimal"></label>`
+      : `<span class="op">1 pieza</span>`;
+    const metalFields = t.mode === 'pieza'
+      ? `<label class="f">Material por pieza <span class="u">${cfg.currency}</span><input class="in" id="tmat-${id}" data-t="${id}" data-k="material" value="${esc(t.material)}" inputmode="decimal"></label>`
+      : `<label class="f">${t.mode === 'lineal' ? 'Pasamanos y postes' : 'Marco y travesaños'}<select class="in" id="tf-${id}" data-t="${id}" data-k="frameMetal">${metalOptions(t.frameMetal)}</select></label>
+         <label class="f">Barrotes<select class="in" id="tbm-${id}" data-t="${id}" data-k="barMetal">${metalOptions(t.barMetal, true)}</select></label>
+         ${t.mode === 'area'
+           ? `<label class="f">Travesaños horizontales<input class="in" id="tr-${id}" data-t="${id}" data-k="rails" value="${esc(t.rails)}" inputmode="numeric"></label>`
+           : `<label class="f">Alto del barandal <span class="u">${u.len}</span><input class="in" id="th-${id}" data-t="${id}" data-k="height" value="${esc(t.height)}" inputmode="decimal"></label>
+              <label class="f">Poste cada <span class="u">${u.len}</span><input class="in" id="tp-${id}" data-t="${id}" data-k="postEvery" value="${esc(t.postEvery)}" inputmode="decimal"></label>
+              <label class="f">Pasamanos / soleras<input class="in" id="tr-${id}" data-t="${id}" data-k="rails" value="${esc(t.rails)}" inputmode="numeric"></label>`}`;
     return `<div class="otype">
       <div class="row" style="align-items:end">
-        <label class="f">Trabajo<input class="in" id="tn-${esc(t.id)}" data-t="${esc(t.id)}" data-k="name" value="${esc(t.name)}"></label>
-        <label class="f">Se cobra<select class="in" id="tm-${esc(t.id)}" data-t="${esc(t.id)}" data-k="mode">
+        <label class="f">Trabajo<input class="in" id="tn-${id}" data-t="${id}" data-k="name" value="${esc(t.name)}"></label>
+        <label class="f">Se cobra<select class="in" id="tm-${id}" data-t="${id}" data-k="mode">
           <option value="area" ${t.mode === 'area' ? 'selected' : ''}>Por área (ancho × alto)</option>
           <option value="lineal" ${t.mode === 'lineal' ? 'selected' : ''}>Por largo</option>
           <option value="pieza" ${t.mode === 'pieza' ? 'selected' : ''}>Por pieza</option></select></label>
+        <label class="f">Mínimo <span class="u">${cfg.currency}</span><input class="in" id="tmin-${id}" data-t="${id}" data-k="min" value="${esc(t.min)}" inputmode="decimal"></label>
       </div>
-      <div class="formula">${ex}
-        <label class="f">Material <span class="u">${cfg.currency}</span><input class="in" id="tmat-${esc(t.id)}" data-t="${esc(t.id)}" data-k="material" value="${esc(t.material)}" inputmode="decimal"></label><span class="op">+</span>
-        <label class="f">Mano de obra <span class="u">${cfg.currency}</span><input class="in ${priced(t) && !num(t.labor) ? 'bad' : ''}" id="tlab-${esc(t.id)}" data-t="${esc(t.id)}" data-k="labor" value="${esc(t.labor)}" inputmode="decimal"></label>
-        <label class="f">Mínimo <span class="u">${cfg.currency}</span><input class="in" id="tmin-${esc(t.id)}" data-t="${esc(t.id)}" data-k="min" value="${esc(t.min)}" inputmode="decimal"></label>
+      <div><div class="sub-h">Material</div><div class="row" style="align-items:end">${metalFields}</div></div>
+      <div><div class="sub-h">Mano de obra · ejemplo</div>
+        <div class="formula">${refShape}<span class="op">lo hacen</span>
+          <label class="f">Personas<input class="in" id="tpp-${id}" data-t="${id}" data-k="refPersons" value="${esc(t.refPersons)}" inputmode="numeric"></label><span class="op">en</span>
+          <label class="f">Días<input class="in" id="tdd-${id}" data-t="${id}" data-k="refDays" value="${esc(t.refDays)}" inputmode="decimal"></label>
+        </div>
       </div>
-      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center">
-        <span class="rate" id="rate-${esc(t.id)}">${rateText(t)}</span>
-        <span style="display:flex;gap:6px">
-          <button class="btn sm" type="button" data-act="toggle-type" data-v="${esc(t.id)}">${t.active ? 'Ocultar al cliente' : 'Mostrar al cliente'}</button>
-          <button class="btn sm ghost" type="button" data-act="del-type" data-v="${esc(t.id)}">Eliminar</button>
-        </span>
+      <div class="rate" id="rate-${id}">${rateText(t)}</div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px">
+        <button class="btn sm" type="button" data-act="toggle-type" data-v="${id}">${t.active ? 'Ocultar al cliente' : 'Mostrar al cliente'}</button>
+        <button class="btn sm ghost" type="button" data-act="del-type" data-v="${id}">Eliminar</button>
       </div>
     </div>`;
   }
+
+  // Prueba del ejemplo, para que el dueño compare con lo que cobra normalmente.
   function rateText(t) {
-    const u = U(), r = rates(t);
-    const unitName = t.mode === 'area' ? u.area.replace('pies²', 'pie²') : t.mode === 'lineal' ? (cfg.unit === 'm' ? 'm' : 'pie') : 'pieza';
-    if (!t.active) return 'Oculto para el cliente';
-    if (r.total <= 0) return 'Sin precio: no se muestra al cliente';
-    return `= ${money(r.total, 2)} por ${unitName} (material ${money(r.mat, 2)} + mano de obra ${money(r.lab, 2)})`;
+    const u = U();
+    if (!t.active) return '<span class="muted">Oculto para el cliente</span>';
+    const d = cfg.designs[0];
+    const m = materialCost(t, t.refA, t.refB, d?.spacing);
+    const l = laborFor(t, sizeOf(t, t.refA, t.refB));
+    const what = t.mode === 'area' ? `${fmt(num(t.refA))} × ${fmt(num(t.refB))} ${u.len}` : t.mode === 'lineal' ? `${fmt(num(t.refA))} ${u.len}` : '1 pieza';
+    const missing = [];
+    if (m.missing) missing.push(t.mode === 'pieza' ? 'precio del material' : 'precio del metal');
+    if (!l.persons) missing.push('ejemplo de mano de obra');
+    if (missing.length) return `<span style="color:var(--warn)">Falta ${missing.join(' y ')}: no se muestra al cliente</span>`;
+    const feet = m.parts.map((p) => `${fmt(p.len, 1)} ${u.len} ${esc(metal(p.id)?.name || '')}`).join(' + ');
+    let total = m.cost + l.cost;
+    if (num(t.min) > total) total = num(t.min);
+    return `Ejemplo ${what}, diseño ${esc((d?.name || '').toLowerCase())}: ${feet ? `${feet} = ` : ''}material ${money(m.cost)} + mano de obra ${money(l.cost)} (${laborText(l)}) ≈ <b>${money(roundUp(total))}</b>`;
+  }
+
+  function refreshOwnerHints() {
+    const cl = document.getElementById('checklist');
+    if (cl) cl.innerHTML = checklist();
+    cfg.types.forEach((t) => { const r = document.getElementById(`rate-${t.id}`); if (r) r.innerHTML = rateText(t); });
+    cfg.metals.forEach((m) => document.getElementById(`mp-${m.id}`)?.classList.toggle('bad', !(num(m.price) > 0) && metalUsed(m.id)));
+    document.getElementById('o-whatsapp')?.classList.toggle('bad', !!cfg.whatsapp && !phoneOk(cfg.whatsapp));
   }
 
   function setDirty() {
@@ -531,7 +794,7 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     if (b) b.disabled = false;
   }
 
-  /* ───────── Publicar (el dueño guarda los precios dentro de la página) ───────── */
+  /* ───────── Publicar ───────── */
   const SKELETON = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>';
   function buildDocument(config) {
     const style = document.getElementById('mw-style').textContent;
@@ -589,7 +852,9 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
         else { ta?.select(); toast('Selecciona y copia el texto'); }
         break;
       }
-      case 'add-type': cfg.types.push({ id: uid(), name: 'Nuevo trabajo', mode: 'area', refA: 1, refB: 1, material: 0, labor: 0, min: 0, active: true }); setDirty(); render(); break;
+      case 'add-metal': cfg.metals.push({ id: uid(), name: 'Nuevo metal', price: 0 }); setDirty(); render(); break;
+      case 'del-metal': if (!metalUsed(v)) { cfg.metals = cfg.metals.filter((m) => m.id !== v); setDirty(); render(); } break;
+      case 'add-type': cfg.types.push({ id: uid(), name: 'Nuevo trabajo', mode: 'area', frameMetal: cfg.metals[0]?.id || '', barMetal: '', rails: 1, height: 0, postEvery: 0, material: 0, refA: 4, refB: 4, refPersons: 1, refDays: 1, min: 0, active: true }); setDirty(); render(); break;
       case 'del-type': cfg.types = cfg.types.filter((t) => t.id !== v); client.items.forEach((it) => { if (it.typeId === v) it.typeId = ''; }); setDirty(); render(); break;
       case 'toggle-type': { const t = cfg.types.find((x) => x.id === v); if (t) { t.active = !t.active; setDirty(); render(); } break; }
       case 'discard': cfg = clone(PUBLISHED); dirty = false; try { localStorage.removeItem(DRAFT_KEY); } catch {} render(); break;
@@ -597,43 +862,48 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     }
   });
 
-  const NUMERIC = new Set(['refA', 'refB', 'material', 'labor', 'min', 'pct', 'rangePct', 'roundTo']);
+  const NUMERIC = new Set(['refA', 'refB', 'material', 'min', 'pct', 'spacing', 'rangePct', 'roundTo', 'wastePct', 'price', 'rails', 'height', 'postEvery', 'refPersons', 'refDays', 'payPerDay', 'minPerPerson', 'maxPersons']);
+  const val = (k, v) => (NUMERIC.has(k) ? num(v) : v);
   document.addEventListener('input', (ev) => {
-    const el = ev.target;
-    if (el.dataset.c) { client[el.dataset.c] = el.value; const ce = document.getElementById('c-errors'); if (ce) ce.textContent = ''; if (client.tried) el.classList.toggle('bad', el.dataset.c === 'name' ? !el.value.trim() : el.dataset.c === 'phone' ? !phoneOk(el.value) : false); return; }
-    if (el.dataset.i && el.dataset.k) {
-      const it = client.items.find((x) => x.id === el.dataset.i);
+    const el = ev.target, ds = el.dataset;
+    if (ds.c) { client[ds.c] = el.value; const ce = document.getElementById('c-errors'); if (ce) ce.textContent = ''; if (client.tried) el.classList.toggle('bad', ds.c === 'name' ? !el.value.trim() : ds.c === 'phone' ? !phoneOk(el.value) : false); return; }
+    if (ds.i && ds.k) {
+      const it = client.items.find((x) => x.id === ds.i);
       if (!it) return;
-      it[el.dataset.k] = el.value;
+      it[ds.k] = el.value;
       const t = cfg.types.find((x) => x.id === it.typeId);
       const sk = document.getElementById(`sk-${it.id}`);
       if (sk && t) sk.innerHTML = sketch(it, t);
       refreshEstimate();
       return;
     }
-    if (el.dataset.o) {
-      const k = el.dataset.o;
-      cfg[k] = NUMERIC.has(k) ? num(el.value) : el.value;
+    if (ds.o) { cfg[ds.o] = val(ds.o, el.value); setDirty(); if (ds.o === 'currency' || ds.o === 'unit') render(); if (ds.o === 'business') document.querySelector('h1').textContent = el.value || 'Herrería'; return; }
+    if (ds.l) { cfg.labor[ds.l] = num(el.value); setDirty(); return; }
+    if (ds.m) {
+      const m = cfg.metals.find((x) => x.id === ds.m);
+      if (!m) return;
+      m[ds.k] = val(ds.k, el.value);
       setDirty();
-      if (k === 'currency' || k === 'unit') render();
-      if (k === 'business') document.querySelector('h1').textContent = el.value || 'Herrería';
+      // los selectores de metal muestran el precio: se actualizan sin perder el foco
+      document.querySelectorAll('select[data-k="frameMetal"], select[data-k="barMetal"]').forEach((s) => { const t = cfg.types.find((x) => x.id === s.dataset.t); if (t) s.innerHTML = metalOptions(t[s.dataset.k], s.dataset.k === 'barMetal'); });
       return;
     }
-    if (el.dataset.t) {
-      const t = cfg.types.find((x) => x.id === el.dataset.t);
+    if (ds.t) {
+      const t = cfg.types.find((x) => x.id === ds.t);
       if (!t) return;
-      const k = el.dataset.k;
-      t[k] = NUMERIC.has(k) ? num(el.value) : el.value;
+      t[ds.k] = val(ds.k, el.value);
+      if (ds.k === 'mode') {
+        if (t.mode === 'area' && !num(t.refB)) t.refB = 1;
+        if (t.mode === 'lineal') { if (!num(t.height)) t.height = 3; if (!num(t.postEvery)) t.postEvery = 6; if (!num(t.rails)) t.rails = 2; }
+        setDirty(); render(); return;
+      }
       setDirty();
-      if (k === 'mode') { if (t.mode === 'area' && !num(t.refB)) t.refB = 1; render(); return; }
-      const r = document.getElementById(`rate-${t.id}`);
-      if (r) r.textContent = rateText(t);
       return;
     }
-    if (el.dataset.d) {
-      const d = cfg.designs.find((x) => x.id === el.dataset.d);
+    if (ds.d) {
+      const d = cfg.designs.find((x) => x.id === ds.d);
       if (!d) return;
-      d[el.dataset.k] = NUMERIC.has(el.dataset.k) ? num(el.value) : el.value;
+      d[ds.k] = val(ds.k, el.value);
       setDirty();
     }
   });
@@ -643,7 +913,6 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
   if (location.hash === '#dueno') view = 'dueno';
   render();
 
-  // ¿Quien abre la página puede editar? Entonces ve el panel del dueño. Los clientes nunca lo ven.
   (async () => {
     const host = window.claude;
     if (!host || !host.use) return;
@@ -653,9 +922,9 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     if (!canEdit) { if (view === 'dueno') { view = 'cliente'; render(); } return; }
     try {
       const d = localStorage.getItem(DRAFT_KEY);
-      if (d) { const parsed = JSON.parse(d); if (parsed && Array.isArray(parsed.types) && JSON.stringify(parsed) !== JSON.stringify(PUBLISHED)) { cfg = parsed; dirty = true; } }
+      if (d) { const parsed = JSON.parse(d); if (parsed && Array.isArray(parsed.types) && Array.isArray(parsed.metals) && JSON.stringify(parsed) !== JSON.stringify(PUBLISHED)) { cfg = parsed; dirty = true; } }
     } catch {}
-    if (!phoneOk(cfg.whatsapp) || dirty || location.hash === '#dueno') view = 'dueno';
+    if (!cfg.types.some(priced) || !phoneOk(cfg.whatsapp) || dirty || location.hash === '#dueno') view = 'dueno';
     render();
   })();
 })();
