@@ -3,32 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Herrería · Cotiza tu trabajo</title>
+<title>Rojo Ironworks AZ · Ejemplo</title>
 <style>
-  body { margin: 0; font-family: Georgia, 'Times New Roman', serif; background: #faf8f5; color: #1d1d1d; }
-  header { padding: 28px 20px; background: #1d1d1d; color: #fff; }
-  header h1 { margin: 0 auto; max-width: 1080px; font-size: 26px; }
-  section { max-width: 1080px; margin: 0 auto; padding: 32px 20px; }
-  h2 { margin: 0 0 8px; }
-  footer { padding: 24px 20px; text-align: center; color: #777; font-size: 14px; }
+  body { margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f6f4f1; color: #1b1b1b; }
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: #141414; color: #fff; }
+  nav a { color: #fff; text-decoration: none; margin-left: 18px; font-size: 15px; }
+  .hero { padding: 72px 24px; text-align: center; background: linear-gradient(#1f1f1f, #2b2b2b); color: #fff; }
+  .hero h1 { margin: 0 0 12px; font-size: 40px; }
+  .hero p { margin: 0 auto 24px; max-width: 560px; color: #ddd; }
+  .cta { display: inline-block; padding: 14px 28px; border-radius: 999px; background: #9e1b1b; color: #fff; font-weight: 700; font-size: 17px; border: 0; cursor: pointer; }
+  section { max-width: 1000px; margin: 0 auto; padding: 48px 24px; }
+  .cards { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .cards div { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #e5e1dc; }
 </style>
 </head>
 <body>
-  <header><h1>Tu Herrería</h1></header>
-  <section>
-    <h2>Cotiza tu trabajo en línea</h2>
-    <p>Elige el trabajo, escribe tus medidas y recibe un estimado al instante.</p>
+  <nav><strong>ROJO IRONWORKS AZ</strong><div><a href="#trabajos">Trabajos</a><a href="#cotizar">Cotizar</a></div></nav>
+
+  <div class="hero">
+    <h1>Portones, rejas y barandales a tu medida</h1>
+    <p>Cotiza en línea en menos de un minuto: elige el trabajo, escribe tus medidas y describe tu diseño.</p>
+    <!-- Cualquier botón con data-cotizar abre el panel de cotización encima de la página -->
+    <button class="cta" data-cotizar>Cotizar mi proyecto</button>
+  </div>
+
+  <section id="trabajos">
+    <div class="cards">
+      <div><h3>Portones</h3><p>Corredizos o abatibles, con o sin motor.</p><button class="cta" data-cotizar style="font-size:14px;padding:10px 18px">Cotizar portón</button></div>
+      <div><h3>Rejas</h3><p>Protección para ventanas y puertas.</p></div>
+      <div><h3>Barandales</h3><p>Escaleras, balcones y terrazas.</p></div>
+    </div>
   </section>
 
-  <!-- ═══ Cotizador: copia desde aquí… ═══ -->
-  <section>
-    <div id="cotizador-herreria" data-color="#1f6fe5"></div>
-  </section>
+  <!-- ═══ Cotizador: pega estas 3 líneas antes de </body> en cada página ═══ -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
   <script src="cotizador.js"></script>
-  <!-- ═══ …hasta aquí ═══ -->
-
-  <footer>Ejemplo de cómo se ve el cotizador dentro de una página propia.</footer>
 </body>
 </html>

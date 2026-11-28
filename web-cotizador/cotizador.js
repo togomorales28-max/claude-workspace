@@ -338,8 +338,13 @@
     return parts.map(function (p) { var m = metal(cfg, p.id); return fmt(p.len * qty, 1) + ' ' + U(cfg).len + ' de ' + (m ? m.name : 'metal') + ' (' + p.what + ')'; }).join('; ');
   }
   function digits(s) { return String(s || '').replace(/\D/g, ''); }
-  function intlPhone(cfg, raw) { var d = digits(raw); if (d.length === 10) d = digits(cfg.countryCode) + d; return d; }
-  function phoneOk(raw) { var d = digits(raw); return d.length >= 10 && d.length <= 15; }
+  /** El número se guarda como +[código de país][número], p. ej. +16025550123. */
+  function intlPhone(_cfg, raw) { return '+' + digits(raw); }
+  /** Obligatorio con + y código de país: «+1 602 555 0123». Acepta espacios, guiones y paréntesis. */
+  function phoneOk(raw) {
+    var s = String(raw || '').trim(), d = digits(s);
+    return /^\+[0-9\s().-]+$/.test(s) && d.length >= 8 && d.length <= 15;
+  }
   function folio() {
     var t = new Date(); var p = function (n) { return String(n).padStart(2, '0'); };
     return 'C' + String(t.getFullYear()).slice(2) + p(t.getMonth() + 1) + p(t.getDate()) + '-' + p(t.getHours()) + p(t.getMinutes()) + String(Math.floor(Math.random() * 90) + 10);
@@ -375,8 +380,8 @@
     var out = [
       '*Nueva cotización ' + s.folio + '*',
       'Cliente: ' + s.name,
-      (s.via === 'sms' ? 'Celular (prefiere SMS)' : 'WhatsApp') + ': +' + s.phone,
-      s.via === 'whatsapp' ? 'Abrir chat: https://wa.me/' + s.phone : null,
+      (s.via === 'sms' ? 'Celular (prefiere SMS)' : 'WhatsApp') + ': ' + s.phone,
+      s.via === 'whatsapp' ? 'Abrir chat: https://wa.me/' + digits(s.phone) : null,
       s.address ? 'Ubicación: ' + s.address : null,
       '',
     ];
@@ -414,7 +419,8 @@
   }
 
   function supabaseStore(conf) {
-    var sb = root.supabase.createClient(conf.supabaseUrl, conf.supabaseAnonKey, { auth: { persistSession: true, detectSessionInUrl: true } });
+    var sb = root.supabase.createClient(conf.supabaseUrl, conf.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'rojo-cotizador-auth' } });
+    var cfgChannel = null, cfgListeners = [];
     return {
       demo: false,
       client: sb,
@@ -425,10 +431,15 @@
         });
       },
       onConfig: function (cb) {
-        var ch = sb.channel('cotizador-config')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'cotizador_config' }, function (p) { if (p.new && p.new.data) cb(p.new.data); })
-          .subscribe();
-        return function () { sb.removeChannel(ch); };
+        cfgListeners.push(cb);
+        if (!cfgChannel) {
+          cfgChannel = sb.channel('cotizador-config')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'cotizador_config' }, function (p) {
+              if (p.new && p.new.data) cfgListeners.forEach(function (fn) { fn(p.new.data); });
+            })
+            .subscribe();
+        }
+        return function () { cfgListeners = cfgListeners.filter(function (fn) { return fn !== cb; }); };
       },
       saveQuote: function (q) {
         return sb.from('cotizador_quotes').insert({
@@ -438,9 +449,26 @@
       },
       // ── Solo para el panel del dueño ──
       session: function () { return sb.auth.getSession().then(function (r) { return r.data.session; }); },
-      onAuth: function (cb) { var s = sb.auth.onAuthStateChange(function (_e, session) { cb(session); }); return function () { s.data.subscription.unsubscribe(); }; },
-      sendLoginLink: function (email, redirectTo) {
-        return sb.auth.signInWithOtp({ email: email, options: { emailRedirectTo: redirectTo, shouldCreateUser: true } }).then(function (r) { if (r.error) throw r.error; });
+      onAuth: function (cb) { var s = sb.auth.onAuthStateChange(function (ev, session) { cb(session, ev); }); return function () { s.data.subscription.unsubscribe(); }; },
+      signIn: function (email, password) {
+        return sb.auth.signInWithPassword({ email: email, password: password }).then(function (r) { if (r.error) throw r.error; return r.data.session; });
+      },
+      signUp: function (email, password, redirectTo) {
+        return sb.auth.signUp({ email: email, password: password, options: { emailRedirectTo: redirectTo } }).then(function (r) { if (r.error) throw r.error; return r.data; });
+      },
+      resetPassword: function (email, redirectTo) {
+        return sb.auth.resetPasswordForEmail(email, { redirectTo: redirectTo }).then(function (r) { if (r.error) throw r.error; });
+      },
+      updatePassword: function (password) {
+        return sb.auth.updateUser({ password: password }).then(function (r) { if (r.error) throw r.error; });
+      },
+      savePushSub: function (sub, email) {
+        return sb.from('cotizador_push_subs').delete().eq('endpoint', sub.endpoint).then(function () {
+          return sb.from('cotizador_push_subs').insert({ owner_email: String(email || '').toLowerCase(), endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth, device: sub.device || null });
+        }).then(function (r) { if (r.error) throw r.error; });
+      },
+      deletePushSub: function (endpoint) {
+        return sb.from('cotizador_push_subs').delete().eq('endpoint', endpoint).then(function (r) { if (r.error) throw r.error; });
       },
       signOut: function () { return sb.auth.signOut(); },
       isOwner: function () { return sb.rpc('cotizador_is_owner').then(function (r) { if (r.error) throw r.error; return !!r.data; }); },
@@ -493,7 +521,12 @@
       },
       session: function () { return Promise.resolve({ user: { email: 'modo de prueba' } }); },
       onAuth: function () { return function () {}; },
-      sendLoginLink: function () { return Promise.resolve(); },
+      signIn: function () { return Promise.resolve({ user: { email: 'modo de prueba' } }); },
+      signUp: function () { return Promise.resolve({}); },
+      resetPassword: function () { return Promise.resolve(); },
+      updatePassword: function () { return Promise.resolve(); },
+      savePushSub: function () { return Promise.resolve(); },
+      deletePushSub: function () { return Promise.resolve(); },
       signOut: function () { return Promise.resolve(); },
       isOwner: function () { return Promise.resolve(true); },
       saveConfig: function (cfg) { write(CK, cfg); if (bc) bc.postMessage('cfg'); return Promise.resolve(true); },
@@ -505,21 +538,81 @@
   }
 
   /* ═══════════════ Cotizador para la página del cliente ═══════════════ */
-  var CSS = ":host { --cz-accent: #1f6fe5; --cz-ink: #121821; --cz-ink2: #3c4757; --cz-mute: #687486; --cz-line: #dbe1e8; --cz-bg: #ffffff; --cz-bg2: #f5f7fa; --cz-soft: #e6eefc; --cz-ok: #1a8a60; --cz-warn: #a3650f; --cz-warnbg: #fbf0dc; --cz-bad: #c23a30; display: block; color: var(--cz-ink); font-family: inherit; }\n* { box-sizing: border-box; }\n.cz { font-size: 15px; line-height: 1.5; }\n.cz-load { padding: 24px; text-align: center; color: var(--cz-mute); }\n.cz-grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }\n@media (max-width: 820px) { .cz-grid { grid-template-columns: minmax(0, 1fr); } }\n.cz-stack { display: grid; gap: 14px; }\n.cz-side { position: sticky; top: 16px; }\n@media (max-width: 820px) { .cz-side { position: static; } }\n.cz-card { background: var(--cz-bg); border: 1px solid var(--cz-line); border-radius: 12px; padding: 16px; }\n.cz-empty { text-align: center; padding: 32px 16px; } .cz-empty h3 { margin: 0 0 6px; }\n.cz-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }\n.cz-head h3 { margin: 0; font-size: 17px; } .cz-head h3 b { color: var(--cz-accent); font-size: 12px; font-weight: 600; margin-right: 4px; font-variant-numeric: tabular-nums; }\n.cz-label { font-size: 13px; color: var(--cz-mute); margin: 14px 0 6px; }\n.cz-choices { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }\n.cz-choice { text-align: left; border: 1.5px solid var(--cz-line); background: var(--cz-bg2); color: var(--cz-ink); border-radius: 10px; padding: 10px 12px; font: inherit; cursor: pointer; transition: border-color .15s, background-color .15s; }\n.cz-choice:hover { border-color: var(--cz-accent); }\n.cz-choice[aria-pressed=\"true\"] { border-color: var(--cz-accent); background: var(--cz-soft); }\n.cz-choice .t { display: block; font-weight: 600; font-size: 14.5px; } .cz-choice .d { display: block; font-size: 12.5px; color: var(--cz-mute); }\n.cz-row { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); margin-top: 14px; }\n.cz-f { display: grid; gap: 5px; font-size: 13px; font-weight: 500; color: var(--cz-ink2); min-width: 0; }\n.cz-f .u { font-weight: 400; color: var(--cz-mute); font-size: 12px; }\n.cz-in { width: 100%; height: 44px; border: 1px solid var(--cz-line); border-radius: 8px; background: var(--cz-bg); color: var(--cz-ink); font: inherit; font-size: 16px; padding: 0 11px; }\ntextarea.cz-in { height: auto; min-height: 72px; padding: 9px 11px; resize: vertical; }\n.cz-in:focus { outline: 2px solid var(--cz-accent); outline-offset: -1px; border-color: transparent; }\n.cz-in.bad { border-color: var(--cz-bad); }\n.cz-sketch { display: flex; gap: 14px; align-items: center; margin-top: 12px; padding: 10px; border-radius: 10px; background: var(--cz-bg2); font-size: 13px; color: var(--cz-ink2); }\n.cz-sketch svg { width: 120px; height: 84px; flex: none; fill: none; stroke: none; }\n.cz-sketch svg text { fill: var(--cz-ink2); stroke: none; font-family: inherit; }\n.cz-sketch svg .acc { stroke: var(--cz-accent); } .cz-sketch svg .fill { fill: var(--cz-soft); }\n.cz-design { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--cz-line); }\n.cz-hint { font-size: 13px; color: var(--cz-mute); margin: 10px 0 6px; }\n.cz-chips { display: flex; flex-wrap: wrap; gap: 6px; }\n.cz-chip { border: 1px solid var(--cz-line); background: var(--cz-bg2); color: var(--cz-ink2); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }\n.cz-chip[aria-pressed=\"true\"] { background: var(--cz-soft); border-color: var(--cz-accent); color: var(--cz-ink); }\n.cz-chip[aria-pressed=\"true\"]::before { content: \"✓ \"; color: var(--cz-accent); }\n.cz-diff { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 8px 12px; border-radius: 9px; font-size: 13.5px; background: var(--cz-bg2); }\n.cz-diff[data-level=\"Media\"] b { color: var(--cz-accent); } .cz-diff[data-level=\"Alta\"] b, .cz-diff[data-level=\"Muy alta\"] b { color: var(--cz-warn); }\n.cz-check { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 13.5px; cursor: pointer; }\n.cz-check input { width: 18px; height: 18px; accent-color: var(--cz-accent); }\n.cz-eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--cz-mute); }\n.cz-big { font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; }\n.cz-range { font-size: 14px; color: var(--cz-ink2); font-weight: 400; font-variant-numeric: tabular-nums; }\n.cz-lines { display: grid; gap: 8px; margin: 12px 0; padding-top: 12px; border-top: 1px solid var(--cz-line); font-size: 13.5px; }\n.cz-line > div:first-child { display: flex; justify-content: space-between; gap: 10px; }\n.cz-num { font-variant-numeric: tabular-nums; white-space: nowrap; }\n.cz-muted { color: var(--cz-mute); } .cz-small { font-size: 12.5px; }\n.cz-notice { border-radius: 9px; padding: 10px 12px; font-size: 12.5px; line-height: 1.45; background: var(--cz-warnbg); color: var(--cz-warn); margin: 12px 0 0; }\n.cz-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 18px; border-radius: 9px; border: 1px solid var(--cz-line); background: var(--cz-bg); color: var(--cz-ink); font: inherit; font-weight: 600; font-size: 15px; cursor: pointer; text-decoration: none; }\n.cz-btn:hover { background: var(--cz-bg2); }\n.cz-btn:disabled { opacity: .5; pointer-events: none; }\n.cz-primary { background: var(--cz-accent); border-color: var(--cz-accent); color: #fff; margin-top: 12px; }\n.cz-primary:hover { background: var(--cz-accent); filter: brightness(.92); }\n.cz-wa { background: #1fa855; border-color: #1fa855; color: #fff; } .cz-wa:hover { background: #188a46; }\n.cz-block { width: 100%; }\n.cz-link { border: 0; background: none; color: var(--cz-mute); font: inherit; font-size: 13.5px; cursor: pointer; text-decoration: underline; }\n:focus-visible { outline: 2px solid var(--cz-accent); outline-offset: 2px; }\n/* Panel */\n.cz-overlay { position: fixed; inset: 0; background: rgba(10, 14, 20, .55); z-index: 2147483000; }\n.cz-overlay.cz-anim { animation: czfade .18s ease-out; }\n.cz-panel { position: fixed; z-index: 2147483001; right: 0; top: 0; bottom: 0; width: min(460px, 100%); background: var(--cz-bg); color: var(--cz-ink); overflow-y: auto; padding: 28px 22px calc(24px + env(safe-area-inset-bottom, 0px)); box-shadow: -12px 0 40px rgba(0,0,0,.18); display: grid; gap: 12px; align-content: start; font-size: 15px; line-height: 1.5; }\n.cz-panel.cz-anim { animation: czslide .26s cubic-bezier(.2,.7,.2,1); }\n@media (max-width: 560px) { .cz-panel { top: auto; max-height: 92dvh; border-radius: 16px 16px 0 0; } .cz-panel.cz-anim { animation-name: czup; } }\n.cz-x { position: absolute; top: 10px; right: 12px; width: 38px; height: 38px; border: 0; border-radius: 8px; background: var(--cz-bg2); font-size: 22px; line-height: 1; cursor: pointer; color: var(--cz-ink2); }\n.cz-title { margin: 2px 40px 0 0; font-size: 22px; }\n.cz-form { display: grid; gap: 12px; }\n.cz-seg-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }\n.cz-seg { display: inline-flex; border: 1px solid var(--cz-line); border-radius: 8px; padding: 2px; background: var(--cz-bg2); }\n.cz-seg button { border: 0; background: none; font: inherit; font-size: 13.5px; color: var(--cz-mute); padding: 6px 12px; border-radius: 6px; cursor: pointer; }\n.cz-seg button[aria-pressed=\"true\"] { background: var(--cz-bg); color: var(--cz-ink); box-shadow: 0 0 0 1px var(--cz-line); }\n.cz-err { color: var(--cz-bad); font-size: 13px; margin: 0; }\n.cz-ok { width: 46px; height: 46px; border-radius: 50%; background: #e1f4ec; color: var(--cz-ok); display: grid; place-items: center; font-size: 22px; font-weight: 700; }\n.cz-summary { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--cz-bg2); font-size: 14px; }\n.cz-summary > div { display: flex; justify-content: space-between; gap: 12px; }\n.cz-total { border-top: 1px solid var(--cz-line); padding-top: 8px; font-weight: 600; }\n@keyframes czfade { from { opacity: 0; } }\n@keyframes czslide { from { transform: translateX(24px); opacity: 0; } }\n@keyframes czup { from { transform: translateY(24px); opacity: 0; } }\n@media (prefers-reduced-motion: reduce) { .cz-overlay, .cz-panel { animation: none; } }\n";
+  var CSS = ":host { --cz-accent: #1f6fe5; --cz-ink: #121821; --cz-ink2: #3c4757; --cz-mute: #687486; --cz-line: #dbe1e8; --cz-bg: #ffffff; --cz-bg2: #f5f7fa; --cz-soft: #e6eefc; --cz-ok: #1a8a60; --cz-warn: #a3650f; --cz-warnbg: #fbf0dc; --cz-bad: #c23a30; display: block; color: var(--cz-ink); font-family: inherit; }\n* { box-sizing: border-box; }\n.cz { font-size: 15px; line-height: 1.5; }\n.cz-load { padding: 24px; text-align: center; color: var(--cz-mute); }\n.cz-grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; }\n@media (max-width: 820px) { .cz-grid { grid-template-columns: minmax(0, 1fr); } }\n.cz-stack { display: grid; gap: 14px; }\n.cz-side { position: sticky; top: 16px; }\n@media (max-width: 820px) { .cz-side { position: static; } }\n.cz-card { background: var(--cz-bg); border: 1px solid var(--cz-line); border-radius: 12px; padding: 16px; }\n.cz-empty { text-align: center; padding: 32px 16px; } .cz-empty h3 { margin: 0 0 6px; }\n.cz-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }\n.cz-head h3 { margin: 0; font-size: 17px; } .cz-head h3 b { color: var(--cz-accent); font-size: 12px; font-weight: 600; margin-right: 4px; font-variant-numeric: tabular-nums; }\n.cz-label { font-size: 13px; color: var(--cz-mute); margin: 14px 0 6px; }\n.cz-choices { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }\n.cz-choice { text-align: left; border: 1.5px solid var(--cz-line); background: var(--cz-bg2); color: var(--cz-ink); border-radius: 10px; padding: 10px 12px; font: inherit; cursor: pointer; transition: border-color .15s, background-color .15s; }\n.cz-choice:hover { border-color: var(--cz-accent); }\n.cz-choice[aria-pressed=\"true\"] { border-color: var(--cz-accent); background: var(--cz-soft); }\n.cz-choice .t { display: block; font-weight: 600; font-size: 14.5px; } .cz-choice .d { display: block; font-size: 12.5px; color: var(--cz-mute); }\n.cz-row { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); margin-top: 14px; }\n.cz-f { display: grid; gap: 5px; font-size: 13px; font-weight: 500; color: var(--cz-ink2); min-width: 0; }\n.cz-f .u { font-weight: 400; color: var(--cz-mute); font-size: 12px; }\n.cz-in { width: 100%; height: 44px; border: 1px solid var(--cz-line); border-radius: 8px; background: var(--cz-bg); color: var(--cz-ink); font: inherit; font-size: 16px; padding: 0 11px; }\ntextarea.cz-in { height: auto; min-height: 72px; padding: 9px 11px; resize: vertical; }\n.cz-in:focus { outline: 2px solid var(--cz-accent); outline-offset: -1px; border-color: transparent; }\n.cz-in.bad { border-color: var(--cz-bad); }\n.cz-sketch { display: flex; gap: 14px; align-items: center; margin-top: 12px; padding: 10px; border-radius: 10px; background: var(--cz-bg2); font-size: 13px; color: var(--cz-ink2); }\n.cz-sketch svg { width: 120px; height: 84px; flex: none; fill: none; stroke: none; }\n.cz-sketch svg text { fill: var(--cz-ink2); stroke: none; font-family: inherit; }\n.cz-sketch svg .acc { stroke: var(--cz-accent); } .cz-sketch svg .fill { fill: var(--cz-soft); }\n.cz-design { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--cz-line); }\n.cz-hint { font-size: 13px; color: var(--cz-mute); margin: 10px 0 6px; }\n.cz-chips { display: flex; flex-wrap: wrap; gap: 6px; }\n.cz-chip { border: 1px solid var(--cz-line); background: var(--cz-bg2); color: var(--cz-ink2); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }\n.cz-chip[aria-pressed=\"true\"] { background: var(--cz-soft); border-color: var(--cz-accent); color: var(--cz-ink); }\n.cz-chip[aria-pressed=\"true\"]::before { content: \"✓ \"; color: var(--cz-accent); }\n.cz-diff { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 8px 12px; border-radius: 9px; font-size: 13.5px; background: var(--cz-bg2); }\n.cz-diff[data-level=\"Media\"] b { color: var(--cz-accent); } .cz-diff[data-level=\"Alta\"] b, .cz-diff[data-level=\"Muy alta\"] b { color: var(--cz-warn); }\n.cz-check { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 13.5px; cursor: pointer; }\n.cz-check input { width: 18px; height: 18px; accent-color: var(--cz-accent); }\n.cz-eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--cz-mute); }\n.cz-big { font-size: 34px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; }\n.cz-range { font-size: 14px; color: var(--cz-ink2); font-weight: 400; font-variant-numeric: tabular-nums; }\n.cz-lines { display: grid; gap: 8px; margin: 12px 0; padding-top: 12px; border-top: 1px solid var(--cz-line); font-size: 13.5px; }\n.cz-line > div:first-child { display: flex; justify-content: space-between; gap: 10px; }\n.cz-num { font-variant-numeric: tabular-nums; white-space: nowrap; }\n.cz-muted { color: var(--cz-mute); } .cz-small { font-size: 12.5px; }\n.cz-notice { border-radius: 9px; padding: 10px 12px; font-size: 12.5px; line-height: 1.45; background: var(--cz-warnbg); color: var(--cz-warn); margin: 12px 0 0; }\n.cz-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 18px; border-radius: 9px; border: 1px solid var(--cz-line); background: var(--cz-bg); color: var(--cz-ink); font: inherit; font-weight: 600; font-size: 15px; cursor: pointer; text-decoration: none; }\n.cz-btn:hover { background: var(--cz-bg2); }\n.cz-btn:disabled { opacity: .5; pointer-events: none; }\n.cz-primary { background: var(--cz-accent); border-color: var(--cz-accent); color: #fff; margin-top: 12px; }\n.cz-primary:hover { background: var(--cz-accent); filter: brightness(.92); }\n.cz-wa { background: #1fa855; border-color: #1fa855; color: #fff; } .cz-wa:hover { background: #188a46; }\n.cz-block { width: 100%; }\n.cz-link { border: 0; background: none; color: var(--cz-mute); font: inherit; font-size: 13.5px; cursor: pointer; text-decoration: underline; }\n:focus-visible { outline: 2px solid var(--cz-accent); outline-offset: 2px; }\n/* Panel */\n.cz-overlay { position: fixed; inset: 0; background: rgba(10, 14, 20, .55); z-index: 2147483000; }\n.cz-overlay.cz-anim { animation: czfade .18s ease-out; }\n.cz-panel { position: fixed; z-index: 2147483001; right: 0; top: 0; bottom: 0; width: min(460px, 100%); background: var(--cz-bg); color: var(--cz-ink); overflow-y: auto; padding: 28px 22px calc(24px + env(safe-area-inset-bottom, 0px)); box-shadow: -12px 0 40px rgba(0,0,0,.18); display: grid; gap: 12px; align-content: start; font-size: 15px; line-height: 1.5; }\n.cz-panel.cz-anim { animation: czslide .26s cubic-bezier(.2,.7,.2,1); }\n@media (max-width: 560px) { .cz-panel { top: auto; max-height: 92dvh; border-radius: 16px 16px 0 0; } .cz-panel.cz-anim { animation-name: czup; } }\n.cz-x { position: absolute; top: 10px; right: 12px; width: 38px; height: 38px; border: 0; border-radius: 8px; background: var(--cz-bg2); font-size: 22px; line-height: 1; cursor: pointer; color: var(--cz-ink2); }\n.cz-title { margin: 2px 40px 0 0; font-size: 22px; }\n.cz-form { display: grid; gap: 12px; }\n.cz-seg-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }\n.cz-seg { display: inline-flex; border: 1px solid var(--cz-line); border-radius: 8px; padding: 2px; background: var(--cz-bg2); }\n.cz-seg button { border: 0; background: none; font: inherit; font-size: 13.5px; color: var(--cz-mute); padding: 6px 12px; border-radius: 6px; cursor: pointer; }\n.cz-seg button[aria-pressed=\"true\"] { background: var(--cz-bg); color: var(--cz-ink); box-shadow: 0 0 0 1px var(--cz-line); }\n.cz-err { color: var(--cz-bad); font-size: 13px; margin: 0; }\n.cz-seg-row.bad .cz-seg { box-shadow: 0 0 0 2px var(--cz-bad); }\n.cz-ok { width: 46px; height: 46px; border-radius: 50%; background: #e1f4ec; color: var(--cz-ok); display: grid; place-items: center; font-size: 22px; font-weight: 700; }\n.cz-summary { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--cz-bg2); font-size: 14px; }\n.cz-summary > div { display: flex; justify-content: space-between; gap: 12px; }\n.cz-total { border-top: 1px solid var(--cz-line); padding-top: 8px; font-weight: 600; }\n@keyframes czfade { from { opacity: 0; } }\n@keyframes czslide { from { transform: translateX(24px); opacity: 0; } }\n@keyframes czup { from { transform: translateY(24px); opacity: 0; } }\n@media (prefers-reduced-motion: reduce) { .cz-overlay, .cz-panel { animation: none; } }\n";
+
+  var PANEL_CSS = [
+    '.czp[hidden] { display: none; }',
+    '.czp-overlay { position: fixed; inset: 0; background: rgba(10, 14, 20, .6); z-index: 2147482000; }',
+    '.czp-sheet { position: fixed; z-index: 2147482001; top: 0; right: 0; bottom: 0; width: min(1080px, 100%); background: var(--cz-bg2); color: var(--cz-ink); display: flex; flex-direction: column; box-shadow: -16px 0 48px rgba(0,0,0,.25); }',
+    '.czp-anim .czp-overlay { animation: czfade .2s ease-out; } .czp-anim .czp-sheet { animation: czslide .3s cubic-bezier(.2,.7,.2,1); }',
+    '@media (max-width: 640px) { .czp-anim .czp-sheet { animation-name: czup; } }',
+    '.czp-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--cz-bg); border-bottom: 1px solid var(--cz-line); padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); }',
+    '.czp-head strong { font-size: 18px; } .czp-head .cz-x { position: static; flex: none; }',
+    '.czp-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 18px max(16px, env(safe-area-inset-right, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }',
+    '.czp-body .cz-side { top: 0; }',
+    '.czp-step { max-width: 560px; margin: 0 auto; display: grid; gap: 12px; background: var(--cz-bg); border: 1px solid var(--cz-line); border-radius: 12px; padding: 20px; }',
+    '.czp-step .cz-title { margin-right: 0; } .czp-back { justify-self: start; padding: 0; }',
+    '.cz-seg-row.bad .cz-seg { box-shadow: 0 0 0 2px var(--cz-bad); }',
+    '.czp-fab { position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 2147481000; border: 0; border-radius: 999px; padding: 14px 24px; background: var(--cz-accent); color: #fff; font: inherit; font-weight: 700; font-size: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.25); cursor: pointer; }',
+    '.czp-fab:hover { filter: brightness(.93); }',
+  ].join('\n');
 
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function uid() { return Math.random().toString(36).slice(2, 9); }
 
+  /**
+   * mode 'inline': el cotizador vive dentro de la página y los datos del cliente se piden en un panel lateral.
+   * mode 'panel':  todo el cotizador se abre encima de la página (como «Personalizar»), sin salir de ella.
+   */
   function mount(container, options) {
     options = options || {};
-    var store = options.store || createStore(options.config || root.COTIZADOR_CONFIG);
+    var mode = options.mode || 'inline';
+    var conf = options.config || root.COTIZADOR_CONFIG || {};
+    var store = options.store || createStore(conf);
     var shadow = container.attachShadow ? container.attachShadow({ mode: 'open' }) : container;
-    var accent = container.getAttribute('data-color');
-    shadow.innerHTML = '<style>' + CSS + (accent && /^#[0-9a-f]{3,8}$/i.test(accent) ? ':host{--cz-accent:' + accent + '}' : '') + '</style><div class="cz" part="cotizador"><div class="cz-load">Cargando precios…</div></div><div class="cz-modal-root"></div>';
+    var accent = container.getAttribute('data-color') || conf.color;
+    var accentCss = accent && /^#[0-9a-f]{3,8}$/i.test(accent) ? ':host{--cz-accent:' + accent + '}' : '';
+    var lastFocus = null;
+    if (mode === 'panel') {
+      shadow.innerHTML = '<style>' + CSS + PANEL_CSS + accentCss + '</style>' +
+        (conf.floatingButton ? '<button class="czp-fab" type="button" data-act="show">' + esc(conf.floatingButtonText || 'Cotizar') + '</button>' : '') +
+        '<div class="czp" hidden><div class="czp-overlay" data-act="close"></div>' +
+        '<div class="czp-sheet" role="dialog" aria-modal="true" aria-labelledby="czp-title">' +
+        '<header class="czp-head"><div><div class="cz-eyebrow" data-biz></div><strong id="czp-title">Cotiza tu proyecto</strong></div>' +
+        '<button class="cz-x" type="button" data-act="close" aria-label="Cerrar">×</button></header>' +
+        '<div class="czp-body"><div class="cz" part="cotizador"><div class="cz-load">Cargando precios…</div></div></div></div></div><div class="cz-modal-root"></div>';
+    } else {
+      shadow.innerHTML = '<style>' + CSS + accentCss + '</style><div class="cz" part="cotizador"><div class="cz-load">Cargando precios…</div></div><div class="cz-modal-root"></div>';
+    }
     var $root = shadow.querySelector('.cz');
     var $modal = shadow.querySelector('.cz-modal-root');
+    var $wrap = shadow.querySelector('.czp');
+    var $body = shadow.querySelector('.czp-body');
     var cfg = null;
-    var state = { items: [], contact: { name: '', phone: '', via: 'whatsapp', address: '', notes: '' }, tried: false, modal: null, sending: false, sent: null, error: '' };
+    var emptyContact = function () { return { name: '', phone: '', via: '', address: '', notes: '' }; };
+    var state = { items: [], contact: emptyContact(), tried: false, modal: null, step: 'calc', sending: false, sent: null, error: '' };
+    var isOpen = function () { return mode === 'panel' ? !!($wrap && !$wrap.hidden) : !!state.modal; };
+
+    function show() {
+      if (mode !== 'panel' || !$wrap.hidden) return;
+      lastFocus = document.activeElement;
+      $wrap.hidden = false; $wrap.classList.add('czp-anim');
+      setTimeout(function () { $wrap.classList.remove('czp-anim'); }, 400);
+      document.documentElement.style.overflow = 'hidden';
+      var x = shadow.querySelector('.czp-head .cz-x'); if (x) x.focus();
+    }
+    function hide() {
+      if (mode !== 'panel' || $wrap.hidden) return;
+      $wrap.hidden = true;
+      document.documentElement.style.overflow = '';
+      if (state.step === 'done') reset();
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+    function reset() {
+      state.items = [newItem()]; state.contact = emptyContact(); state.tried = false; state.sent = null; state.step = 'calc'; state.error = '';
+      render();
+    }
+    function toTop() { if ($body) $body.scrollTop = 0; }
 
     function newItem() {
       var first = (cfg.types || []).find(function (t) { return core.priced(cfg, t); });
@@ -528,6 +621,13 @@
     function money(n) { return core.money(cfg, n); }
 
     function render() {
+      var biz = shadow.querySelector('[data-biz]'); if (biz) biz.textContent = cfg.business || '';
+      if (mode === 'panel' && state.step !== 'calc') {
+        $root.innerHTML = '<div class="czp-step">' + (state.step === 'form'
+          ? '<button class="cz-link czp-back" type="button" data-act="back">← Volver a mi proyecto</button>' + formView()
+          : doneView()) + '</div>';
+        return;
+      }
       var available = cfg.types.filter(function (t) { return core.priced(cfg, t); });
       if (!available.length) { $root.innerHTML = '<div class="cz-card cz-empty"><h3>Muy pronto</h3><p>Estamos preparando nuestros precios. Vuelve más tarde para cotizar al instante.</p></div>'; return; }
       state.items.forEach(function (it) { if (!available.some(function (t) { return t.id === it.typeId; })) it.typeId = available[0].id; });
@@ -618,8 +718,14 @@
     }
 
     /* ── Panel (se abre encima de la misma página) ── */
-    function openPanel() { state.modal = 'form'; state.error = ''; state.animate = true; renderModal(); setTimeout(function () { var f = shadow.querySelector('[data-c="name"]'); if (f) f.focus(); }, 30); }
-    function closePanel() { state.modal = null; renderModal(); }
+    function focusName() { setTimeout(function () { var f = shadow.querySelector('[data-c="name"]'); if (f) f.focus(); }, 30); }
+    function openPanel() {
+      state.error = '';
+      if (mode === 'panel') { state.step = 'form'; render(); toTop(); focusName(); return; }
+      state.modal = 'form'; state.animate = true; renderModal(); focusName();
+    }
+    function closePanel() { if (mode === 'panel') { hide(); return; } state.modal = null; renderModal(); }
+    function refreshForm() { if (mode === 'panel') render(); else renderModal(); }
     function renderModal() {
       if (!state.modal) { $modal.innerHTML = ''; document.documentElement.style.overflow = ''; return; }
       document.documentElement.style.overflow = 'hidden';
@@ -634,8 +740,8 @@
         '<p class="cz-muted cz-small">Déjanos tus datos para enviarte la cotización y comunicarnos contigo.</p>' +
         '<form class="cz-form" data-form novalidate>' +
         '<label class="cz-f">Nombre<input class="cz-in' + bad(c.name.trim()) + '" data-c="name" value="' + esc(c.name) + '" autocomplete="name" required></label>' +
-        '<label class="cz-f">WhatsApp o celular <span class="u">con lada</span><input class="cz-in' + bad(core.phoneOk(c.phone)) + '" data-c="phone" value="' + esc(c.phone) + '" inputmode="tel" autocomplete="tel" placeholder="Ej. 555 123 4567" required></label>' +
-        '<div class="cz-seg-row"><span class="cz-muted cz-small">¿Cómo te contactamos?</span><div class="cz-seg">' +
+        '<label class="cz-f">Número de WhatsApp o celular <span class="u">obligatorio, con + y código de país</span><input class="cz-in' + bad(core.phoneOk(c.phone)) + '" data-c="phone" value="' + esc(c.phone) + '" inputmode="tel" autocomplete="tel" placeholder="+1 602 555 0123" required></label>' +
+        '<div class="cz-seg-row' + (state.tried && !c.via ? ' bad' : '') + '"><span class="cz-small">¿Por dónde te contactamos? <span class="cz-muted">(obligatorio)</span></span><div class="cz-seg">' +
         '<button type="button" data-act="via" data-v="whatsapp" aria-pressed="' + (c.via === 'whatsapp') + '">WhatsApp</button><button type="button" data-act="via" data-v="sms" aria-pressed="' + (c.via === 'sms') + '">Mensaje SMS</button></div></div>' +
         '<label class="cz-f">Ciudad o colonia <span class="u">opcional</span><input class="cz-in" data-c="address" value="' + esc(c.address) + '"></label>' +
         '<label class="cz-f">Comentarios <span class="u">opcional</span><textarea class="cz-in" data-c="notes" placeholder="Color, si incluye instalación…">' + esc(c.notes) + '</textarea></label>' +
@@ -647,7 +753,7 @@
       var s = state.sent, msg = s.message;
       return '<div class="cz-ok">✓</div><div class="cz-eyebrow">Cotización ' + esc(s.folio) + '</div>' +
         '<h3 class="cz-title">¡Listo, ' + esc(s.name.split(' ')[0]) + '! Recibimos tu cotización</h3>' +
-        '<p class="cz-muted cz-small">Te contactaremos por ' + (s.via === 'sms' ? 'mensaje SMS' : 'WhatsApp') + ' al +' + esc(s.phone) + '.</p>' +
+        '<p class="cz-muted cz-small">Te contactaremos por ' + (s.via === 'sms' ? 'mensaje SMS' : 'WhatsApp') + ' al ' + esc(s.phone) + '.</p>' +
         '<div class="cz-summary">' + s.items.map(function (x) { return '<div><span>' + esc(x.text) + '</span><span class="cz-num">' + money(x.total) + '</span></div>'; }).join('') +
         '<div class="cz-total"><span>Estimado total</span><span class="cz-num">' + money(s.total) + '</span></div>' +
         '<div class="cz-muted cz-small"><span>Rango posible</span><span class="cz-num">' + money(s.low) + ' – ' + money(s.high) + '</span></div></div>' +
@@ -659,18 +765,20 @@
     function submit() {
       state.tried = true;
       var c = state.contact, e = core.estimate(cfg, state.items);
-      if (!e.total) { state.error = 'Completa las medidas del trabajo.'; renderModal(); return; }
-      if (!c.name.trim() || !core.phoneOk(c.phone)) {
-        state.error = !c.name.trim() ? 'Escribe tu nombre.' : 'Escribe tu número de WhatsApp o celular con lada (10 dígitos o más).';
-        renderModal(); var b = shadow.querySelector('.cz-in.bad'); if (b) b.focus(); return;
-      }
+      if (!e.total) { state.error = 'Completa las medidas del trabajo.'; refreshForm(); return; }
+      var err = !c.name.trim() ? 'Escribe tu nombre.'
+        : !String(c.phone || '').trim() ? 'El número de WhatsApp o celular es obligatorio. Escríbelo con + y código de país, por ejemplo: +1 602 555 0123'
+        : !core.phoneOk(c.phone) ? 'Escribe tu número con + y código de país, por ejemplo: +1 602 555 0123'
+        : !c.via ? 'Elige si te contactamos por WhatsApp o por mensaje SMS.' : '';
+      if (err) { state.error = err; refreshForm(); var b = shadow.querySelector('.cz-in.bad'); if (b) b.focus(); return; }
       var q = core.buildQuote(cfg, state.items, c);
       q.message = core.ownerMessage(cfg, q);
-      state.sending = true; state.error = ''; renderModal();
+      state.sending = true; state.error = ''; refreshForm();
       store.saveQuote(q).then(function () {
-        state.sending = false; state.sent = q; state.modal = 'done'; renderModal();
+        state.sending = false; state.sent = q;
+        if (mode === 'panel') { state.step = 'done'; render(); toTop(); } else { state.modal = 'done'; renderModal(); }
       }).catch(function () {
-        state.sending = false; state.error = 'No pudimos enviar tu cotización. Revisa tu conexión e intenta de nuevo.'; renderModal();
+        state.sending = false; state.error = 'No pudimos enviar tu cotización. Revisa tu conexión e intenta de nuevo.'; refreshForm();
       });
     }
 
@@ -693,9 +801,12 @@
       else if (act === 'photo' && item) item.photo = el.checked;
       else if (act === 'open') openPanel();
       else if (act === 'close') closePanel();
-      else if (act === 'via') { state.contact.via = v; renderModal(); }
+      else if (act === 'show') show();
+      else if (act === 'back') { state.step = 'calc'; state.error = ''; render(); toTop(); }
+      else if (act === 'via') { state.contact.via = v; if (state.error) state.error = ''; refreshForm(); }
       else if (act === 'new') {
-        state.items = [newItem()]; state.contact = { name: '', phone: '', via: 'whatsapp', address: '', notes: '' }; state.tried = false; state.sent = null;
+        if (mode === 'panel') { reset(); toTop(); return; }
+        state.items = [newItem()]; state.contact = emptyContact(); state.tried = false; state.sent = null;
         closePanel(); render(); container.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
@@ -712,7 +823,7 @@
       if (k === 'desc') { var fb = shadow.querySelector('[data-feat="' + it.id + '"]'); if (fb) fb.innerHTML = featBlock(it); }
       refreshEstimate();
     });
-    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && state.modal) closePanel(); });
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && isOpen()) closePanel(); });
 
     /* ── Arranque y actualización automática de precios ── */
     function applyConfig(next) {
@@ -734,16 +845,39 @@
       if (root.console) console.warn('[cotizador] No se pudieron leer los precios de Supabase; se usan los precios incluidos en cotizador.js.');
     });
     store.onConfig(function (c) { applyConfig(c); });
-    return { store: store };
+    return { store: store, open: show, close: hide };
   }
 
   var api = { core: core, createStore: createStore, mount: mount, DEFAULT_CONFIG: DEFAULT_CONFIG };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Cotizador = api;
 
-  // Montaje automático en <div id="cotizador-herreria"></div>
+  /* Montaje automático:
+     - <div id="cotizador-herreria"></div>  → cotizador dentro de la página
+     - Cualquier botón o enlace con data-cotizar o href="#cotizar" → abre el panel completo encima de la página
+     - Botón flotante «Cotizar» si config.js trae floatingButton: true
+     - Abrir tuweb.com/#cotizar abre el panel directamente */
   if (typeof document !== 'undefined' && !root.COTIZADOR_NO_AUTOMOUNT) {
-    var start = function () { var el = document.getElementById('cotizador-herreria'); if (el && !el.__cz) { el.__cz = true; mount(el); } };
+    var start = function () {
+      var conf = root.COTIZADOR_CONFIG || {};
+      var store = createStore(conf);
+      var el = document.getElementById('cotizador-herreria');
+      if (el && !el.__cz) { el.__cz = true; mount(el, { store: store }); }
+      if (conf.panel === false || document.getElementById('cotizador-herreria-panel')) return;
+      var host = document.createElement('div');
+      host.id = 'cotizador-herreria-panel';
+      document.body.appendChild(host);
+      var panel = mount(host, { mode: 'panel', store: store, config: conf });
+      api.open = panel.open; api.close = panel.close;
+      document.addEventListener('click', function (ev) {
+        var t = ev.target.closest && ev.target.closest('[data-cotizar], a[href="#cotizar"], a[href$="/#cotizar"]');
+        if (!t) return;
+        ev.preventDefault();
+        panel.open();
+      });
+      if (location.hash === '#cotizar') panel.open();
+      window.addEventListener('hashchange', function () { if (location.hash === '#cotizar') panel.open(); });
+    };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
   }
 })(typeof window !== 'undefined' ? window : globalThis);

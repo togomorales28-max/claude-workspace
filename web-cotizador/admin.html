@@ -4,18 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Panel del cotizador</title>
+<meta name="theme-color" content="#9e1b1b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cotizaciones">
+<link rel="manifest" href="cotizador-admin.webmanifest">
+<link rel="icon" href="cotizador-icon-192.png">
+<link rel="apple-touch-icon" href="cotizador-icon-192.png">
+<title>Rojo Ironworks · Cotizaciones</title>
 <style>
 :root {
   --bg: #eef1f5; --surface: #ffffff; --surface-2: #f6f8fb; --ink: #121821; --ink-2: #3c4757; --mute: #677385;
-  --line: #d9e0e8; --accent: #1f6fe5; --accent-2: #1659c0; --accent-soft: #e3edfd; --on-accent: #ffffff;
+  --line: #d9e0e8; --accent: #9e1b1b; --accent-2: #7f1414; --accent-soft: #f7e3e1; --on-accent: #ffffff;
   --ok: #1a8a60; --ok-soft: #e1f4ec; --warn: #a3650f; --warn-soft: #fbf0dc; --bad: #c23a30; --bad-soft: #fbe6e4;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) { :root {
   --bg: #0b0f14; --surface: #121922; --surface-2: #17202b; --ink: #e6edf5; --ink-2: #b4c0ce; --mute: #8592a4;
-  --line: #263345; --accent: #3a8dff; --accent-2: #63a5ff; --accent-soft: #14294a; --on-accent: #04101f;
+  --line: #263345; --accent: #f0645a; --accent-2: #ff8a80; --accent-soft: #3a1714; --on-accent: #1a0503;
   --ok: #3cc08d; --ok-soft: #10301f; --warn: #f0b341; --warn-soft: #33270f; --bad: #f2645a; --bad-soft: #3a1714; color-scheme: dark;
 } }
 * { box-sizing: border-box; }
@@ -75,6 +81,20 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
 .savebar { position: sticky; bottom: 0; margin-top: 18px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; box-shadow: 0 -6px 18px rgba(0,0,0,.08); }
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 9px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
 [hidden] { display: none !important; }
+.day { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); margin: 18px 0 6px; }
+.qlist { display: grid; gap: 8px; }
+.qrow { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.qrow > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; }
+.qrow > summary::-webkit-details-marker { display: none; }
+.qrow[open] > summary { border-bottom: 1px solid var(--line); }
+.qrow .when { font-family: var(--mono); font-size: 13px; color: var(--ink-2); line-height: 1.25; }
+.qrow .when small { display: block; color: var(--mute); font-size: 11px; }
+.qrow .who { min-width: 0; } .qrow .who b { display: block; } .qrow .who span { display: block; font-size: 13px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qrow .amt { text-align: right; font-family: var(--mono); font-weight: 600; } .qrow .amt .pill { margin-top: 4px; }
+.qrow .body { padding: 14px; display: grid; gap: 10px; }
+.qrow.is-new { border-color: var(--bad); }
+.pushcard { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.pw { position: relative; } .pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--mute); font: inherit; font-size: 13px; cursor: pointer; padding: 6px; }
 </style>
 </head>
 <body>
@@ -97,7 +117,10 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
   var NUMERIC = ['refA', 'refB', 'material', 'min', 'pct', 'spacing', 'rangePct', 'roundTo', 'wastePct', 'price', 'rails', 'height', 'postEvery', 'refPersons', 'refDays'];
   var val = function (k, v) { return NUMERIC.indexOf(k) >= 0 ? num(v) : v; };
 
-  var S = { session: null, view: 'cotizaciones', published: null, cfg: null, dirty: false, quotes: [], filter: 'todas', sentLink: false, loginError: '' };
+  var CONF = window.COTIZADOR_CONFIG || {};
+  var S = { session: null, view: 'cotizaciones', published: null, cfg: null, dirty: false, quotes: [], filter: 'todas',
+    authMode: 'login', authMsg: '', authErr: '', busy: false, push: 'desconocido' };
+  var ADMIN_URL = location.origin + location.pathname;
   var money = function (n, d) { return core.money(S.cfg, n, d); };
   var U = function () { return core.U(S.cfg); };
 
@@ -108,20 +131,52 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
     el.textContent = t; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.hidden = true; }, 3200);
   }
 
-  /* ───────── Entrada con correo ───────── */
+  /* ───────── Entrada con correo y contraseña (la sesión queda guardada) ───────── */
+  function authErrText(e) {
+    var m = String((e && e.message) || '');
+    if (/invalid login credentials/i.test(m)) return 'Correo o contraseña incorrectos.';
+    if (/email not confirmed/i.test(m)) return 'Tu correo aún no está confirmado. Abre el correo de confirmación que te llegó.';
+    if (/already registered|already been registered/i.test(m)) return 'Ese correo ya tiene cuenta. Entra con tu contraseña.';
+    if (/password should be at least|weak/i.test(m)) return 'La contraseña debe tener al menos 8 caracteres.';
+    if (/rate limit|too many/i.test(m)) return 'Demasiados intentos. Espera unos minutos.';
+    return m || 'No se pudo completar. Revisa tu conexión.';
+  }
+  function pwField(name, label, auto) {
+    return '<label class="f">' + label + '<span class="pw"><input class="in" type="password" name="' + name + '" autocomplete="' + auto + '" minlength="8" required style="padding-right:64px"><button type="button" data-act="toggle-pw">Ver</button></span></label>';
+  }
   function loginView() {
-    return '<div class="login card stack"><div><div class="eyebrow">Panel del dueño</div><h1>Entrar</h1></div>' +
-      (S.sentLink
-        ? '<p class="notice info">Te enviamos un enlace a tu correo. Ábrelo en este mismo dispositivo para entrar.</p><button class="btn" data-act="relogin">Usar otro correo</button>'
-        : '<p class="muted small">Escribe tu correo y te mandamos un enlace para entrar. No necesitas contraseña.</p>' +
-          '<form class="stack" data-form="login"><label class="f">Correo<input class="in" type="email" name="email" autocomplete="email" required></label>' +
-          (S.loginError ? '<p class="small" style="color:var(--bad)">' + esc(S.loginError) + '</p>' : '') +
-          '<button class="btn primary" type="submit">Enviarme el enlace</button></form>') + '</div>';
+    var m = S.authMode, err = S.authErr ? '<p class="small" style="color:var(--bad)" role="alert">' + esc(S.authErr) + '</p>' : '';
+    var msg = S.authMsg ? '<p class="notice info">' + esc(S.authMsg) + '</p>' : '';
+    var head = '<div><div class="eyebrow">Rojo Ironworks · Panel del dueño</div><h1>' +
+      (m === 'signup' ? 'Crear mi cuenta' : m === 'forgot' ? 'Recuperar contraseña' : m === 'recovery' ? 'Nueva contraseña' : 'Entrar') + '</h1></div>';
+    var body;
+    if (m === 'recovery') {
+      body = '<form class="stack" data-form="recovery">' + pwField('password', 'Nueva contraseña', 'new-password') + err +
+        '<button class="btn primary" type="submit"' + (S.busy ? ' disabled' : '') + '>Guardar contraseña</button></form>';
+    } else if (m === 'forgot') {
+      body = '<form class="stack" data-form="forgot"><label class="f">Correo<input class="in" type="email" name="email" autocomplete="email" required></label>' + err +
+        '<button class="btn primary" type="submit"' + (S.busy ? ' disabled' : '') + '>Enviarme el enlace</button></form>' +
+        '<button class="btn ghost" data-act="auth-mode" data-v="login">Volver</button>';
+    } else if (m === 'signup') {
+      body = '<p class="small muted">Solo la primera vez. La primera cuenta que se crea queda como dueña del panel.</p>' +
+        '<form class="stack" data-form="signup"><label class="f">Correo<input class="in" type="email" name="email" autocomplete="email" required></label>' +
+        pwField('password', 'Contraseña (mínimo 8 caracteres)', 'new-password') + err +
+        '<button class="btn primary" type="submit"' + (S.busy ? ' disabled' : '') + '>Crear cuenta y entrar</button></form>' +
+        '<button class="btn ghost" data-act="auth-mode" data-v="login">Ya tengo cuenta</button>';
+    } else {
+      body = '<p class="small muted">Entras una sola vez: este dispositivo recordará tu sesión.</p>' +
+        '<form class="stack" data-form="login"><label class="f">Correo<input class="in" type="email" name="email" autocomplete="username" required></label>' +
+        pwField('password', 'Contraseña', 'current-password') + err +
+        '<button class="btn primary" type="submit"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'Entrando…' : 'Entrar') + '</button></form>' +
+        '<div class="actions" style="justify-content:space-between"><button class="btn ghost sm" data-act="auth-mode" data-v="forgot">¿Olvidaste tu contraseña?</button>' +
+        '<button class="btn ghost sm" data-act="auth-mode" data-v="signup">Primera vez: crear cuenta</button></div>';
+    }
+    return '<div class="login card stack">' + head + msg + body + '</div>';
   }
 
   /* ───────── Pantalla principal ───────── */
   function render() {
-    if (!S.session) { $app.innerHTML = loginView(); return; }
+    if (!S.session || S.authMode === 'recovery') { $app.innerHTML = loginView(); return; }
     if (!S.cfg) { $app.innerHTML = '<p class="muted">Cargando…</p>'; return; }
     var nuevas = S.quotes.filter(function (q) { return q.status === 'nueva'; }).length;
     $app.innerHTML =
@@ -137,34 +192,62 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
 
   /* ───────── Cotizaciones ───────── */
   var STATUS = [['nueva', 'Nueva'], ['contactado', 'Contactado'], ['vendida', 'Vendida'], ['descartada', 'Descartada']];
+  function pushCard() {
+    var st = S.push;
+    var txt = st === 'activo' ? '<b>Avisos activados</b> en este dispositivo. Te llegará una notificación con cada cotización, aunque la app esté cerrada.'
+      : st === 'bloqueado' ? '<b>Avisos bloqueados.</b> Permite las notificaciones para este sitio en los ajustes del navegador o del teléfono.'
+      : st === 'ios-instalar' ? '<b>En iPhone:</b> toca Compartir → «Agregar a pantalla de inicio», abre la app desde el ícono y activa los avisos ahí.'
+      : st === 'no-soportado' ? 'Este navegador no permite avisos. Usa Chrome en Android o computadora, o Safari en iPhone (instalando la app).'
+      : '<b>Recibe un aviso</b> en este teléfono o computadora cada vez que alguien cotice.';
+    var btn = st === 'activo' ? '<button class="btn sm" data-act="push-test">Probar aviso</button><button class="btn sm ghost" data-act="push-off">Desactivar</button>'
+      : (st === 'inactivo' || st === 'desconocido') ? '<button class="btn sm primary" data-act="push-on">Activar avisos</button>' : '';
+    return '<section class="card pushcard"><p class="small" style="max-width:640px">🔔 ' + txt + '</p><div class="actions">' + btn + '</div></section>';
+  }
+  function dayLabel(d) {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var x = new Date(d); x.setHours(0, 0, 0, 0);
+    var diff = Math.round((today - x) / 86400000);
+    if (diff === 0) return 'Hoy';
+    if (diff === 1) return 'Ayer';
+    return new Date(d).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: x.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
+  }
   function quotesView() {
     var list = S.quotes.filter(function (q) { return S.filter === 'todas' || q.status === S.filter; });
-    var cfg = S.cfg;
-    return '<div class="stack"><div class="filters">' + [['todas', 'Todas']].concat(STATUS).map(function (s) {
+    var cfg = S.cfg, lastDay = '';
+    var rows = list.map(function (q) {
+      var d = new Date(q.created_at), label = dayLabel(q.created_at), head = '';
+      if (label !== lastDay) { head = '<div class="day">' + esc(label) + '</div>'; lastDay = label; }
+      var first = String(q.client_name || '').split(' ')[0];
+      var hello = 'Hola ' + first + ', soy de ' + (cfg.business || 'la herrería') + '. Recibimos tu cotización ' + q.folio + ' por ' + core.money(cfg, q.total) + '. ¿Cuándo podemos ir a tomar medidas?';
+      var job = (q.detail || []).map(function (x) { return String(x.text || '').split(' — ').slice(0, 2).join(' '); }).join(' · ');
+      var phone = String(q.client_phone || '');
+      var label2 = (STATUS.find(function (s) { return s[0] === q.status; }) || [0, q.status])[1];
+      return head + '<details class="qrow' + (q.status === 'nueva' ? ' is-new' : '') + '"><summary>' +
+        '<div class="when">' + d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' }) + '<small>' + d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) + '</small></div>' +
+        '<div class="who"><b>' + esc(q.client_name) + '</b><span>' + esc(job || q.folio) + '</span></div>' +
+        '<div class="amt">' + core.money(cfg, q.total) + '<br><span class="pill ' + esc(q.status) + '">' + esc(label2) + '</span></div></summary>' +
+        '<div class="body">' +
+        '<div class="small muted">Folio ' + esc(q.folio) + ' · ' + d.toLocaleString('es-MX', { dateStyle: 'full', timeStyle: 'short' }) + '</div>' +
+        '<div class="small">' + (q.contact_via === 'sms' ? 'Prefiere <b>SMS</b>' : 'Prefiere <b>WhatsApp</b>') + ' · <span class="num">' + esc(phone) + '</span>' + (q.address ? ' · ' + esc(q.address) : '') + ' · rango ' + core.money(cfg, q.low) + ' – ' + core.money(cfg, q.high) + '</div>' +
+        '<ul>' + (q.detail || []).map(function (x) {
+          return '<li>' + esc(x.text) + ' — <b>' + core.money(cfg, x.total) + '</b>' + (x.desc ? '<br><span class="muted">«' + esc(x.desc) + '»</span>' : '') + (x.extra ? '<br><span class="muted small">Dificultad: ' + esc(x.extraText) + '</span>' : '') + (x.photo ? '<br><span class="small">📷 Tiene foto o dibujo</span>' : '') + '</li>';
+        }).join('') + '</ul>' +
+        (q.notes ? '<p class="small"><b>Comentarios:</b> ' + esc(q.notes) + '</p>' : '') +
+        '<div class="actions">' +
+        '<a class="btn sm wa" href="' + esc(core.waLink(phone, hello)) + '" target="_blank" rel="noopener" data-act="contacted" data-id="' + q.id + '">WhatsApp</a>' +
+        '<a class="btn sm" href="sms:' + esc(phone) + '?&body=' + encodeURIComponent(hello) + '" data-act="contacted" data-id="' + q.id + '">SMS</a>' +
+        '<a class="btn sm" href="tel:' + esc(phone) + '">Llamar</a>' +
+        '<select class="in" style="width:auto;height:34px;font-size:14px" data-status="' + q.id + '" aria-label="Estado">' + STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (q.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('') + '</select>' +
+        '<button class="btn sm ghost" data-act="del-quote" data-id="' + q.id + '">Eliminar</button></div>' +
+        (q.message ? '<details><summary class="small muted" style="cursor:pointer">Ver detalle completo (metal y mano de obra)</summary><pre>' + esc(q.message) + '</pre></details>' : '') +
+        '</div></details>';
+    }).join('');
+    return '<div class="stack">' + pushCard() + '<div><div class="filters">' + [['todas', 'Todas']].concat(STATUS).map(function (s) {
       var n = s[0] === 'todas' ? S.quotes.length : S.quotes.filter(function (q) { return q.status === s[0]; }).length;
       return '<button data-act="filter" data-v="' + s[0] + '" aria-pressed="' + (S.filter === s[0]) + '">' + s[1] + ' · ' + n + '</button>';
     }).join('') + '</div>' +
-      (!list.length ? '<div class="card"><p class="muted">' + (S.quotes.length ? 'No hay cotizaciones con este estado.' : 'Aún no llegan cotizaciones. Cuando un cliente cotice en tu web, aparecerá aquí al momento.') + '</p></div>' :
-      list.map(function (q) {
-        var first = String(q.client_name || '').split(' ')[0];
-        var hello = 'Hola ' + first + ', soy de ' + (cfg.business || 'la herrería') + '. Recibimos tu cotización ' + q.folio + ' por ' + core.money(cfg, q.total) + '. ¿Cuándo podemos ir a tomar medidas?';
-        var d = new Date(q.created_at);
-        return '<article class="card quote"><div class="quote-head"><div><span class="pill ' + esc(q.status) + '">' + esc(q.status) + '</span> <b>' + esc(q.client_name) + '</b> <span class="muted small">· ' + esc(q.folio) + ' · ' + d.toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + '</span></div>' +
-          '<div class="total">' + core.money(cfg, q.total) + '</div></div>' +
-          '<div class="small muted">' + (q.contact_via === 'sms' ? 'Prefiere SMS' : 'Prefiere WhatsApp') + ' · <span class="num">+' + esc(q.client_phone) + '</span>' + (q.address ? ' · ' + esc(q.address) : '') + ' · rango ' + core.money(cfg, q.low) + ' – ' + core.money(cfg, q.high) + '</div>' +
-          '<ul>' + (q.detail || []).map(function (x) {
-            return '<li>' + esc(x.text) + ' — <b>' + core.money(cfg, x.total) + '</b>' + (x.desc ? '<br><span class="muted">«' + esc(x.desc) + '»</span>' : '') + (x.extra ? '<br><span class="muted small">Dificultad: ' + esc(x.extraText) + '</span>' : '') + (x.photo ? '<br><span class="small">📷 Tiene foto o dibujo</span>' : '') + '</li>';
-          }).join('') + '</ul>' +
-          (q.notes ? '<p class="small"><b>Comentarios:</b> ' + esc(q.notes) + '</p>' : '') +
-          '<div class="actions">' +
-          '<a class="btn sm wa" href="' + esc(core.waLink(q.client_phone, hello)) + '" target="_blank" rel="noopener" data-act="contacted" data-id="' + q.id + '">WhatsApp</a>' +
-          '<a class="btn sm" href="sms:+' + esc(q.client_phone) + '?&body=' + encodeURIComponent(hello) + '" data-act="contacted" data-id="' + q.id + '">SMS</a>' +
-          '<a class="btn sm" href="tel:+' + esc(q.client_phone) + '">Llamar</a>' +
-          '<select class="in" style="width:auto;height:34px;font-size:14px" data-status="' + q.id + '" aria-label="Estado">' + STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (q.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('') + '</select>' +
-          '<button class="btn sm ghost" data-act="del-quote" data-id="' + q.id + '">Eliminar</button></div>' +
-          (q.message ? '<details><summary class="small muted" style="cursor:pointer">Ver detalle completo (metal y mano de obra)</summary><pre>' + esc(q.message) + '</pre></details>' : '') +
-          '</article>';
-      }).join('')) + '</div>';
+      (!list.length ? '<div class="card" style="margin-top:12px"><p class="muted">' + (S.quotes.length ? 'No hay cotizaciones con este estado.' : 'Aún no llegan cotizaciones. Cuando un cliente cotice en tu web, aparecerá aquí al momento.') + '</p></div>'
+        : '<div class="qlist">' + rows + '</div>') + '</div></div>';
   }
 
   /* ───────── Precios ───────── */
@@ -287,20 +370,34 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
 
   /* ───────── Eventos ───────── */
   document.addEventListener('submit', function (ev) {
-    if (ev.target.getAttribute('data-form') !== 'login') return;
+    var form = ev.target.getAttribute('data-form'); if (!form) return;
     ev.preventDefault();
-    var email = ev.target.email.value.trim();
-    S.loginError = '';
-    store.sendLoginLink(email, location.origin + location.pathname).then(function () { S.sentLink = true; render(); })
-      .catch(function (e) { S.loginError = (e && e.message) || 'No se pudo enviar el enlace.'; render(); });
+    var f = ev.target, email = f.email ? f.email.value.trim() : '', pw = f.password ? f.password.value : '';
+    S.authErr = ''; S.authMsg = ''; S.busy = true; render();
+    var done = function () { S.busy = false; render(); };
+    var fail = function (e) { S.busy = false; S.authErr = authErrText(e); render(); };
+    if (form === 'login') store.signIn(email, pw).then(function () { S.busy = false; }).catch(fail);
+    else if (form === 'signup') store.signUp(email, pw, ADMIN_URL).then(function (r) {
+      if (r && r.session) { S.busy = false; return; }
+      return store.signIn(email, pw).then(function () { S.busy = false; }).catch(function (e) {
+        if (/not confirmed/i.test(String(e && e.message))) { S.authMode = 'login'; S.authMsg = 'Cuenta creada. Confirma tu correo con el enlace que te llegó y después entra.'; done(); }
+        else fail(e);
+      });
+    }).catch(fail);
+    else if (form === 'forgot') store.resetPassword(email, ADMIN_URL).then(function () { S.authMode = 'login'; S.authMsg = 'Te enviamos un enlace para crear una nueva contraseña.'; done(); }).catch(fail);
+    else if (form === 'recovery') store.updatePassword(pw).then(function () { S.authMode = 'login'; S.busy = false; toast('Contraseña actualizada'); if (S.session) startOwner(); render(); }).catch(fail);
   });
   document.addEventListener('click', function (ev) {
     var el = ev.target.closest('[data-act]'); if (!el) return;
     var act = el.getAttribute('data-act'), v = el.getAttribute('data-v'), qid = el.getAttribute('data-id');
     var cfg = S.cfg;
     switch (act) {
-      case 'relogin': S.sentLink = false; render(); break;
-      case 'logout': store.signOut(); break;
+      case 'auth-mode': S.authMode = v; S.authErr = ''; S.authMsg = ''; render(); break;
+      case 'toggle-pw': { var inp = el.parentNode.querySelector('input'); inp.type = inp.type === 'password' ? 'text' : 'password'; el.textContent = inp.type === 'password' ? 'Ver' : 'Ocultar'; break; }
+      case 'logout': pushOff(true).then(function () { return store.signOut(); }); break;
+      case 'push-on': pushOn(); break;
+      case 'push-off': pushOff(); break;
+      case 'push-test': notifyLocal('Prueba de aviso', 'Así te llegará cada cotización nueva.', 'prueba'); break;
       case 'view': S.view = v; render(); break;
       case 'filter': S.filter = v; render(); break;
       case 'contacted': { var q = S.quotes.find(function (x) { return String(x.id) === qid; }); if (q && q.status === 'nueva') store.updateQuote(q.id, { status: 'contactado' }).then(loadQuotes); break; }
@@ -355,7 +452,14 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
       var fresh = knownIds ? list.filter(function (q) { return knownIds.indexOf(q.id) < 0; }) : [];
       knownIds = list.map(function (q) { return q.id; });
       S.quotes = list;
-      if (fresh.length) toast(fresh.length === 1 ? 'Nueva cotización de ' + fresh[0].client_name : fresh.length + ' cotizaciones nuevas');
+      if (fresh.length) {
+        toast(fresh.length === 1 ? 'Nueva cotización de ' + fresh[0].client_name : fresh.length + ' cotizaciones nuevas');
+        beep();
+        // si este dispositivo no tiene avisos push, se avisa desde la página abierta
+        if (S.push !== 'activo' && document.hidden) notifyLocal('Nueva cotización · ' + core.money(S.cfg, fresh[0].total), fresh[0].client_name, 'cotizacion-' + fresh[0].id);
+      }
+      var nNew = list.filter(function (q) { return q.status === 'nueva'; }).length;
+      document.title = (nNew ? '(' + nNew + ') ' : '') + 'Rojo Ironworks · Cotizaciones';
       if (S.view === 'cotizaciones' || fresh.length) {
         var keepScroll = window.scrollY;
         if (S.view === 'cotizaciones') { render(); window.scrollTo(0, keepScroll); }
@@ -368,7 +472,7 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
     if (started) return; started = true;
     store.isOwner().then(function (ok) {
       if (!ok) {
-        $app.innerHTML = '<div class="login card stack"><h1>Sin permiso</h1><p class="muted">El correo <b>' + esc(S.session.user.email) + '</b> no está registrado como dueño. Agrégalo en Supabase (tabla cotizador_owner) o entra con tu correo.</p><button class="btn" data-act="logout">Salir</button></div>';
+        $app.innerHTML = '<div class="login card stack"><h1>Sin permiso</h1><p class="muted">El correo <b>' + esc(S.session.user.email) + '</b> no es el dueño de este panel. Entra con el correo con el que creaste la cuenta.</p><button class="btn" data-act="logout">Salir</button></div>';
         started = false; return;
       }
       return store.loadConfig().then(function (cfg) {
@@ -378,6 +482,7 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
           var d = localStorage.getItem(DRAFT_KEY);
           if (d) { var p = JSON.parse(d); if (p && Array.isArray(p.types) && JSON.stringify(p) !== JSON.stringify(S.published)) { S.cfg = p; S.dirty = true; S.view = 'precios'; } }
         } catch (e) { /* sin borrador */ }
+        checkPush().then(render);
         render();
         store.onConfig(function (c) { S.published = c; if (!S.dirty) { S.cfg = JSON.parse(JSON.stringify(c)); if (S.view === 'precios') render(); } });
         loadQuotes();
@@ -386,8 +491,72 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
       });
     }).catch(function () { $app.innerHTML = '<div class="login card"><p class="notice">No se pudo conectar con Supabase. Revisa config.js y tu conexión.</p></div>'; started = false; });
   }
-  store.onAuth(function (session) { S.session = session; if (session) startOwner(); else { started = false; render(); } });
-  store.session().then(function (session) { S.session = session; if (session) startOwner(); else render(); });
+  /* ───────── Avisos (notificaciones push) ───────── */
+  var SW_URL = 'cotizador-sw.js';
+  function b64ToBytes(b64) {
+    var pad = '='.repeat((4 - (b64.length % 4)) % 4), raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    var out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out;
+  }
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+  function checkPush() {
+    if (!pushSupported()) { S.push = isIOS && !standalone ? 'ios-instalar' : 'no-soportado'; return Promise.resolve(); }
+    if (Notification.permission === 'denied') { S.push = 'bloqueado'; return Promise.resolve(); }
+    return navigator.serviceWorker.getRegistration(SW_URL).then(function (reg) { return reg && reg.pushManager.getSubscription(); })
+      .then(function (sub) { S.push = sub && Notification.permission === 'granted' ? 'activo' : 'inactivo'; })
+      .catch(function () { S.push = 'inactivo'; });
+  }
+  function pushOn() {
+    if (!pushSupported()) { checkPush().then(render); return; }
+    if (!CONF.vapidPublicKey) { toast('Falta la llave de avisos en config.js.'); return; }
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') { S.push = perm === 'denied' ? 'bloqueado' : 'inactivo'; render(); return; }
+      return navigator.serviceWorker.register(SW_URL).then(function () { return navigator.serviceWorker.ready; }).then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (sub) {
+          return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(CONF.vapidPublicKey) });
+        });
+      }).then(function (sub) {
+        var j = sub.toJSON();
+        return store.savePushSub({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, device: (isIOS ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : 'Computadora') + ' · ' + new Date().toLocaleDateString('es-MX') }, S.session.user.email);
+      }).then(function () { S.push = 'activo'; render(); toast('Avisos activados en este dispositivo'); });
+    }).catch(function () { toast('No se pudieron activar los avisos. Intenta de nuevo.'); });
+  }
+  function pushOff(silent) {
+    if (!pushSupported()) return Promise.resolve();
+    return navigator.serviceWorker.getRegistration(SW_URL).then(function (reg) { return reg && reg.pushManager.getSubscription(); })
+      .then(function (sub) { if (!sub) return; return store.deletePushSub(sub.endpoint).catch(function () {}).then(function () { return sub.unsubscribe(); }); })
+      .then(function () { if (!silent) { S.push = 'inactivo'; render(); toast('Avisos desactivados'); } })
+      .catch(function () {});
+  }
+  function notifyLocal(title, body, tag) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') { toast(title + ' — ' + body); return; }
+    var opts = { body: body, tag: tag, icon: 'cotizador-icon-192.png', badge: 'cotizador-icon-192.png' };
+    navigator.serviceWorker && navigator.serviceWorker.getRegistration(SW_URL).then(function (reg) {
+      if (reg) reg.showNotification(title, opts); else new Notification(title, opts);
+    }).catch(function () { try { new Notification(title, opts); } catch (e) { toast(title); } });
+  }
+  var audioCtx = null;
+  function beep() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.18].forEach(function (t) {
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.frequency.value = 880; g.gain.setValueAtTime(0.0001, audioCtx.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + t + 0.15);
+        o.connect(g); g.connect(audioCtx.destination); o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + 0.16);
+      });
+    } catch (e) { /* sin sonido */ }
+  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (ev) { if (ev.data === 'cotizaciones') { S.view = 'cotizaciones'; loadQuotes(); } });
+
+  store.onAuth(function (session, event) {
+    S.session = session;
+    if (event === 'PASSWORD_RECOVERY') { S.authMode = 'recovery'; render(); return; }
+    if (session && S.authMode !== 'recovery') { S.authMode = 'login'; startOwner(); } else if (!session) { started = false; S.cfg = null; render(); }
+  });
+  store.session().then(function (session) { S.session = session; if (session && S.authMode !== 'recovery') startOwner(); else render(); });
 })();
 </script>
 </body>
