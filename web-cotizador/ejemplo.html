@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Herrería · Cotiza tu trabajo</title>
+<style>
+  body { margin: 0; font-family: Georgia, 'Times New Roman', serif; background: #faf8f5; color: #1d1d1d; }
+  header { padding: 28px 20px; background: #1d1d1d; color: #fff; }
+  header h1 { margin: 0 auto; max-width: 1080px; font-size: 26px; }
+  section { max-width: 1080px; margin: 0 auto; padding: 32px 20px; }
+  h2 { margin: 0 0 8px; }
+  footer { padding: 24px 20px; text-align: center; color: #777; font-size: 14px; }
+</style>
+</head>
+<body>
+  <header><h1>Tu Herrería</h1></header>
+  <section>
+    <h2>Cotiza tu trabajo en línea</h2>
+    <p>Elige el trabajo, escribe tus medidas y recibe un estimado al instante.</p>
+  </section>
+
+  <!-- ═══ Cotizador: copia desde aquí… ═══ -->
+  <section>
+    <div id="cotizador-herreria" data-color="#1f6fe5"></div>
+  </section>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="cotizador.js"></script>
+  <!-- ═══ …hasta aquí ═══ -->
+
+  <footer>Ejemplo de cómo se ve el cotizador dentro de una página propia.</footer>
+</body>
+</html>

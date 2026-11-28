@@ -467,10 +467,10 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     const extraPct = num(d?.pct) + feats.reduce((sum, f) => sum + num(f.pct), 0);
     const designExtra = base * (extraPct / 100);
     let total = base + designExtra;
-    const minTotal = num(t.min) * qty;
-    const minApplied = total > 0 && total < minTotal;
-    if (minApplied) total = minTotal;
     if (total > 0) total = roundUp(total);
+    const minTotal = num(t.min) * qty;
+    const minApplied = total > 0 && total < minTotal; // el mínimo se respeta exacto, sin redondear
+    if (minApplied) total = minTotal;
     return { t, d, qty, complete, parts: m.parts, material, labor, designExtra, extraPct, feats, total, minApplied, size: sizeOf(t, it.a, it.b) };
   }
 
@@ -901,9 +901,8 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     if (!l.persons) missing.push('ejemplo de mano de obra');
     if (missing.length) return `<span style="color:var(--warn)">Falta ${missing.join(' y ')}: no se muestra al cliente</span>`;
     const feet = m.parts.map((p) => `${fmt(p.len, 1)} ${u.len} ${esc(metal(p.id)?.name || '')}`).join(' + ');
-    let total = m.cost + l.cost;
-    if (num(t.min) > total) total = num(t.min);
-    return `Ejemplo ${what}, diseño ${esc((d?.name || '').toLowerCase())}: ${feet ? `${feet} = ` : ''}material ${money(m.cost)} + mano de obra ${money(l.cost)} (${laborText(l)}) ≈ <b>${money(roundUp(total))}</b>`;
+    let total = Math.max(roundUp(m.cost + l.cost), num(t.min));
+    return `Ejemplo ${what}, diseño ${esc((d?.name || '').toLowerCase())}: ${feet ? `${feet} = ` : ''}material ${money(m.cost)} + mano de obra ${money(l.cost)} (${laborText(l)}) ≈ <b>${money(total)}</b>`;
   }
 
   function refreshOwnerHints() {
