@@ -151,32 +151,32 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     {
       "id": "tc2",
       "name": "Tubo cuadrado 2\" × 2\" cal. 14",
-      "price": 0
+      "price": 3.0
     },
     {
       "id": "tc15",
       "name": "Tubo cuadrado 1½\" × 1½\" cal. 16",
-      "price": 0
+      "price": 1.8
     },
     {
       "id": "tc1",
       "name": "Tubo cuadrado 1\" × 1\" cal. 16",
-      "price": 0
+      "price": 1.1
     },
     {
       "id": "tc34",
       "name": "Tubo cuadrado ¾\" × ¾\" cal. 18",
-      "price": 0
+      "price": 0.75
     },
     {
       "id": "bc12",
       "name": "Barra cuadrada maciza ½\"",
-      "price": 0
+      "price": 1.0
     },
     {
       "id": "ang",
       "name": "Ángulo 1½\" × 1½\" × ⅛\"",
-      "price": 0
+      "price": 1.6
     }
   ],
   "types": [
@@ -329,7 +329,8 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       "pct": 15,
       "keywords": "segundo piso, segunda planta, andamio, azotea, balcon, dificil acceso"
     }
-  ]
+  ],
+  "examplePrices": true
 }</script>
 
 <script id="mw-main">
@@ -744,6 +745,7 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
         </div>
       </section>
 
+      ${cfg.examplePrices ? `<p class="notice" id="example-banner"><b>Los precios del metal son de ejemplo.</b> Cámbialos por los de tu proveedor y toca «Guardar y publicar». Mientras tanto, tus clientes ven estimados con estos precios de ejemplo.</p>` : ''}
       <section class="card stack">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2>Metal de tu proveedor</h2><button class="btn sm" type="button" data-act="add-metal">+ Metal</button></div>
         <p class="muted small">Precio por ${u.one}. Si te lo venden por tramo, divide: un tramo de 20 ${u.len} a $60 = $3 por ${u.one}.</p>
@@ -834,6 +836,7 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       { ok: usedIds.length > 0 && usedIds.every((id) => metalPrice(id) > 0), t: 'Precio de los metales que usan tus trabajos' },
       { ok: num(cfg.labor.payPerDay) > 0 && num(cfg.labor.maxPersons) >= 1, t: 'Pago por persona' },
       { ok: cfg.types.some(priced), t: 'Al menos un trabajo listo para el cliente' },
+      { ok: !cfg.examplePrices, t: 'Precios reales de tu proveedor (ahora son de ejemplo)' },
     ];
     return checks.map((c) => `<span><i class="dot" style="background:${c.ok ? 'var(--ok)' : 'var(--warn)'}"></i>${esc(c.t)}${c.ok ? '' : ' <span class="muted">(falta)</span>'}</span>`).join('');
   }
@@ -1020,6 +1023,7 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       const m = cfg.metals.find((x) => x.id === ds.m);
       if (!m) return;
       m[ds.k] = val(ds.k, el.value);
+      if (ds.k === 'price' && cfg.examplePrices) { cfg.examplePrices = false; document.getElementById('example-banner')?.remove(); }
       setDirty();
       // los selectores de metal muestran el precio: se actualizan sin perder el foco
       document.querySelectorAll('select[data-k="frameMetal"], select[data-k="barMetal"]').forEach((s) => { const t = cfg.types.find((x) => x.id === s.dataset.t); if (t) s.innerHTML = metalOptions(t[s.dataset.k], s.dataset.k === 'barMetal'); });
