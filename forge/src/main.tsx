@@ -6,7 +6,11 @@ import './index.css';
 import { App } from './App';
 import { initPwa } from './lib/pwa';
 
-initPwa();
+import { IS_ARTIFACT, TARGET } from './lib/platform';
+import { startCloudSync } from './data/cloudSync';
+
+if (TARGET === 'web') initPwa();
+if (IS_ARTIFACT) void startCloudSync();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

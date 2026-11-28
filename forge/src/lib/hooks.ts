@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/data/db';
 import { DEFAULT_SETTINGS } from '@/data/repo';
 import type { Settings } from '@/domain/types';
+import { saveFile } from './platform';
 
 /** Configuración en vivo. `undefined` mientras carga. */
 export function useSettings(): Settings | undefined {
@@ -16,13 +17,5 @@ export const useClients = () => useLiveQuery(() => db.clients.orderBy('name').to
 export const useQuotes = () => useLiveQuery(() => db.quotes.orderBy('createdAt').reverse().toArray(), []);
 export const useReferences = () => useLiveQuery(() => db.references.orderBy('updatedAt').reverse().toArray(), []);
 
-export function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
+/** Descarga un archivo (en el artefacto pide confirmación al visor). */
+export const downloadBlob = (blob: Blob, filename: string) => saveFile(blob, filename);

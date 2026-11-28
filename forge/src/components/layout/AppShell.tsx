@@ -4,6 +4,7 @@ import { LayoutDashboard, FileText, Package, Users, Settings as Cog, Plus, Ruler
 import { cn } from '@/lib/cn';
 import { useSettings } from '@/lib/hooks';
 import { InstallButton } from './InstallButton';
+import { DownloadAppButton, SyncStatus } from './AppExtras';
 
 const NAV = [
   { to: '/', label: 'Panel', icon: LayoutDashboard, end: true },
@@ -73,13 +74,12 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
-        <div className="px-3 pb-2">
+        <div className="flex flex-col px-3 pb-2">
           <InstallButton />
+          <DownloadAppButton />
         </div>
         <div className="border-t border-ink-750 px-5 py-4 text-[11px] leading-relaxed text-ink-500">
-          Datos guardados en este dispositivo.
-          <br />
-          Respalda desde Configuración.
+          <SyncStatus />
         </div>
       </aside>
 

@@ -7,7 +7,7 @@ import { db } from '@/data/db';
 import { quotesRepo } from '@/data/repo';
 import { useSettings } from '@/lib/hooks';
 import { buildDocument } from '@/lib/document';
-import { downloadQuotePdf, printQuotePdf, shareWhatsApp } from '@/lib/share';
+import { canPrint, downloadQuotePdf, printQuotePdf, trySharePdf, whatsappUrl } from '@/lib/share';
 import { Button, EmptyState, IconButton, Select, StatusBadge, Segmented } from '@/components/ui';
 import { useConfirm } from '@/components/ui/confirm';
 import { STATUSES, statusLabel } from '@/domain/constants';
@@ -138,29 +138,52 @@ export function QuoteView() {
         </div>
       )}
 
-      <div className="no-print mb-5 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
-        <Button variant="primary" icon={Download} disabled={busy} onClick={() => run(() => downloadQuotePdf(quote, settings), 'PDF descargado')}>
-          PDF
-        </Button>
-        <Button icon={Printer} disabled={busy} onClick={() => run(() => printQuotePdf(quote, settings))}>
-          Imprimir
-        </Button>
+      <div className={`no-print mb-5 grid gap-2 sm:flex sm:flex-wrap ${canPrint ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <Button
-          icon={MessageCircle}
+          variant="primary"
+          icon={Download}
           disabled={busy}
-          className="text-[#5fd48a]"
           onClick={() =>
             run(async () => {
-              const r = await shareWhatsApp(quote, settings);
-              if (r === 'link') toast.success('Se abrió WhatsApp y se descargó el PDF para adjuntarlo');
-              if (r !== 'cancelled' && quote.status === 'draft') await quotesRepo.setStatus(quote.id, 'sent');
+              const r = await downloadQuotePdf(quote, settings);
+              if (r === 'saved') toast.success('PDF descargado');
+              else if (r === 'unavailable') toast.error('Las descargas no están disponibles en esta vista.');
             })
           }
         >
-          WhatsApp
+          PDF
         </Button>
+        {canPrint && (
+          <Button icon={Printer} disabled={busy} onClick={() => run(() => printQuotePdf(quote, settings))}>
+            Imprimir
+          </Button>
+        )}
+        <a
+          href={whatsappUrl(quote, settings)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="contents"
+          onClick={async (e) => {
+            const markSent = () => quote.status === 'draft' && quotesRepo.setStatus(quote.id, 'sent');
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && canPrint) {
+              // En celular (fuera del artefacto) intentar compartir el PDF directamente.
+              e.preventDefault();
+              const r = await trySharePdf(quote, settings);
+              if (r === 'shared') return void markSent();
+              if (r === 'cancelled') return;
+              window.open(whatsappUrl(quote, settings), '_blank', 'noopener');
+            }
+            void markSent();
+            const pdf = await downloadQuotePdf(quote, settings);
+            if (pdf === 'saved') toast.success('Adjunta en WhatsApp el PDF que se descargó');
+          }}
+        >
+          <Button icon={MessageCircle} disabled={busy} className="text-[#5fd48a]" tabIndex={-1}>
+            WhatsApp
+          </Button>
+        </a>
         <Segmented
-          className="col-span-3 sm:ml-auto"
+          className="col-span-full sm:ml-auto"
           value={tab}
           onChange={setTab}
           options={[

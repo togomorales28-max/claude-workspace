@@ -11,10 +11,11 @@ import type { Quote, ReferencePrice, ScaleMethod, Settings } from '@/domain/type
 import { Button, Field, Input, NumberInput, PageHeader, Panel, Segmented, Select, Textarea, Toggle } from '@/components/ui';
 import { EstimatorWidget } from '@/widget/EstimatorWidget';
 import { cn } from '@/lib/cn';
+import { IS_SINGLE_FILE, PUBLIC_URL } from '@/lib/platform';
 
 /** URL base donde está publicada esta copia de FORGE (sin hash ni index.html). */
-export const currentBaseUrl = () => location.href.split('#')[0].split('?')[0].replace(/index\.html$/, '');
-const isLocal = () => /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(location.hostname) || location.protocol === 'file:';
+export const currentBaseUrl = () => IS_SINGLE_FILE ? PUBLIC_URL : location.href.split('#')[0].split('?')[0].replace(/index\.html$/, '');
+const isLocal = () => !IS_SINGLE_FILE && /^(localhost|127\.|0\.0\.0\.0|\[::1\])/.test(location.hostname) || location.protocol === 'file:';
 
 function measureOf(q: Quote, m: ScaleMethod) {
   const d = q.dimensions;

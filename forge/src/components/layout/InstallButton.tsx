@@ -1,11 +1,48 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { IS_ARTIFACT, TARGET, useCapability } from '@/lib/platform';
 import { Download, Share, SquarePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { canPromptInstall, isIos, isStandalone, promptInstall, subscribeInstall } from '@/lib/pwa';
 import { Button, Modal } from '@/components/ui';
 
 /** Botón "Instalar app": usa el aviso nativo (Android/Chrome/Edge) o muestra instrucciones en iPhone. */
+interface DesktopInstall {
+  install?: { state(): Promise<string>; request(): Promise<unknown> };
+  fs?: unknown;
+}
+
+/** Dentro del artefacto: instalar como app de escritorio desde la app de Claude (capacidad `desktop`). */
+function DesktopInstallButton({ compact }: { compact?: boolean }) {
+  const [desk, setDesk] = useState<DesktopInstall | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void useCapability<DesktopInstall>('desktop').then(async (d) => {
+      if (alive && d?.install && (await d.install.state().catch(() => '')) === 'available') setDesk(d);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  if (!desk?.install) return null;
+  const onClick = () => desk.install!.request().catch(() => toast.error('No se pudo instalar como app de escritorio.'));
+  return compact ? (
+    <button type="button" onClick={onClick} aria-label="Instalar app de escritorio" className="grid size-9 place-items-center rounded-lg text-ember-400 hover:bg-ink-800">
+      <Download className="size-5" />
+    </button>
+  ) : (
+    <Button variant="ghost" icon={Download} onClick={onClick} className="w-full justify-start text-ember-300">
+      Instalar app de escritorio
+    </Button>
+  );
+}
+
 export function InstallButton({ compact }: { compact?: boolean }) {
+  if (IS_ARTIFACT) return <DesktopInstallButton compact={compact} />;
+  if (TARGET === 'file') return null;
+  return <PwaInstallButton compact={compact} />;
+}
+
+function PwaInstallButton({ compact }: { compact?: boolean }) {
   const can = useSyncExternalStore(subscribeInstall, canPromptInstall, () => false);
   const [help, setHelp] = useState(false);
   if (isStandalone()) return null;

@@ -12,6 +12,8 @@ import { Button, Field, Input, NumberInput, PageHeader, Segmented, Select, Texta
 import { useConfirm } from '@/components/ui/confirm';
 import { ROUND_OPTIONS } from '@/domain/constants';
 import type { Settings } from '@/domain/types';
+import { IS_ARTIFACT } from '@/lib/platform';
+import { DownloadAppButton, SyncStatus } from '@/components/layout/AppExtras';
 
 function Group({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
@@ -206,13 +208,16 @@ function SettingsForm({ initial }: { initial: Settings }) {
           </Field>
         </Group>
 
-        <Group title="Datos y respaldo" description="Tu información se guarda solo en este dispositivo. Descarga un respaldo con regularidad.">
+        <Group title="Datos y respaldo" description={IS_ARTIFACT ? 'Tus datos se guardan en tu cuenta de Claude y en este navegador. Descarga un respaldo de vez en cuando.' : 'Tu información se guarda solo en este dispositivo. Descarga un respaldo con regularidad.'}>
+          <SyncStatus className="text-xs" />
           <div className="flex flex-wrap gap-2">
+            <DownloadAppButton full />
             <Button
               icon={Download}
               onClick={async () => {
-                downloadBlob(await exportBackup(), `forge-respaldo-${new Date().toISOString().slice(0, 10)}.json`);
-                toast.success('Respaldo descargado');
+                const r = await downloadBlob(await exportBackup(), `forge-respaldo-${new Date().toISOString().slice(0, 10)}.json`);
+                if (r === 'saved') toast.success('Respaldo descargado');
+                else if (r === 'unavailable') toast.error('Las descargas no están disponibles en esta vista.');
               }}
             >
               Descargar respaldo

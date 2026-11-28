@@ -1,4 +1,5 @@
-import { createHashRouter, RouterProvider, useRouteError, Link } from 'react-router-dom';
+import { createHashRouter, createMemoryRouter, RouterProvider, useRouteError, Link, type RouteObject } from 'react-router-dom';
+import { IS_ARTIFACT } from '@/lib/platform';
 import { Toaster } from 'sonner';
 import { AlertTriangle } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
@@ -33,7 +34,7 @@ function RouteError() {
   );
 }
 
-const router = createHashRouter([
+const routes: RouteObject[] = [
   {
     path: '/',
     element: <AppShell />,
@@ -54,7 +55,10 @@ const router = createHashRouter([
       { path: '*', element: <RouteError /> },
     ],
   },
-]);
+];
+
+// Dentro del artefacto el hash con rutas no se conserva: se navega en memoria.
+const router = IS_ARTIFACT ? createMemoryRouter(routes) : createHashRouter(routes);
 
 export function App() {
   return (

@@ -1,18 +1,24 @@
 import type { Quote, Settings } from '@/domain/types';
 import { whatsappText } from './document';
 import { waPhone } from '@/domain/format';
-import { downloadBlob } from './hooks';
+import { IS_ARTIFACT, saveFile } from './platform';
 
-export async function downloadQuotePdf(q: Quote, s: Settings) {
+export async function quotePdfBlob(q: Quote, s: Settings) {
   const { generateQuotePdf, pdfFileName } = await import('./pdf');
-  const pdf = generateQuotePdf(q, s);
-  downloadBlob(pdf.output('blob'), pdfFileName(q));
+  return { blob: generateQuotePdf(q, s).output('blob'), name: pdfFileName(q) };
 }
 
-/** Imprime el PDF mediante un iframe oculto; si el navegador no lo permite, lo abre en otra pestaña. */
+export async function downloadQuotePdf(q: Quote, s: Settings) {
+  const { blob, name } = await quotePdfBlob(q, s);
+  return saveFile(blob, name);
+}
+
+/** Imprimir no está disponible dentro de un artefacto (el marco bloquea el diálogo). */
+export const canPrint = !IS_ARTIFACT;
+
+/** Imprime el PDF mediante un iframe oculto; en celular lo abre en otra pestaña. */
 export async function printQuotePdf(q: Quote, s: Settings) {
-  const { generateQuotePdf } = await import('./pdf');
-  const blob = generateQuotePdf(q, s).output('blob');
+  const { blob } = await quotePdfBlob(q, s);
   const url = URL.createObjectURL(blob);
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (isMobile) {
@@ -38,28 +44,25 @@ export async function printQuotePdf(q: Quote, s: Settings) {
   document.body.appendChild(iframe);
 }
 
+/** Enlace de WhatsApp con el resumen de la cotización (para usar en un <a href>). */
+export const whatsappUrl = (q: Quote, s: Settings) =>
+  `https://wa.me/${q.clientPhone ? waPhone(q.clientPhone) : ''}?text=${encodeURIComponent(whatsappText(q, s))}`;
+
 /**
- * Comparte por WhatsApp. En celulares que lo permiten se comparte el PDF directamente
- * (hoja de compartir del sistema). En otros casos se abre WhatsApp con el resumen y
- * se descarga el PDF para adjuntarlo.
+ * En celulares con hoja de compartir (fuera del artefacto) comparte el PDF directamente.
+ * Devuelve true si lo compartió; false si se debe seguir con el enlace de WhatsApp.
  */
-export async function shareWhatsApp(q: Quote, s: Settings): Promise<'shared' | 'link' | 'cancelled'> {
-  const { generateQuotePdf, pdfFileName } = await import('./pdf');
-  const text = whatsappText(q, s);
-  const file = new File([generateQuotePdf(q, s).output('blob')], pdfFileName(q), { type: 'application/pdf' });
+export async function trySharePdf(q: Quote, s: Settings): Promise<'shared' | 'cancelled' | 'fallback'> {
+  if (IS_ARTIFACT) return 'fallback';
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobile && nav.share && nav.canShare?.({ files: [file] })) {
-    try {
-      await nav.share({ files: [file], text, title: `Cotización ${q.number}` });
-      return 'shared';
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') return 'cancelled';
-    }
+  if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || !nav.share) return 'fallback';
+  const { blob, name } = await quotePdfBlob(q, s);
+  const file = new File([blob], name, { type: 'application/pdf' });
+  if (!nav.canShare?.({ files: [file] })) return 'fallback';
+  try {
+    await nav.share({ files: [file], text: whatsappText(q, s), title: `Cotización ${q.number}` });
+    return 'shared';
+  } catch (e) {
+    return (e as Error).name === 'AbortError' ? 'cancelled' : 'fallback';
   }
-  const phone = q.clientPhone ? waPhone(q.clientPhone) : '';
-  const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-  window.open(url, '_blank', 'noopener');
-  downloadBlob(file, file.name);
-  return 'link';
 }

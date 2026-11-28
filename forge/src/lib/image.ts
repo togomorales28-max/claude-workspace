@@ -10,7 +10,7 @@ export async function fileToLogo(file: File): Promise<string> {
       i.onerror = () => rej(new Error('No se pudo leer la imagen.'));
       i.src = url;
     });
-    const max = 480;
+    const max = 360; // pequeño para que quepa en la sincronización y el PDF
     const w = img.naturalWidth || max;
     const h = img.naturalHeight || max;
     const scale = Math.min(1, max / Math.max(w, h));
