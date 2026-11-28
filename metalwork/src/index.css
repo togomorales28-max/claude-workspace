@@ -1,0 +1,71 @@
+@import 'tailwindcss';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-sans/700.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
+@theme {
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --color-base: #0a0e13;
+  --color-panel: #10161e;
+  --color-panel-2: #151d27;
+  --color-raised: #1b2531;
+  --color-line: #233041;
+  --color-line-2: #2e3e52;
+  --color-ink: #e4ebf3;
+  --color-ink-2: #aab6c4;
+  --color-mute: #74839a;
+  --color-volt: #2f8cff;
+  --color-volt-2: #5aa6ff;
+  --color-volt-ink: #04101f;
+  --color-ok: #2fc08a;
+  --color-warn: #f0b03a;
+  --color-bad: #f2594b;
+}
+
+@layer base {
+  html { color-scheme: dark; -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-base text-ink font-sans antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  ::selection { background: color-mix(in srgb, var(--color-volt) 45%, transparent); }
+  input, select, textarea, button { font: inherit; }
+  input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; }
+  :focus-visible { outline: 2px solid var(--color-volt); outline-offset: 2px; }
+  @media (hover: none) { * { -webkit-user-select: auto; } button { -webkit-user-select: none; user-select: none; } }
+}
+
+@layer components {
+  .num { @apply font-mono tabular-nums; }
+  .eyebrow { @apply font-mono text-[11px] uppercase tracking-[0.12em] text-mute; }
+  .field {
+    @apply w-full h-10 rounded-md bg-base border border-line px-3 text-[15px] text-ink placeholder:text-mute/70
+      transition-colors hover:border-line-2 focus:border-volt focus:outline-none;
+  }
+  /* iOS hace zoom con inputs < 16px */
+  @media (max-width: 640px) { .field { font-size: 16px; } }
+  .field-err { @apply border-bad/80 focus:border-bad; }
+  select.field { @apply pr-8 appearance-none bg-no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2374839a' stroke-width='1.6'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+    background-position: right 10px center; }
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--color-line) 45%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 45%, transparent) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}
+
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .28s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.fade { animation: fade .18s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .rise, .fade { animation: none; } }
+
+@media print { body { background: white; } }
