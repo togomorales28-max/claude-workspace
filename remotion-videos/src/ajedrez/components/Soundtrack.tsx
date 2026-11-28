@@ -24,11 +24,17 @@ const musicVolume = (f: number) => {
   );
   const base = HAS_VOICE ? 0.5 : 0.75;
   if (!HAS_VOICE) return base * fade;
-  const speaking = VOICE_LINES.some(
-    (l) =>
-      f >= l.start - 4 && f <= l.start + VOICE_FILES[l.id].durationInFrames + 4,
+  // Distance (in frames) to the nearest voice take; 0 while speaking.
+  const dist = Math.min(
+    ...VOICE_LINES.map((l) => {
+      const a = l.start;
+      const b = l.start + VOICE_FILES[l.id].durationInFrames;
+      return f < a ? a - f : f > b ? f - b : 0;
+    }),
   );
-  return fade * (speaking ? base * 0.45 : base);
+  // Smooth duck: ~-11 dB under the voice, recovering over 10 frames.
+  const duck = interpolate(dist, [0, 10], [0.28, 1], clamp);
+  return fade * base * duck;
 };
 
 export const Soundtrack: React.FC = () => (

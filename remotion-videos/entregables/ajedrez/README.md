@@ -6,7 +6,7 @@
 
 | Archivo | Qué es |
 |---|---|
-| `ajedrez-tiktok.mp4` | Video final con subtítulos, música y efectos |
+| `ajedrez-tiktok.mp4` | Video final con narración, subtítulos, música y efectos |
 | `guion-narracion.md` | Guion de voz por escenas, con tiempos, duración máxima y nombre de archivo de cada toma |
 | `subtitulos.srt` | Una línea por frase (para TikTok, CapCut o Premiere) |
 | `subtitulos-tiktok.srt` | Frases cortas, idénticas a los subtítulos grabados en el video |
@@ -50,19 +50,31 @@ npm run ajedrez:voz                    # registrar las tomas de voz (ver abajo)
 Si Remotion no puede descargar su navegador (red restringida), indícale uno local:
 `REMOTION_BROWSER_EXECUTABLE=/ruta/a/chrome-headless-shell npm run ajedrez:render`.
 
-## Añadir la narración
+## Narración (voz)
 
-En el entorno de producción no había ningún servicio de voz (TTS) disponible, así que el video final lleva subtítulos, música y efectos, pero **no voz**. La estructura para añadirla ya está lista:
+La voz está generada con **Kokoro**, un sistema de texto a voz neuronal, gratuito y de código abierto (licencia Apache-2.0). Sus archivos de modelo se publican en GitHub: [thewh1teagle/kokoro-onnx](https://github.com/thewh1teagle/kokoro-onnx).
 
-1. Graba o genera cada frase de `guion-narracion.md`. Puedes usar un locutor, ElevenLabs, Azure TTS (voz `es-MX`) u otro servicio.
-2. Guarda cada toma como `public/ajedrez/audio/voz/<archivo>.mp3`, por ejemplo `05_rey.mp3`. También sirven .wav y .m4a.
-3. Ejecuta `npm run ajedrez:voz`. El script mide cada toma y avisa si alguna no cabe en su ventana.
-4. Ejecuta `npm run ajedrez:render`. La música baja de volumen automáticamente mientras habla la voz.
+- La voz por defecto es `ef_dora`, femenina y juvenil. Las alternativas masculinas son `em_alex` y `em_santa`.
+- El acento es latinoamericano: la pronunciación se genera con la variante `es-419` de espeak-ng, que usa *seseo* (s en lugar de θ) y *yeísmo* (y en lugar de ll).
+- Las casillas se leen en voz alta ("e cuatro", "efe tres", "ce seis").
+- Cada toma se ajusta a su tiempo (solo `10_peon_a` se aceleró, a 1,27×) y se normaliza.
+- Los subtítulos se sincronizan con la duración real de cada toma.
+- La música baja unos 11 dB mientras habla la voz. Así la voz queda unos 9 dB por encima de la música y los efectos.
 
-Si una toma dura más de lo previsto, ajusta `start`/`end` en `narration.json` y los tiempos de la escena en `timeline.ts`. Los subtítulos y el SRT se actualizan solos.
+Para regenerarla (por ejemplo, con otra voz o tras cambiar el guion):
+
+```bash
+pip install kokoro-onnx soundfile
+python3 scripts/generate_voice.py --voice em_alex   # descarga el modelo (~350 MB) la primera vez
+npm run ajedrez:voz                                  # registra las tomas
+npm run ajedrez:render
+```
+
+Para usar una voz grabada por una persona, reemplaza los archivos de `public/ajedrez/audio/voz/` (mismos nombres, en .wav, .mp3 o .m4a) y ejecuta `npm run ajedrez:voz`.
 
 ## Recursos y licencias
 
 - **Piezas, tablero y animaciones:** dibujados en SVG para este proyecto. Son originales.
+- **Voz:** Kokoro (Apache-2.0), generada localmente.
 - **Música y efectos:** sintetizados con `scripts/generate_audio.py`, sin muestras de terceros, así que no tienen derechos de autor de terceros.
 - **Tipografías:** Montserrat y Playfair Display, ambas con licencia SIL Open Font License (ver `public/ajedrez/fonts/`).

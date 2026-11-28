@@ -7,7 +7,7 @@ Video vertical 1080×1920 · 30 fps · 65 s · español latino.
 en el cierre. Las palabras en **negrita** se enfatizan. Pronuncia las casillas como
 letra + número ("e cuatro", "efe tres").
 
-**Archivos de voz:** graba o genera una toma por línea y guárdala como
+**Archivos de voz:** la versión actual está generada con Kokoro (`scripts/generate_voice.py`). Para reemplazarla, graba o genera una toma por línea y guárdala como
 `public/ajedrez/audio/voz/<archivo>.mp3` (o .wav / .m4a). Cada toma debe caber
 en su ventana ("Duración máx."). Después ejecuta `npm run ajedrez:voz` y vuelve a renderizar.
 

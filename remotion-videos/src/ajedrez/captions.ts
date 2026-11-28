@@ -1,4 +1,10 @@
 import narration from "./data/narration.json";
+import voiceManifest from "./data/voice-manifest.json";
+
+const VOICE = voiceManifest.files as Record<
+  string,
+  { durationInFrames: number }
+>;
 
 export type NarrationLine = {
   id: string;
@@ -81,14 +87,20 @@ export const chunkLine = (line: NarrationLine): CaptionChunk[] => {
   const weight = (g: CaptionWord[]) =>
     g.reduce((n, w) => n + w.text.length + 2, 0);
   const total = groups.reduce((n, g) => n + weight(g), 0);
-  const span = line.end - line.start;
+  // With a recorded/generated take, spread the chunks over the real speech
+  // and keep the last chunk on screen until the line's end.
+  const spoken = VOICE[line.id]?.durationInFrames;
+  const span = spoken
+    ? Math.min(spoken, line.end - line.start)
+    : line.end - line.start;
   let t = line.start;
-  return groups.map((g) => {
+  return groups.map((g, i) => {
     const d = (weight(g) / total) * span;
+    const isLast = i === groups.length - 1;
     const chunk = {
       lineId: line.id,
       start: Math.round(t),
-      end: Math.round(t + d),
+      end: isLast ? Math.max(Math.round(t + d), line.end) : Math.round(t + d),
       words: g,
     };
     t += d;

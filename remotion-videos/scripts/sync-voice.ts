@@ -21,14 +21,28 @@ const out: Record<string, { file: string; durationInFrames: number }> = {};
 const probe = (path: string) => {
   const res = execFileSync(
     "npx",
-    ["remotion", "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+    [
+      "remotion",
+      "ffprobe",
+      "-v",
+      "error",
+      "-show_entries",
+      "format=duration",
+      "-of",
+      "csv=p=0",
+      path,
+    ],
     { cwd: ROOT, encoding: "utf8" },
   );
   return parseFloat(res.trim());
 };
 
 LINES.forEach((line, i) => {
-  const file = files.find((f) => /\.(mp3|wav|m4a|aac|ogg)$/i.test(f) && f.replace(/\.[^.]+$/, "") === line.id);
+  const file = files.find(
+    (f) =>
+      /\.(mp3|wav|m4a|aac|ogg)$/i.test(f) &&
+      f.replace(/\.[^.]+$/, "") === line.id,
+  );
   if (!file) {
     console.log(`  ·  ${line.id}: sin archivo`);
     return;
@@ -37,8 +51,14 @@ LINES.forEach((line, i) => {
   const frames = Math.ceil(seconds * FPS);
   const windowEnd = LINES[i + 1]?.start ?? TOTAL_FRAMES;
   const max = windowEnd - line.start;
-  out[line.id] = { file, durationInFrames: Math.min(frames, TOTAL_FRAMES - line.start) };
-  const warn = frames > max ? `  ⚠ dura ${seconds.toFixed(2)} s, máximo ${(max / FPS).toFixed(2)} s` : "";
+  out[line.id] = {
+    file,
+    durationInFrames: Math.min(frames, TOTAL_FRAMES - line.start),
+  };
+  const warn =
+    frames > max
+      ? `  ⚠ dura ${seconds.toFixed(2)} s, máximo ${(max / FPS).toFixed(2)} s`
+      : "";
   console.log(`  ✓  ${line.id}: ${file} (${seconds.toFixed(2)} s)${warn}`);
 });
 
@@ -53,4 +73,6 @@ writeFileSync(
     2,
   ) + "\n",
 );
-console.log(`\n${Object.keys(out).length}/${LINES.length} tomas de voz registradas en ${MANIFEST}`);
+console.log(
+  `\n${Object.keys(out).length}/${LINES.length} tomas de voz registradas en ${MANIFEST}`,
+);
