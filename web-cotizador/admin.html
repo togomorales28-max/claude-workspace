@@ -10,7 +10,7 @@
 <link rel="manifest" href="cotizador-admin.webmanifest">
 <link rel="icon" href="cotizador-icon-192.png">
 <link rel="apple-touch-icon" href="cotizador-icon-192.png">
-<title>Rojo Ironworks · Cotizaciones</title>
+<title>Rojo Iron Works · Cotizaciones</title>
 <style>
 :root {
   --bg: #eef1f5; --surface: #ffffff; --surface-2: #f6f8fb; --ink: #121821; --ink-2: #3c4757; --mute: #677385;
@@ -147,7 +147,7 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
   function loginView() {
     var m = S.authMode, err = S.authErr ? '<p class="small" style="color:var(--bad)" role="alert">' + esc(S.authErr) + '</p>' : '';
     var msg = S.authMsg ? '<p class="notice info">' + esc(S.authMsg) + '</p>' : '';
-    var head = '<div><div class="eyebrow">Rojo Ironworks · Panel del dueño</div><h1>' +
+    var head = '<div><div class="eyebrow">Rojo Iron Works · Panel del dueño</div><h1>' +
       (m === 'signup' ? 'Crear mi cuenta' : m === 'forgot' ? 'Recuperar contraseña' : m === 'recovery' ? 'Nueva contraseña' : 'Entrar') + '</h1></div>';
     var body;
     if (m === 'recovery') {
@@ -459,7 +459,7 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
         if (S.push !== 'activo' && document.hidden) notifyLocal('Nueva cotización · ' + core.money(S.cfg, fresh[0].total), fresh[0].client_name, 'cotizacion-' + fresh[0].id);
       }
       var nNew = list.filter(function (q) { return q.status === 'nueva'; }).length;
-      document.title = (nNew ? '(' + nNew + ') ' : '') + 'Rojo Ironworks · Cotizaciones';
+      document.title = (nNew ? '(' + nNew + ') ' : '') + 'Rojo Iron Works · Cotizaciones';
       if (S.view === 'cotizaciones' || fresh.length) {
         var keepScroll = window.scrollY;
         if (S.view === 'cotizaciones') { render(); window.scrollTo(0, keepScroll); }
@@ -512,7 +512,9 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
     if (!CONF.vapidPublicKey) { toast('Falta la llave de avisos en config.js.'); return; }
     Notification.requestPermission().then(function (perm) {
       if (perm !== 'granted') { S.push = perm === 'denied' ? 'bloqueado' : 'inactivo'; render(); return; }
-      return navigator.serviceWorker.register(SW_URL).then(function () { return navigator.serviceWorker.ready; }).then(function (reg) {
+      return fetch(SW_URL, { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+        if (!r.ok) throw new Error('sin-sw');
+      }).then(function () { return navigator.serviceWorker.register(SW_URL); }).then(function () { return navigator.serviceWorker.ready; }).then(function (reg) {
         return reg.pushManager.getSubscription().then(function (sub) {
           return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(CONF.vapidPublicKey) });
         });
@@ -520,7 +522,9 @@ details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px
         var j = sub.toJSON();
         return store.savePushSub({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, device: (isIOS ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : 'Computadora') + ' · ' + new Date().toLocaleDateString('es-MX') }, S.session.user.email);
       }).then(function () { S.push = 'activo'; render(); toast('Avisos activados en este dispositivo'); });
-    }).catch(function () { toast('No se pudieron activar los avisos. Intenta de nuevo.'); });
+    }).catch(function (e) {
+      toast(e && e.message === 'sin-sw' ? 'Para recibir avisos, sube también el archivo cotizador-sw.js junto a admin.html.' : 'No se pudieron activar los avisos. Intenta de nuevo.');
+    });
   }
   function pushOff(silent) {
     if (!pushSupported()) return Promise.resolve();

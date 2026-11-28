@@ -13,6 +13,9 @@ import base64, hashlib, io, os, re, shutil, sys
 from PIL import Image
 
 SRC, OUT = sys.argv[1], sys.argv[2]
+# --un-archivo: todo dentro de index.html (fotos optimizadas y cotizador), para reemplazar un solo archivo.
+SINGLE = '--un-archivo' in sys.argv
+COT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'web-cotizador')
 IMG_DIR = os.path.join(OUT, 'img')
 os.makedirs(IMG_DIR, exist_ok=True)
 html = open(SRC, encoding='utf-8').read()
@@ -56,10 +59,12 @@ def process_img_tag(m):
             im.save(path, 'WEBP', lossless=True, method=6)
             stats['bytes_out'] += os.path.getsize(path)
             seen[key] = True
+        if SINGLE:
+            return tag.replace(src_m.group(1), 'data:image/webp;base64,' + base64.b64encode(open(path, 'rb').read()).decode())
         return tag.replace(src_m.group(1), 'img/' + name + '.webp')
     im = im.convert('RGB')
     is_carousel = 'data-slot="carousel"' in tag
-    view_w = 1000 if is_carousel else 600            # tamaño que de verdad se ve en la página
+    view_w = 1000 if is_carousel else (800 if SINGLE else 600)   # tamaño que de verdad se ve en la página
     small_name, big_name = f"{name}-{view_w}.webp", f"{name}-1600.webp"
     w_small, w_big = os.path.join(IMG_DIR, small_name), os.path.join(IMG_DIR, big_name)
     if key not in seen:
@@ -75,8 +80,11 @@ def process_img_tag(m):
         stats['first'] = stats.get('first', 0) + os.path.getsize(w_small)
         seen[key] = tiny_data_uri(im)
     small, big = 'img/' + small_name, 'img/' + big_name
+    if SINGLE:
+        small = big = 'data:image/webp;base64,' + base64.b64encode(open(w_small, 'rb').read()).decode()
     # La página usa la versión de su tamaño; la grande solo se descarga al abrir la foto en el visor.
-    new = tag.replace(src_m.group(0), f'src="{small}" data-full="{big}" data-bg="{seen[key]}"')
+    full_attr = '' if SINGLE else f' data-full="{big}"'   # en un solo archivo el visor usa la misma foto
+    new = tag.replace(src_m.group(0), f'src="{small}"{full_attr} data-bg="{seen[key]}"')
     # Todas las fotos se descargan al entrar; la primera del carrusel con prioridad alta.
     new = new.replace('loading="lazy"', 'loading="eager"')
     if 'fetchpriority="high"' not in new:
@@ -195,11 +203,18 @@ rep("""          items.push({ src: photos[i].src, alt: photos[i].alt });""",
 # ── Cotizador ──
 rep('</body>\n</html>', '''<!-- Cotizador Rojo Iron Works: panel de cotización encima de la página -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" defer></script>
-<script src="config.js" defer></script>
-<script src="cotizador.js" defer></script>
+__COTIZADOR_SCRIPTS__
 </body>
 </html>''')
 
+if SINGLE:
+    conf = open(os.path.join(OUT, 'config.js'), encoding='utf-8').read() if os.path.exists(os.path.join(OUT, 'config.js')) else open(os.path.join(COT_DIR, 'config.js'), encoding='utf-8').read()
+    cot = open(os.path.join(COT_DIR, 'cotizador.js'), encoding='utf-8').read()
+    S = 'script'
+    html = html.replace('__COTIZADOR_SCRIPTS__', '<' + S + '>\n' + conf.replace('</' + S, '<\\/' + S) + '\n</' + S + '>\n<' + S + ' defer src="data:text/javascript;base64,' + base64.b64encode(cot.encode('utf-8')).decode() + '"></' + S + '>')
+    shutil.rmtree(IMG_DIR, ignore_errors=True)
+else:
+    html = html.replace('__COTIZADOR_SCRIPTS__', '<script src="config.js" defer></script>\n<script src="cotizador.js" defer></script>')
 open(os.path.join(OUT, 'index.html'), 'w', encoding='utf-8').write(html)
 new_size = os.path.getsize(os.path.join(OUT, 'index.html'))
 print(f"HTML: {orig_size/1e6:.1f} MB -> {new_size/1e3:.0f} KB")
