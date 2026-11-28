@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#9e1b1b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cotizaciones">
+<link rel="manifest" href="cotizador-admin.webmanifest">
+<link rel="icon" href="cotizador-icon-192.png">
+<link rel="apple-touch-icon" href="cotizador-icon-192.png">
+<title>Rojo Ironworks · Cotizaciones</title>
+<style>
+:root {
+  --bg: #eef1f5; --surface: #ffffff; --surface-2: #f6f8fb; --ink: #121821; --ink-2: #3c4757; --mute: #677385;
+  --line: #d9e0e8; --accent: #9e1b1b; --accent-2: #7f1414; --accent-soft: #f7e3e1; --on-accent: #ffffff;
+  --ok: #1a8a60; --ok-soft: #e1f4ec; --warn: #a3650f; --warn-soft: #fbf0dc; --bad: #c23a30; --bad-soft: #fbe6e4;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #0b0f14; --surface: #121922; --surface-2: #17202b; --ink: #e6edf5; --ink-2: #b4c0ce; --mute: #8592a4;
+  --line: #263345; --accent: #f0645a; --accent-2: #ff8a80; --accent-soft: #3a1714; --on-accent: #1a0503;
+  --ok: #3cc08d; --ok-soft: #10301f; --warn: #f0b341; --warn-soft: #33270f; --bad: #f2645a; --bad-soft: #3a1714; color-scheme: dark;
+} }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-right)) 64px max(16px, env(safe-area-inset-left)); }
+h1, h2, h3 { margin: 0; letter-spacing: -0.01em; } h1 { font-size: 24px; } h2 { font-size: 17px; }
+p { margin: 0; }
+.muted { color: var(--mute); } .small { font-size: 13px; } .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); }
+.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.tabs { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.tabs button { border: 0; background: none; color: var(--mute); font: inherit; font-weight: 500; font-size: 14px; padding: 7px 14px; border-radius: 7px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+.badge { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--bad); color: #fff; font-size: 12px; text-align: center; margin-left: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.stack { display: grid; gap: 16px; }
+.row { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+label.f { display: grid; gap: 5px; font-size: 13px; font-weight: 500; color: var(--ink-2); min-width: 0; }
+label.f .u { font-family: var(--mono); font-size: 11px; color: var(--mute); font-weight: 400; }
+.in { width: 100%; height: 42px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; padding: 0 11px; }
+textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertical; }
+.in:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+.in.bad { border-color: var(--bad); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 42px; padding: 0 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; font-size: 14.5px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.wa { background: #1fa855; border-color: #1fa855; color: #fff; }
+.btn.sm { height: 34px; padding: 0 12px; font-size: 13.5px; font-weight: 500; }
+.btn.ghost { border-color: transparent; background: none; color: var(--mute); }
+.btn:disabled { opacity: .45; pointer-events: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.notice { border-radius: 9px; padding: 10px 12px; font-size: 13.5px; background: var(--warn-soft); color: var(--warn); }
+.notice.info { background: var(--accent-soft); color: var(--ink-2); }
+.login { max-width: 420px; margin: 8vh auto 0; }
+/* cotizaciones */
+.quote { display: grid; gap: 10px; }
+.quote-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline; }
+.quote .total { font-family: var(--mono); font-size: 22px; font-weight: 600; }
+.pill { display: inline-block; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line); }
+.pill.nueva { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.pill.contactado { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.pill.vendida { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.quote ul { margin: 0; padding-left: 18px; font-size: 14px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+details pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 10px; border-radius: 8px; margin: 8px 0 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filters button { border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+/* precios */
+.otype { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface-2); display: grid; gap: 12px; }
+.formula { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.formula .op { font-family: var(--mono); color: var(--mute); padding-bottom: 10px; }
+.formula label.f { width: 100px; }
+.rate { font-family: var(--mono); font-size: 12.5px; color: var(--ok); } .rate b { color: var(--ink); }
+.sub-h { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); margin-bottom: 6px; }
+.metal-row { display: grid; grid-template-columns: minmax(0, 1fr) 130px 80px; gap: 8px; align-items: center; }
+.savebar { position: sticky; bottom: 0; margin-top: 18px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; box-shadow: 0 -6px 18px rgba(0,0,0,.08); }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 9px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+[hidden] { display: none !important; }
+.day { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); margin: 18px 0 6px; }
+.qlist { display: grid; gap: 8px; }
+.qrow { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.qrow > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; }
+.qrow > summary::-webkit-details-marker { display: none; }
+.qrow[open] > summary { border-bottom: 1px solid var(--line); }
+.qrow .when { font-family: var(--mono); font-size: 13px; color: var(--ink-2); line-height: 1.25; }
+.qrow .when small { display: block; color: var(--mute); font-size: 11px; }
+.qrow .who { min-width: 0; } .qrow .who b { display: block; } .qrow .who span { display: block; font-size: 13px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qrow .amt { text-align: right; font-family: var(--mono); font-weight: 600; } .qrow .amt .pill { margin-top: 4px; }
+.qrow .body { padding: 14px; display: grid; gap: 10px; }
+.qrow.is-new { border-color: var(--bad); }
+.pushcard { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.pw { position: relative; } .pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--mute); font: inherit; font-size: 13px; cursor: pointer; padding: 6px; }
+</style>
+</head>
+<body>
+<div id="app" class="wrap"><p class="muted">Cargando…</p></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>window.COTIZADOR_NO_AUTOMOUNT = true;</script>
+<script src="cotizador.js"></script>
+<script>
+(function () {
+  'use strict';
+  var C = window.Cotizador, core = C.core;
+  var store = C.createStore(window.COTIZADOR_CONFIG);
+  var DRAFT_KEY = 'cotizador-admin-borrador';
+  var $app = document.getElementById('app');
+  var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var num = core.num, fmt = core.fmt;
+  var uid = function () { return Math.random().toString(36).slice(2, 9); };
+  var NUMERIC = ['refA', 'refB', 'material', 'min', 'pct', 'spacing', 'rangePct', 'roundTo', 'wastePct', 'price', 'rails', 'height', 'postEvery', 'refPersons', 'refDays'];
+  var val = function (k, v) { return NUMERIC.indexOf(k) >= 0 ? num(v) : v; };
+
+  var CONF = window.COTIZADOR_CONFIG || {};
+  var S = { session: null, view: 'cotizaciones', published: null, cfg: null, dirty: false, quotes: [], filter: 'todas',
+    authMode: 'login', authMsg: '', authErr: '', busy: false, push: 'desconocido' };
+  var ADMIN_URL = location.origin + location.pathname;
+  var money = function (n, d) { return core.money(S.cfg, n, d); };
+  var U = function () { return core.U(S.cfg); };
+
+  var toastTimer;
+  function toast(t) {
+    var el = document.querySelector('.toast');
+    if (!el) { el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.textContent = t; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.hidden = true; }, 3200);
+  }
+
+  /* ───────── Entrada con correo y contraseña (la sesión queda guardada) ───────── */
+  function authErrText(e) {
+    var m = String((e && e.message) || '');
+    if (/invalid login credentials/i.test(m)) return 'Correo o contraseña incorrectos.';
+    if (/email not confirmed/i.test(m)) return 'Tu correo aún no está confirmado. Abre el correo de confirmación que te llegó.';
+    if (/already registered|already been registered/i.test(m)) return 'Ese correo ya tiene cuenta. Entra con tu contraseña.';
+    if (/password should be at least|weak/i.test(m)) return 'La contraseña debe tener al menos 8 caracteres.';
+    if (/rate limit|too many/i.test(m)) return 'Demasiados intentos. Espera unos minutos.';
+    return m || 'No se pudo completar. Revisa tu conexión.';
+  }
+  function pwField(name, label, auto) {
+    return '<label class="f">' + label + '<span class="pw"><input class="in" type="password" name="' + name + '" autocomplete="' + auto + '" minlength="8" required style="padding-right:64px"><button type="button" data-act="toggle-pw">Ver</button></span></label>';
+  }
+  function loginView() {
+    var m = S.authMode, err = S.authErr ? '<p class="small" style="color:var(--bad)" role="alert">' + esc(S.authErr) + '</p>' : '';
+    var msg = S.authMsg ? '<p class="notice info">' + esc(S.authMsg) + '</p>' : '';
+    var head = '<div><div class="eyebrow">Rojo Ironworks · Panel del dueño</div><h1>' +
+      (m === 'signup' ? 'Crear mi cuenta' : m === 'forgot' ? 'Recuperar contraseña' : m === 'recovery' ? 'Nueva contraseña' : 'Entrar') + '</h1></div>';
+    var body;
+    if (m === 'recovery') {
+      body = '<form class="stack" data-form="recovery">' + pwField('password', 'Nueva contraseña', 'new-password') + err +
+        '<button class="btn primary" type="submit"' + (S.busy ? ' disabled' : '') + '>Guardar contraseña</button></form>';
+    } else if (m === 'forgot') {
+      body = '<form class="stack" data-form="forgot"><label class="f">Correo<input class="in" type="email" name="email" autocomplete="email" required></label>' + err +
+        '<button class="btn primary" type="submit"' + (S.busy ? ' disabled' : '') + '>Enviarme el enlace</button></form>' +
+        '<button class="btn ghost" data-act="auth-mode" data-v="login">Volver</button>';
+    } else if (m === 'signup') {
+      body = '<p class="small muted">Solo la primera vez. La primera cuenta que se crea queda como dueña del panel.</p>' +
+        '<form class="stack" data-form="signup"><label class="f">Correo<input class="in" type="email" name="email" autocomplete="email" required></label>' +
+        pwField('password', 'Contraseña (mínimo 8 caracteres)', 'new-password') + err +
+        '<button class="btn primary" type="submit"' + (S.busy ? ' disabled' : '') + '>Crear cuenta y entrar</button></form>' +
+        '<button class="btn ghost" data-act="auth-mode" data-v="login">Ya tengo cuenta</button>';
+    } else {
+      body = '<p class="small muted">Entras una sola vez: este dispositivo recordará tu sesión.</p>' +
+        '<form class="stack" data-form="login"><label class="f">Correo<input class="in" type="email" name="email" autocomplete="username" required></label>' +
+        pwField('password', 'Contraseña', 'current-password') + err +
+        '<button class="btn primary" type="submit"' + (S.busy ? ' disabled' : '') + '>' + (S.busy ? 'Entrando…' : 'Entrar') + '</button></form>' +
+        '<div class="actions" style="justify-content:space-between"><button class="btn ghost sm" data-act="auth-mode" data-v="forgot">¿Olvidaste tu contraseña?</button>' +
+        '<button class="btn ghost sm" data-act="auth-mode" data-v="signup">Primera vez: crear cuenta</button></div>';
+    }
+    return '<div class="login card stack">' + head + msg + body + '</div>';
+  }
+
+  /* ───────── Pantalla principal ───────── */
+  function render() {
+    if (!S.session || S.authMode === 'recovery') { $app.innerHTML = loginView(); return; }
+    if (!S.cfg) { $app.innerHTML = '<p class="muted">Cargando…</p>'; return; }
+    var nuevas = S.quotes.filter(function (q) { return q.status === 'nueva'; }).length;
+    $app.innerHTML =
+      (store.demo ? '<p class="notice" style="margin-bottom:12px"><b>Modo de prueba.</b> Falta poner los datos de Supabase en config.js; todo se guarda solo en este navegador.</p>' : '') +
+      '<header class="top"><div><div class="eyebrow">Panel del dueño · ' + esc(S.session.user && S.session.user.email) + '</div><h1>' + esc(S.cfg.business || 'Mi herrería') + '</h1></div>' +
+      '<div class="actions"><div class="tabs" role="tablist">' +
+      '<button role="tab" data-act="view" data-v="cotizaciones" aria-selected="' + (S.view === 'cotizaciones') + '">Cotizaciones' + (nuevas ? '<span class="badge">' + nuevas + '</span>' : '') + '</button>' +
+      '<button role="tab" data-act="view" data-v="precios" aria-selected="' + (S.view === 'precios') + '">Precios</button></div>' +
+      (window.COTIZADOR_CONFIG && window.COTIZADOR_CONFIG.siteUrl ? '<a class="btn sm" href="' + esc(window.COTIZADOR_CONFIG.siteUrl) + '" target="_blank" rel="noopener">Ver mi web</a>' : '') +
+      (store.demo ? '' : '<button class="btn sm ghost" data-act="logout">Salir</button>') + '</div></header>' +
+      '<main>' + (S.view === 'precios' ? pricesView() : quotesView()) + '</main>';
+  }
+
+  /* ───────── Cotizaciones ───────── */
+  var STATUS = [['nueva', 'Nueva'], ['contactado', 'Contactado'], ['vendida', 'Vendida'], ['descartada', 'Descartada']];
+  function pushCard() {
+    var st = S.push;
+    var txt = st === 'activo' ? '<b>Avisos activados</b> en este dispositivo. Te llegará una notificación con cada cotización, aunque la app esté cerrada.'
+      : st === 'bloqueado' ? '<b>Avisos bloqueados.</b> Permite las notificaciones para este sitio en los ajustes del navegador o del teléfono.'
+      : st === 'ios-instalar' ? '<b>En iPhone:</b> toca Compartir → «Agregar a pantalla de inicio», abre la app desde el ícono y activa los avisos ahí.'
+      : st === 'no-soportado' ? 'Este navegador no permite avisos. Usa Chrome en Android o computadora, o Safari en iPhone (instalando la app).'
+      : '<b>Recibe un aviso</b> en este teléfono o computadora cada vez que alguien cotice.';
+    var btn = st === 'activo' ? '<button class="btn sm" data-act="push-test">Probar aviso</button><button class="btn sm ghost" data-act="push-off">Desactivar</button>'
+      : (st === 'inactivo' || st === 'desconocido') ? '<button class="btn sm primary" data-act="push-on">Activar avisos</button>' : '';
+    return '<section class="card pushcard"><p class="small" style="max-width:640px">🔔 ' + txt + '</p><div class="actions">' + btn + '</div></section>';
+  }
+  function dayLabel(d) {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var x = new Date(d); x.setHours(0, 0, 0, 0);
+    var diff = Math.round((today - x) / 86400000);
+    if (diff === 0) return 'Hoy';
+    if (diff === 1) return 'Ayer';
+    return new Date(d).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: x.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
+  }
+  function quotesView() {
+    var list = S.quotes.filter(function (q) { return S.filter === 'todas' || q.status === S.filter; });
+    var cfg = S.cfg, lastDay = '';
+    var rows = list.map(function (q) {
+      var d = new Date(q.created_at), label = dayLabel(q.created_at), head = '';
+      if (label !== lastDay) { head = '<div class="day">' + esc(label) + '</div>'; lastDay = label; }
+      var first = String(q.client_name || '').split(' ')[0];
+      var hello = 'Hola ' + first + ', soy de ' + (cfg.business || 'la herrería') + '. Recibimos tu cotización ' + q.folio + ' por ' + core.money(cfg, q.total) + '. ¿Cuándo podemos ir a tomar medidas?';
+      var job = (q.detail || []).map(function (x) { return String(x.text || '').split(' — ').slice(0, 2).join(' '); }).join(' · ');
+      var phone = String(q.client_phone || '');
+      var label2 = (STATUS.find(function (s) { return s[0] === q.status; }) || [0, q.status])[1];
+      return head + '<details class="qrow' + (q.status === 'nueva' ? ' is-new' : '') + '"><summary>' +
+        '<div class="when">' + d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' }) + '<small>' + d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) + '</small></div>' +
+        '<div class="who"><b>' + esc(q.client_name) + '</b><span>' + esc(job || q.folio) + '</span></div>' +
+        '<div class="amt">' + core.money(cfg, q.total) + '<br><span class="pill ' + esc(q.status) + '">' + esc(label2) + '</span></div></summary>' +
+        '<div class="body">' +
+        '<div class="small muted">Folio ' + esc(q.folio) + ' · ' + d.toLocaleString('es-MX', { dateStyle: 'full', timeStyle: 'short' }) + '</div>' +
+        '<div class="small">' + (q.contact_via === 'sms' ? 'Prefiere <b>SMS</b>' : 'Prefiere <b>WhatsApp</b>') + ' · <span class="num">' + esc(phone) + '</span>' + (q.address ? ' · ' + esc(q.address) : '') + ' · rango ' + core.money(cfg, q.low) + ' – ' + core.money(cfg, q.high) + '</div>' +
+        '<ul>' + (q.detail || []).map(function (x) {
+          return '<li>' + esc(x.text) + ' — <b>' + core.money(cfg, x.total) + '</b>' + (x.desc ? '<br><span class="muted">«' + esc(x.desc) + '»</span>' : '') + (x.extra ? '<br><span class="muted small">Dificultad: ' + esc(x.extraText) + '</span>' : '') + (x.photo ? '<br><span class="small">📷 Tiene foto o dibujo</span>' : '') + '</li>';
+        }).join('') + '</ul>' +
+        (q.notes ? '<p class="small"><b>Comentarios:</b> ' + esc(q.notes) + '</p>' : '') +
+        '<div class="actions">' +
+        '<a class="btn sm wa" href="' + esc(core.waLink(phone, hello)) + '" target="_blank" rel="noopener" data-act="contacted" data-id="' + q.id + '">WhatsApp</a>' +
+        '<a class="btn sm" href="sms:' + esc(phone) + '?&body=' + encodeURIComponent(hello) + '" data-act="contacted" data-id="' + q.id + '">SMS</a>' +
+        '<a class="btn sm" href="tel:' + esc(phone) + '">Llamar</a>' +
+        '<select class="in" style="width:auto;height:34px;font-size:14px" data-status="' + q.id + '" aria-label="Estado">' + STATUS.map(function (s) { return '<option value="' + s[0] + '"' + (q.status === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('') + '</select>' +
+        '<button class="btn sm ghost" data-act="del-quote" data-id="' + q.id + '">Eliminar</button></div>' +
+        (q.message ? '<details><summary class="small muted" style="cursor:pointer">Ver detalle completo (metal y mano de obra)</summary><pre>' + esc(q.message) + '</pre></details>' : '') +
+        '</div></details>';
+    }).join('');
+    return '<div class="stack">' + pushCard() + '<div><div class="filters">' + [['todas', 'Todas']].concat(STATUS).map(function (s) {
+      var n = s[0] === 'todas' ? S.quotes.length : S.quotes.filter(function (q) { return q.status === s[0]; }).length;
+      return '<button data-act="filter" data-v="' + s[0] + '" aria-pressed="' + (S.filter === s[0]) + '">' + s[1] + ' · ' + n + '</button>';
+    }).join('') + '</div>' +
+      (!list.length ? '<div class="card" style="margin-top:12px"><p class="muted">' + (S.quotes.length ? 'No hay cotizaciones con este estado.' : 'Aún no llegan cotizaciones. Cuando un cliente cotice en tu web, aparecerá aquí al momento.') + '</p></div>'
+        : '<div class="qlist">' + rows + '</div>') + '</div></div>';
+  }
+
+  /* ───────── Precios ───────── */
+  var metalUsed = function (id) { return S.cfg.types.some(function (t) { return t.mode !== 'pieza' && (t.frameMetal === id || t.barMetal === id); }); };
+  function checklist() {
+    var cfg = S.cfg;
+    var used = cfg.types.filter(function (t) { return t.active && t.mode !== 'pieza'; }).reduce(function (a, t) { return a.concat([t.frameMetal, t.barMetal]); }, []).filter(Boolean);
+    var checks = [
+      [core.phoneOk(cfg.whatsapp), 'Tu número de WhatsApp'],
+      [used.length > 0 && used.every(function (id) { return core.metalPrice(cfg, id) > 0; }), 'Precio de los metales que usan tus trabajos'],
+      [cfg.types.some(function (t) { return core.priced(cfg, t); }), 'Al menos un trabajo listo para el cliente'],
+      [!cfg.examplePrices, 'Precios reales de tu proveedor (ahora son de ejemplo)'],
+    ];
+    return checks.map(function (c) { return '<div class="small"><span style="color:' + (c[0] ? 'var(--ok)' : 'var(--warn)') + '">●</span> ' + esc(c[1]) + (c[0] ? '' : ' <span class="muted">(falta)</span>') + '</div>'; }).join('');
+  }
+  function metalOptions(sel, allowNone) {
+    return (allowNone ? '<option value=""' + (!sel ? ' selected' : '') + '>Sin barrotes</option>' : '') +
+      S.cfg.metals.map(function (m) { return '<option value="' + esc(m.id) + '"' + (m.id === sel ? ' selected' : '') + '>' + esc(m.name) + (num(m.price) > 0 ? ' — ' + money(num(m.price), 2) : ' — sin precio') + '</option>'; }).join('');
+  }
+  function rateText(t) {
+    var cfg = S.cfg, u = U();
+    if (!t.active) return '<span class="muted">Oculto para el cliente</span>';
+    var d = cfg.designs[0], m = core.materialCost(cfg, t, t.refA, t.refB, d && d.spacing), l = core.laborFor(cfg, t, core.sizeOf(t, t.refA, t.refB));
+    var what = t.mode === 'area' ? fmt(num(t.refA)) + ' × ' + fmt(num(t.refB)) + ' ' + u.len : t.mode === 'lineal' ? fmt(num(t.refA)) + ' ' + u.len : '1 pieza';
+    var missing = [];
+    if (m.missing) missing.push(t.mode === 'pieza' ? 'precio del material' : 'precio del metal');
+    if (!l.persons) missing.push('ejemplo de mano de obra');
+    if (missing.length) return '<span style="color:var(--warn)">Falta ' + missing.join(' y ') + ': no se muestra al cliente</span>';
+    var feet = m.parts.map(function (p) { var mm = core.metal(cfg, p.id); return fmt(p.len, 1) + ' ' + u.len + ' ' + esc(mm ? mm.name : ''); }).join(' + ');
+    var total = Math.max(core.roundUp(cfg, m.cost + l.cost), num(t.min));
+    return 'Ejemplo ' + what + ', diseño ' + esc((d && d.name || '').toLowerCase()) + ': ' + (feet ? feet + ' = ' : '') + 'material ' + money(m.cost) + ' + mano de obra ' + money(l.cost) + ' (' + core.laborText(l) + ') ≈ <b>' + money(total) + '</b>';
+  }
+  function typeEditor(t) {
+    var u = U(), id = esc(t.id);
+    var refShape = t.mode === 'area'
+      ? '<label class="f">Ancho <span class="u">' + u.len + '</span><input class="in" data-t="' + id + '" data-k="refA" value="' + esc(t.refA) + '" inputmode="decimal"></label><span class="op">×</span><label class="f">Alto <span class="u">' + u.len + '</span><input class="in" data-t="' + id + '" data-k="refB" value="' + esc(t.refB) + '" inputmode="decimal"></label>'
+      : t.mode === 'lineal' ? '<label class="f">Largo <span class="u">' + u.len + '</span><input class="in" data-t="' + id + '" data-k="refA" value="' + esc(t.refA) + '" inputmode="decimal"></label>' : '<span class="op">1 pieza</span>';
+    var metalFields = t.mode === 'pieza'
+      ? '<label class="f">Material por pieza <span class="u">' + esc(S.cfg.currency) + '</span><input class="in" data-t="' + id + '" data-k="material" value="' + esc(t.material) + '" inputmode="decimal"></label>'
+      : '<label class="f">' + (t.mode === 'lineal' ? 'Pasamanos y postes' : 'Marco y travesaños') + '<select class="in" data-t="' + id + '" data-k="frameMetal">' + metalOptions(t.frameMetal) + '</select></label>' +
+        '<label class="f">Barrotes<select class="in" data-t="' + id + '" data-k="barMetal">' + metalOptions(t.barMetal, true) + '</select></label>' +
+        (t.mode === 'area' ? '<label class="f">Travesaños horizontales<input class="in" data-t="' + id + '" data-k="rails" value="' + esc(t.rails) + '" inputmode="numeric"></label>'
+          : '<label class="f">Alto del barandal <span class="u">' + u.len + '</span><input class="in" data-t="' + id + '" data-k="height" value="' + esc(t.height) + '" inputmode="decimal"></label>' +
+            '<label class="f">Poste cada <span class="u">' + u.len + '</span><input class="in" data-t="' + id + '" data-k="postEvery" value="' + esc(t.postEvery) + '" inputmode="decimal"></label>' +
+            '<label class="f">Pasamanos<input class="in" data-t="' + id + '" data-k="rails" value="' + esc(t.rails) + '" inputmode="numeric"></label>');
+    return '<div class="otype"><div class="row" style="align-items:end">' +
+      '<label class="f">Trabajo<input class="in" data-t="' + id + '" data-k="name" value="' + esc(t.name) + '"></label>' +
+      '<label class="f">Se cobra<select class="in" data-t="' + id + '" data-k="mode"><option value="area"' + (t.mode === 'area' ? ' selected' : '') + '>Por área (ancho × alto)</option><option value="lineal"' + (t.mode === 'lineal' ? ' selected' : '') + '>Por largo</option><option value="pieza"' + (t.mode === 'pieza' ? ' selected' : '') + '>Por pieza</option></select></label>' +
+      '<label class="f">Mínimo <span class="u">' + esc(S.cfg.currency) + '</span><input class="in" data-t="' + id + '" data-k="min" value="' + esc(t.min) + '" inputmode="decimal"></label></div>' +
+      '<div><div class="sub-h">Material</div><div class="row" style="align-items:end">' + metalFields + '</div></div>' +
+      '<div><div class="sub-h">Mano de obra · ejemplo</div><div class="formula">' + refShape + '<span class="op">lo hacen</span>' +
+      '<label class="f">Personas<input class="in" data-t="' + id + '" data-k="refPersons" value="' + esc(t.refPersons) + '" inputmode="numeric"></label><span class="op">en</span>' +
+      '<label class="f">Días<input class="in" data-t="' + id + '" data-k="refDays" value="' + esc(t.refDays) + '" inputmode="decimal"></label></div></div>' +
+      '<div class="rate" data-rate="' + id + '">' + rateText(t) + '</div>' +
+      '<div class="actions" style="justify-content:flex-end"><button class="btn sm" data-act="toggle-type" data-v="' + id + '">' + (t.active ? 'Ocultar al cliente' : 'Mostrar al cliente') + '</button><button class="btn sm ghost" data-act="del-type" data-v="' + id + '">Eliminar</button></div></div>';
+  }
+  function pricesView() {
+    var cfg = S.cfg, u = U(), L = cfg.labor;
+    return '<div class="stack">' +
+      '<section class="card"><div class="row" style="align-items:start"><div><h2>Antes de guardar</h2><p class="small muted" style="margin-top:4px">Al tocar «Guardar» tu web se actualiza sola en segundos, también para quien la tenga abierta.</p></div><div id="checklist" style="display:grid;gap:4px">' + checklist() + '</div></div></section>' +
+      (cfg.examplePrices ? '<p class="notice" id="example-banner"><b>Los precios del metal son de ejemplo.</b> Cámbialos por los de tu proveedor y toca «Guardar».</p>' : '') +
+      '<section class="card stack"><div class="actions" style="justify-content:space-between"><h2>Metal de tu proveedor</h2><button class="btn sm" data-act="add-metal">+ Metal</button></div>' +
+      '<p class="small muted">Precio por ' + u.one + '. Si te lo venden por tramo, divide: un tramo de 20 ' + u.len + ' a $60 = $3 por ' + u.one + '.</p>' +
+      cfg.metals.map(function (m) {
+        return '<div class="metal-row"><input class="in" data-m="' + esc(m.id) + '" data-k="name" value="' + esc(m.name) + '" aria-label="Nombre del metal">' +
+          '<input class="in num' + (!(num(m.price) > 0) && metalUsed(m.id) ? ' bad' : '') + '" data-m="' + esc(m.id) + '" data-k="price" value="' + (num(m.price) > 0 ? esc(m.price) : '') + '" inputmode="decimal" placeholder="$ por ' + u.one + '" aria-label="Precio por ' + u.one + '">' +
+          '<button class="btn sm ghost" data-act="del-metal" data-v="' + esc(m.id) + '"' + (metalUsed(m.id) ? ' disabled title="Lo usa un trabajo"' : '') + '>Quitar</button></div>';
+      }).join('') +
+      '<label class="f" style="max-width:220px">Desperdicio de material <span class="u">%</span><input class="in" data-o="wastePct" value="' + esc(cfg.wastePct) + '" inputmode="decimal"></label></section>' +
+      '<section class="card stack"><h2>Mano de obra</h2><p class="small muted">Cada persona cobra los días que tarda el trabajo, con un mínimo por persona.</p><div class="row">' +
+      '<label class="f">Pago por persona por día <span class="u">' + esc(cfg.currency) + '</span><input class="in" data-l="payPerDay" value="' + esc(L.payPerDay) + '" inputmode="decimal"></label>' +
+      '<label class="f">Mínimo por persona <span class="u">' + esc(cfg.currency) + '</span><input class="in" data-l="minPerPerson" value="' + esc(L.minPerPerson) + '" inputmode="decimal"></label>' +
+      '<label class="f">Máximo de personas<input class="in" data-l="maxPersons" value="' + esc(L.maxPersons) + '" inputmode="numeric"></label></div></section>' +
+      '<section class="card stack"><div class="actions" style="justify-content:space-between"><h2>Trabajos</h2><button class="btn sm" data-act="add-type">+ Trabajo</button></div>' + cfg.types.map(typeEditor).join('') + '</section>' +
+      '<section class="card stack"><h2>Estilos de diseño</h2>' + cfg.designs.map(function (d) {
+        return '<div class="row" style="align-items:end"><label class="f">Nombre<input class="in" data-d="' + esc(d.id) + '" data-k="name" value="' + esc(d.name) + '"></label>' +
+          '<label class="f">Descripción<input class="in" data-d="' + esc(d.id) + '" data-k="desc" value="' + esc(d.desc) + '"></label>' +
+          '<label class="f">Barrote cada <span class="u">' + u.sub + '</span><input class="in" data-d="' + esc(d.id) + '" data-k="spacing" value="' + esc(d.spacing) + '" inputmode="decimal"></label>' +
+          '<label class="f">Extra <span class="u">%</span><input class="in" data-d="' + esc(d.id) + '" data-k="pct" value="' + esc(d.pct) + '" inputmode="decimal"></label></div>';
+      }).join('') + '</section>' +
+      '<section class="card stack"><div class="actions" style="justify-content:space-between"><h2>Dificultad del diseño</h2><button class="btn sm" data-act="add-feature">+ Detalle</button></div>' +
+      '<p class="small muted">Si el cliente escribe alguna palabra clave al describir su diseño, el detalle se marca solo y el precio sube ese %.</p>' +
+      (cfg.features || []).map(function (f) {
+        return '<div class="otype" style="gap:10px"><div class="row" style="align-items:end"><label class="f">Detalle<input class="in" data-f="' + esc(f.id) + '" data-k="name" value="' + esc(f.name) + '"></label>' +
+          '<label class="f">Explicación<input class="in" data-f="' + esc(f.id) + '" data-k="desc" value="' + esc(f.desc) + '"></label>' +
+          '<label class="f">Sube el precio <span class="u">%</span><input class="in" data-f="' + esc(f.id) + '" data-k="pct" value="' + esc(f.pct) + '" inputmode="decimal"></label></div>' +
+          '<div class="actions"><label class="f" style="flex:1">Palabras clave <span class="u">separadas por coma</span><input class="in" data-f="' + esc(f.id) + '" data-k="keywords" value="' + esc(f.keywords) + '"></label><button class="btn sm ghost" data-act="del-feature" data-v="' + esc(f.id) + '" style="align-self:end">Quitar</button></div></div>';
+      }).join('') + '</section>' +
+      '<section class="card stack"><h2>Tu negocio</h2><div class="row">' +
+      '<label class="f">Nombre del taller<input class="in" data-o="business" value="' + esc(cfg.business) + '"></label>' +
+      '<label class="f">Tu WhatsApp <span class="u">con código de país</span><input class="in" data-o="whatsapp" value="' + esc(cfg.whatsapp) + '" inputmode="tel"></label>' +
+      '<label class="f">Código de país de tus clientes<input class="in" data-o="countryCode" value="' + esc(cfg.countryCode) + '" inputmode="numeric" placeholder="1 = EE. UU., 52 = México"></label></div><div class="row">' +
+      '<label class="f">Moneda<select class="in" data-o="currency"><option value="USD"' + (cfg.currency === 'USD' ? ' selected' : '') + '>Dólares (USD)</option><option value="MXN"' + (cfg.currency === 'MXN' ? ' selected' : '') + '>Pesos (MXN)</option></select></label>' +
+      '<label class="f">Medidas en<select class="in" data-o="unit"><option value="ft"' + (cfg.unit === 'ft' ? ' selected' : '') + '>Pies</option><option value="m"' + (cfg.unit === 'm' ? ' selected' : '') + '>Metros</option></select></label>' +
+      '<label class="f">Rango para el cliente <span class="u">± %</span><input class="in" data-o="rangePct" value="' + esc(cfg.rangePct) + '" inputmode="decimal"></label>' +
+      '<label class="f">Redondear a <span class="u">' + esc(cfg.currency) + '</span><input class="in" data-o="roundTo" value="' + esc(cfg.roundTo) + '" inputmode="numeric"></label></div>' +
+      '<label class="f">Aviso de que el precio puede variar<textarea class="in" data-o="disclaimer">' + esc(cfg.disclaimer) + '</textarea></label></section>' +
+      '<div class="savebar"><span class="small' + (S.dirty ? '' : ' muted') + '" id="save-state">' + (S.dirty ? 'Cambios sin guardar. Tu web sigue mostrando los precios anteriores.' : 'Tu web muestra estos precios.') + '</span>' +
+      '<div class="actions">' + (S.dirty ? '<button class="btn sm ghost" data-act="discard">Descartar</button>' : '') + '<button class="btn primary" data-act="save"' + (S.dirty ? '' : ' disabled') + '>Guardar</button></div></div></div>';
+  }
+  function setDirty() {
+    S.dirty = true;
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(S.cfg)); } catch (e) { /* sin almacenamiento */ }
+    var st = document.getElementById('save-state'); if (st) { st.textContent = 'Cambios sin guardar. Tu web sigue mostrando los precios anteriores.'; st.classList.remove('muted'); }
+    var b = document.querySelector('[data-act="save"]'); if (b) b.disabled = false;
+    var cl = document.getElementById('checklist'); if (cl) cl.innerHTML = checklist();
+    S.cfg.types.forEach(function (t) { var r = document.querySelector('[data-rate="' + t.id + '"]'); if (r) r.innerHTML = rateText(t); });
+  }
+  function save() {
+    var b = document.querySelector('[data-act="save"]'); if (b) { b.disabled = true; b.textContent = 'Guardando…'; }
+    store.saveConfig(S.cfg).then(function () {
+      S.published = JSON.parse(JSON.stringify(S.cfg)); S.dirty = false;
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* sin almacenamiento */ }
+      toast('Guardado. Tu web ya muestra los cambios.'); render();
+    }).catch(function (e) {
+      toast(e && e.code === 'not_owner' ? 'Tu correo no tiene permiso para cambiar precios.' : 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.');
+      if (b) { b.disabled = false; b.textContent = 'Guardar'; }
+    });
+  }
+
+  /* ───────── Eventos ───────── */
+  document.addEventListener('submit', function (ev) {
+    var form = ev.target.getAttribute('data-form'); if (!form) return;
+    ev.preventDefault();
+    var f = ev.target, email = f.email ? f.email.value.trim() : '', pw = f.password ? f.password.value : '';
+    S.authErr = ''; S.authMsg = ''; S.busy = true; render();
+    var done = function () { S.busy = false; render(); };
+    var fail = function (e) { S.busy = false; S.authErr = authErrText(e); render(); };
+    if (form === 'login') store.signIn(email, pw).then(function () { S.busy = false; }).catch(fail);
+    else if (form === 'signup') store.signUp(email, pw, ADMIN_URL).then(function (r) {
+      if (r && r.session) { S.busy = false; return; }
+      return store.signIn(email, pw).then(function () { S.busy = false; }).catch(function (e) {
+        if (/not confirmed/i.test(String(e && e.message))) { S.authMode = 'login'; S.authMsg = 'Cuenta creada. Confirma tu correo con el enlace que te llegó y después entra.'; done(); }
+        else fail(e);
+      });
+    }).catch(fail);
+    else if (form === 'forgot') store.resetPassword(email, ADMIN_URL).then(function () { S.authMode = 'login'; S.authMsg = 'Te enviamos un enlace para crear una nueva contraseña.'; done(); }).catch(fail);
+    else if (form === 'recovery') store.updatePassword(pw).then(function () { S.authMode = 'login'; S.busy = false; toast('Contraseña actualizada'); if (S.session) startOwner(); render(); }).catch(fail);
+  });
+  document.addEventListener('click', function (ev) {
+    var el = ev.target.closest('[data-act]'); if (!el) return;
+    var act = el.getAttribute('data-act'), v = el.getAttribute('data-v'), qid = el.getAttribute('data-id');
+    var cfg = S.cfg;
+    switch (act) {
+      case 'auth-mode': S.authMode = v; S.authErr = ''; S.authMsg = ''; render(); break;
+      case 'toggle-pw': { var inp = el.parentNode.querySelector('input'); inp.type = inp.type === 'password' ? 'text' : 'password'; el.textContent = inp.type === 'password' ? 'Ver' : 'Ocultar'; break; }
+      case 'logout': pushOff(true).then(function () { return store.signOut(); }); break;
+      case 'push-on': pushOn(); break;
+      case 'push-off': pushOff(); break;
+      case 'push-test': notifyLocal('Prueba de aviso', 'Así te llegará cada cotización nueva.', 'prueba'); break;
+      case 'view': S.view = v; render(); break;
+      case 'filter': S.filter = v; render(); break;
+      case 'contacted': { var q = S.quotes.find(function (x) { return String(x.id) === qid; }); if (q && q.status === 'nueva') store.updateQuote(q.id, { status: 'contactado' }).then(loadQuotes); break; }
+      case 'del-quote': if (el.dataset.confirm) { store.deleteQuote(Number(qid) || qid).then(loadQuotes); } else { el.dataset.confirm = '1'; el.textContent = '¿Seguro? Toca otra vez'; el.style.color = 'var(--bad)'; } break;
+      case 'add-metal': cfg.metals.push({ id: uid(), name: 'Nuevo metal', price: 0 }); setDirty(); render(); break;
+      case 'del-metal': if (!metalUsed(v)) { cfg.metals = cfg.metals.filter(function (m) { return m.id !== v; }); setDirty(); render(); } break;
+      case 'add-type': cfg.types.push({ id: uid(), name: 'Nuevo trabajo', mode: 'area', frameMetal: (cfg.metals[0] || {}).id || '', barMetal: '', rails: 1, height: 0, postEvery: 0, material: 0, refA: 4, refB: 4, refPersons: 1, refDays: 1, min: 0, active: true }); setDirty(); render(); break;
+      case 'del-type': if (el.dataset.confirm) { cfg.types = cfg.types.filter(function (t) { return t.id !== v; }); setDirty(); render(); } else { el.dataset.confirm = '1'; el.textContent = '¿Seguro?'; } break;
+      case 'toggle-type': { var t = cfg.types.find(function (x) { return x.id === v; }); if (t) { t.active = !t.active; setDirty(); render(); } break; }
+      case 'add-feature': cfg.features = (cfg.features || []).concat([{ id: uid(), name: 'Nuevo detalle', desc: '', pct: 10, keywords: '' }]); setDirty(); render(); break;
+      case 'del-feature': cfg.features = (cfg.features || []).filter(function (f) { return f.id !== v; }); setDirty(); render(); break;
+      case 'discard': S.cfg = JSON.parse(JSON.stringify(S.published)); S.dirty = false; try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* */ } render(); break;
+      case 'save': save(); break;
+    }
+  });
+  document.addEventListener('input', function (ev) {
+    var el = ev.target, ds = el.dataset, cfg = S.cfg;
+    if (!cfg) return;
+    if (ds.o) { cfg[ds.o] = val(ds.o, el.value); setDirty(); if (ds.o === 'currency' || ds.o === 'unit') render(); return; }
+    if (ds.l) { cfg.labor[ds.l] = num(el.value); setDirty(); return; }
+    if (ds.m) {
+      var m = cfg.metals.find(function (x) { return x.id === ds.m; }); if (!m) return;
+      m[ds.k] = val(ds.k, el.value);
+      if (ds.k === 'price' && cfg.examplePrices) { cfg.examplePrices = false; var bn = document.getElementById('example-banner'); if (bn) bn.remove(); }
+      setDirty();
+      document.querySelectorAll('select[data-k="frameMetal"], select[data-k="barMetal"]').forEach(function (s) { var t = cfg.types.find(function (x) { return x.id === s.dataset.t; }); if (t) s.innerHTML = metalOptions(t[s.dataset.k], s.dataset.k === 'barMetal'); });
+      return;
+    }
+    if (ds.t) {
+      var t = cfg.types.find(function (x) { return x.id === ds.t; }); if (!t) return;
+      t[ds.k] = val(ds.k, el.value);
+      if (ds.k === 'mode') {
+        if (t.mode === 'area' && !num(t.refB)) t.refB = 1;
+        if (t.mode === 'lineal') { if (!num(t.height)) t.height = 3; if (!num(t.postEvery)) t.postEvery = 6; if (!num(t.rails)) t.rails = 2; }
+        setDirty(); render(); return;
+      }
+      setDirty(); return;
+    }
+    if (ds.d) { var d = cfg.designs.find(function (x) { return x.id === ds.d; }); if (d) { d[ds.k] = val(ds.k, el.value); setDirty(); } return; }
+    if (ds.f) { var f = (cfg.features || []).find(function (x) { return x.id === ds.f; }); if (f) { f[ds.k] = val(ds.k, el.value); setDirty(); } }
+  });
+  document.addEventListener('change', function (ev) {
+    var el = ev.target;
+    if (el.dataset.status) { store.updateQuote(Number(el.dataset.status) || el.dataset.status, { status: el.value }).then(loadQuotes).catch(function () { toast('No se pudo cambiar el estado.'); }); return; }
+    if (el.tagName === 'SELECT' && (el.dataset.o || el.dataset.t)) el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  /* ───────── Datos ───────── */
+  var knownIds = null;
+  function loadQuotes() {
+    return store.listQuotes().then(function (list) {
+      var fresh = knownIds ? list.filter(function (q) { return knownIds.indexOf(q.id) < 0; }) : [];
+      knownIds = list.map(function (q) { return q.id; });
+      S.quotes = list;
+      if (fresh.length) {
+        toast(fresh.length === 1 ? 'Nueva cotización de ' + fresh[0].client_name : fresh.length + ' cotizaciones nuevas');
+        beep();
+        // si este dispositivo no tiene avisos push, se avisa desde la página abierta
+        if (S.push !== 'activo' && document.hidden) notifyLocal('Nueva cotización · ' + core.money(S.cfg, fresh[0].total), fresh[0].client_name, 'cotizacion-' + fresh[0].id);
+      }
+      var nNew = list.filter(function (q) { return q.status === 'nueva'; }).length;
+      document.title = (nNew ? '(' + nNew + ') ' : '') + 'Rojo Ironworks · Cotizaciones';
+      if (S.view === 'cotizaciones' || fresh.length) {
+        var keepScroll = window.scrollY;
+        if (S.view === 'cotizaciones') { render(); window.scrollTo(0, keepScroll); }
+        else { var tab = document.querySelector('[data-v="cotizaciones"]'); if (tab) tab.innerHTML = 'Cotizaciones<span class="badge">' + S.quotes.filter(function (q) { return q.status === 'nueva'; }).length + '</span>'; }
+      }
+    }).catch(function () { toast('No se pudieron cargar las cotizaciones.'); });
+  }
+  var started = false;
+  function startOwner() {
+    if (started) return; started = true;
+    store.isOwner().then(function (ok) {
+      if (!ok) {
+        $app.innerHTML = '<div class="login card stack"><h1>Sin permiso</h1><p class="muted">El correo <b>' + esc(S.session.user.email) + '</b> no es el dueño de este panel. Entra con el correo con el que creaste la cuenta.</p><button class="btn" data-act="logout">Salir</button></div>';
+        started = false; return;
+      }
+      return store.loadConfig().then(function (cfg) {
+        S.published = cfg || JSON.parse(JSON.stringify(C.DEFAULT_CONFIG));
+        S.cfg = JSON.parse(JSON.stringify(S.published));
+        try {
+          var d = localStorage.getItem(DRAFT_KEY);
+          if (d) { var p = JSON.parse(d); if (p && Array.isArray(p.types) && JSON.stringify(p) !== JSON.stringify(S.published)) { S.cfg = p; S.dirty = true; S.view = 'precios'; } }
+        } catch (e) { /* sin borrador */ }
+        checkPush().then(render);
+        render();
+        store.onConfig(function (c) { S.published = c; if (!S.dirty) { S.cfg = JSON.parse(JSON.stringify(c)); if (S.view === 'precios') render(); } });
+        loadQuotes();
+        store.onQuotes(loadQuotes);
+        setInterval(loadQuotes, 60000); // respaldo por si se pierde la conexión en tiempo real
+      });
+    }).catch(function () { $app.innerHTML = '<div class="login card"><p class="notice">No se pudo conectar con Supabase. Revisa config.js y tu conexión.</p></div>'; started = false; });
+  }
+  /* ───────── Avisos (notificaciones push) ───────── */
+  var SW_URL = 'cotizador-sw.js';
+  function b64ToBytes(b64) {
+    var pad = '='.repeat((4 - (b64.length % 4)) % 4), raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    var out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out;
+  }
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+  function checkPush() {
+    if (!pushSupported()) { S.push = isIOS && !standalone ? 'ios-instalar' : 'no-soportado'; return Promise.resolve(); }
+    if (Notification.permission === 'denied') { S.push = 'bloqueado'; return Promise.resolve(); }
+    return navigator.serviceWorker.getRegistration(SW_URL).then(function (reg) { return reg && reg.pushManager.getSubscription(); })
+      .then(function (sub) { S.push = sub && Notification.permission === 'granted' ? 'activo' : 'inactivo'; })
+      .catch(function () { S.push = 'inactivo'; });
+  }
+  function pushOn() {
+    if (!pushSupported()) { checkPush().then(render); return; }
+    if (!CONF.vapidPublicKey) { toast('Falta la llave de avisos en config.js.'); return; }
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') { S.push = perm === 'denied' ? 'bloqueado' : 'inactivo'; render(); return; }
+      return navigator.serviceWorker.register(SW_URL).then(function () { return navigator.serviceWorker.ready; }).then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (sub) {
+          return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(CONF.vapidPublicKey) });
+        });
+      }).then(function (sub) {
+        var j = sub.toJSON();
+        return store.savePushSub({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, device: (isIOS ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : 'Computadora') + ' · ' + new Date().toLocaleDateString('es-MX') }, S.session.user.email);
+      }).then(function () { S.push = 'activo'; render(); toast('Avisos activados en este dispositivo'); });
+    }).catch(function () { toast('No se pudieron activar los avisos. Intenta de nuevo.'); });
+  }
+  function pushOff(silent) {
+    if (!pushSupported()) return Promise.resolve();
+    return navigator.serviceWorker.getRegistration(SW_URL).then(function (reg) { return reg && reg.pushManager.getSubscription(); })
+      .then(function (sub) { if (!sub) return; return store.deletePushSub(sub.endpoint).catch(function () {}).then(function () { return sub.unsubscribe(); }); })
+      .then(function () { if (!silent) { S.push = 'inactivo'; render(); toast('Avisos desactivados'); } })
+      .catch(function () {});
+  }
+  function notifyLocal(title, body, tag) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') { toast(title + ' — ' + body); return; }
+    var opts = { body: body, tag: tag, icon: 'cotizador-icon-192.png', badge: 'cotizador-icon-192.png' };
+    navigator.serviceWorker && navigator.serviceWorker.getRegistration(SW_URL).then(function (reg) {
+      if (reg) reg.showNotification(title, opts); else new Notification(title, opts);
+    }).catch(function () { try { new Notification(title, opts); } catch (e) { toast(title); } });
+  }
+  var audioCtx = null;
+  function beep() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.18].forEach(function (t) {
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.frequency.value = 880; g.gain.setValueAtTime(0.0001, audioCtx.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + t + 0.15);
+        o.connect(g); g.connect(audioCtx.destination); o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + 0.16);
+      });
+    } catch (e) { /* sin sonido */ }
+  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (ev) { if (ev.data === 'cotizaciones') { S.view = 'cotizaciones'; loadQuotes(); } });
+
+  store.onAuth(function (session, event) {
+    S.session = session;
+    if (event === 'PASSWORD_RECOVERY') { S.authMode = 'recovery'; render(); return; }
+    if (session && S.authMode !== 'recovery') { S.authMode = 'login'; startOwner(); } else if (!session) { started = false; S.cfg = null; render(); }
+  });
+  store.session().then(function (session) { S.session = session; if (session && S.authMode !== 'recovery') startOwner(); else render(); });
+})();
+</script>
+</body>
+</html>
