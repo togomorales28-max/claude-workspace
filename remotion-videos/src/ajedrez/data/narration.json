@@ -1,0 +1,177 @@
+{
+  "fps": 30,
+  "note": "Frames are absolute (30 fps). *word* marks a highlighted keyword in the captions. onScreen=true lines are already shown as big title text, so they are left out of the burned-in captions (but kept in the SRT and voice-over). A ' | ' marks a manual caption break.",
+  "lines": [
+    {
+      "id": "01_intro_a",
+      "scene": "intro",
+      "start": 12,
+      "end": 72,
+      "onScreen": true,
+      "text": "¿Quieres aprender a jugar *ajedrez*?"
+    },
+    {
+      "id": "02_intro_b",
+      "scene": "intro",
+      "start": 80,
+      "end": 134,
+      "text": "Te lo explico en *un minuto*."
+    },
+    {
+      "id": "03_objetivo_a",
+      "scene": "objetivo",
+      "start": 165,
+      "end": 248,
+      "text": "El *objetivo*: dar *jaque mate* al rey rival."
+    },
+    {
+      "id": "04_objetivo_b",
+      "scene": "objetivo",
+      "start": 262,
+      "end": 342,
+      "text": "Atacado y sin escape… *¡ganaste!*"
+    },
+    {
+      "id": "05_rey",
+      "scene": "piezas",
+      "start": 366,
+      "end": 446,
+      "text": "El *rey*: una casilla en cualquier dirección."
+    },
+    {
+      "id": "06_dama",
+      "scene": "piezas",
+      "start": 456,
+      "end": 536,
+      "text": "La *dama*: recta o diagonal, sin límite."
+    },
+    {
+      "id": "07_torre",
+      "scene": "piezas",
+      "start": 550,
+      "end": 620,
+      "text": "La *torre*: horizontal y vertical."
+    },
+    {
+      "id": "08_alfil",
+      "scene": "piezas",
+      "start": 630,
+      "end": 694,
+      "text": "El *alfil*: solo en diagonal."
+    },
+    {
+      "id": "09_caballo",
+      "scene": "piezas",
+      "start": 705,
+      "end": 815,
+      "text": "El *caballo* se mueve | en *L*… | ¡y salta otras piezas!"
+    },
+    {
+      "id": "10_peon_a",
+      "scene": "piezas",
+      "start": 825,
+      "end": 908,
+      "text": "El *peón* avanza | una casilla, | o *dos* en su | primera jugada."
+    },
+    {
+      "id": "11_peon_b",
+      "scene": "piezas",
+      "start": 912,
+      "end": 955,
+      "text": "Y *captura* en diagonal."
+    },
+    {
+      "id": "12_jaque",
+      "scene": "reglas",
+      "start": 966,
+      "end": 1055,
+      "text": "*Jaque*: tu rey está atacado y debes salvarlo."
+    },
+    {
+      "id": "13_jaque_mate",
+      "scene": "reglas",
+      "start": 1066,
+      "end": 1170,
+      "text": "*Jaque mate*: atacado y sin salida. ¡Fin de la partida!"
+    },
+    {
+      "id": "14_enroque",
+      "scene": "reglas",
+      "start": 1180,
+      "end": 1288,
+      "text": "*Enroque*: | el rey da dos pasos | y la torre lo cruza."
+    },
+    {
+      "id": "15_promocion",
+      "scene": "reglas",
+      "start": 1300,
+      "end": 1405,
+      "text": "Si un *peón* llega al final… *¡se convierte en dama!*"
+    },
+    {
+      "id": "16_partida_intro",
+      "scene": "partida",
+      "start": 1416,
+      "end": 1452,
+      "text": "Mira esta *apertura*."
+    },
+    {
+      "id": "17_e4",
+      "scene": "partida",
+      "start": 1462,
+      "end": 1500,
+      "text": "Peón *e4*."
+    },
+    {
+      "id": "18_e5",
+      "scene": "partida",
+      "start": 1522,
+      "end": 1560,
+      "text": "Peón *e5*."
+    },
+    {
+      "id": "19_cf3",
+      "scene": "partida",
+      "start": 1582,
+      "end": 1622,
+      "text": "Caballo *f3*."
+    },
+    {
+      "id": "20_cc6",
+      "scene": "partida",
+      "start": 1642,
+      "end": 1682,
+      "text": "Caballo *c6*."
+    },
+    {
+      "id": "21_ac4",
+      "scene": "partida",
+      "start": 1702,
+      "end": 1740,
+      "text": "Alfil *c4*."
+    },
+    {
+      "id": "22_centro",
+      "scene": "partida",
+      "start": 1745,
+      "end": 1795,
+      "text": "¡Desarrolla y controla el *centro*!"
+    },
+    {
+      "id": "23_final_a",
+      "scene": "final",
+      "start": 1812,
+      "end": 1866,
+      "onScreen": true,
+      "text": "*Ahora te toca jugar*."
+    },
+    {
+      "id": "24_final_b",
+      "scene": "final",
+      "start": 1872,
+      "end": 1940,
+      "onScreen": true,
+      "text": "Guarda este video y empieza a *practicar*."
+    }
+  ]
+}

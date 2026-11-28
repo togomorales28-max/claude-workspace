@@ -1,0 +1,95 @@
+1
+00:00:00,400 --> 00:00:02,400
+¿Quieres aprender a jugar ajedrez?
+
+2
+00:00:02,667 --> 00:00:04,467
+Te lo explico en un minuto.
+
+3
+00:00:05,500 --> 00:00:08,267
+El objetivo: dar jaque mate al rey rival.
+
+4
+00:00:08,733 --> 00:00:11,400
+Atacado y sin escape… ¡ganaste!
+
+5
+00:00:12,200 --> 00:00:14,867
+El rey: una casilla en cualquier dirección.
+
+6
+00:00:15,200 --> 00:00:17,867
+La dama: recta o diagonal, sin límite.
+
+7
+00:00:18,333 --> 00:00:20,667
+La torre: horizontal y vertical.
+
+8
+00:00:21,000 --> 00:00:23,133
+El alfil: solo en diagonal.
+
+9
+00:00:23,500 --> 00:00:27,167
+El caballo se mueve en L… ¡y salta otras piezas!
+
+10
+00:00:27,500 --> 00:00:30,267
+El peón avanza una casilla, o dos en su primera jugada.
+
+11
+00:00:30,400 --> 00:00:31,833
+Y captura en diagonal.
+
+12
+00:00:32,200 --> 00:00:35,167
+Jaque: tu rey está atacado y debes salvarlo.
+
+13
+00:00:35,533 --> 00:00:39,000
+Jaque mate: atacado y sin salida. ¡Fin de la partida!
+
+14
+00:00:39,333 --> 00:00:42,933
+Enroque: el rey da dos pasos y la torre lo cruza.
+
+15
+00:00:43,333 --> 00:00:46,833
+Si un peón llega al final… ¡se convierte en dama!
+
+16
+00:00:47,200 --> 00:00:48,400
+Mira esta apertura.
+
+17
+00:00:48,733 --> 00:00:50,000
+Peón e4.
+
+18
+00:00:50,733 --> 00:00:52,000
+Peón e5.
+
+19
+00:00:52,733 --> 00:00:54,067
+Caballo f3.
+
+20
+00:00:54,733 --> 00:00:56,067
+Caballo c6.
+
+21
+00:00:56,733 --> 00:00:58,000
+Alfil c4.
+
+22
+00:00:58,167 --> 00:00:59,833
+¡Desarrolla y controla el centro!
+
+23
+00:01:00,400 --> 00:01:02,200
+Ahora te toca jugar.
+
+24
+00:01:02,400 --> 00:01:04,667
+Guarda este video y empieza a practicar.

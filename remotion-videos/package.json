@@ -10,23 +10,33 @@
   "private": true,
   "dependencies": {
     "@remotion/cli": "4.0.547",
+    "@remotion/fonts": "4.0.547",
+    "@remotion/media": "4.0.547",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "remotion": "4.0.547"
   },
   "devDependencies": {
+    "@fontsource/montserrat": "^5.3.0",
+    "@fontsource/playfair-display": "^5.3.0",
     "@remotion/eslint-config-flat": "4.0.547",
     "@types/react": "19.3.0",
     "@types/web": "0.0.166",
     "eslint": "10.15.0",
     "prettier": "3.8.1",
+    "tsx": "^4.23.15",
     "typescript": "5.9.3"
   },
   "scripts": {
     "dev": "remotion studio",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "ajedrez:audio": "python3 scripts/generate_audio.py",
+    "ajedrez:subtitulos": "tsx scripts/export-subtitles.ts",
+    "ajedrez:voz": "tsx scripts/sync-voice.ts",
+    "ajedrez:render": "remotion render AjedrezTikTok out/ajedrez-tiktok.mp4 --codec=h264 --crf=18 --audio-bitrate=192k",
+    "ajedrez:render-sin-subtitulos": "remotion render AjedrezTikTok out/ajedrez-tiktok-sin-subtitulos.mp4 --codec=h264 --crf=18 --audio-bitrate=192k --props=./src/ajedrez/data/props-sin-subtitulos.json"
   },
   "allowScripts": {
     "esbuild": false
