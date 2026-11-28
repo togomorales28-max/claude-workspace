@@ -118,6 +118,15 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
 .sub-h { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mute); margin-bottom: 6px; }
 .rate b { color: var(--ink); }
 @media (max-width: 480px) { .metal-head, .metal-row { grid-template-columns: minmax(0, 1fr) 104px 70px; } }
+.mydesign { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; transition: background-color .15s, border-color .15s; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.chip[aria-pressed="true"]::before { content: "✓ "; color: var(--accent); }
+.diff { display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 8px 12px; border-radius: 9px; font-size: 13.5px; background: var(--surface-2); }
+.diff-media b { color: var(--accent); } .diff-alta b, .diff-muy-alta b { color: var(--warn); }
+.photo { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 13.5px; cursor: pointer; flex-wrap: wrap; }
+.photo input { width: 18px; height: 18px; accent-color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -262,6 +271,64 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       "spacing": 4,
       "pct": 60
     }
+  ],
+  "features": [
+    {
+      "id": "curvas",
+      "name": "Curvas o arcos",
+      "desc": "Partes dobladas, arco arriba, ondas",
+      "pct": 20,
+      "keywords": "arco, curva, curvo, curveado, onda, ondulado, redondo, media luna"
+    },
+    {
+      "id": "forja",
+      "name": "Forja y adornos",
+      "desc": "Figuras, flores, lanzas, espirales",
+      "pct": 30,
+      "keywords": "forja, figura, adorno, flor, lanza, punta, roseta, voluta, espiral, decorado, colonial, rustico"
+    },
+    {
+      "id": "lamina",
+      "name": "Lámina calada o cortada",
+      "desc": "Diseños cortados en lámina o placa",
+      "pct": 25,
+      "keywords": "calado, calada, laser, plasma, perforad, letras, logo, recortad"
+    },
+    {
+      "id": "peatonal",
+      "name": "Puerta peatonal integrada",
+      "desc": "Puerta chica dentro del portón",
+      "pct": 15,
+      "keywords": "peatonal, puerta chica, puertita, puerta pequena, entrada de personas"
+    },
+    {
+      "id": "corredizo",
+      "name": "Corredizo o abatible doble",
+      "desc": "Rieles, ruedas, dos hojas",
+      "pct": 10,
+      "keywords": "corrediz, riel, rueda, dos hojas, doble hoja, abatible"
+    },
+    {
+      "id": "motor",
+      "name": "Preparación para motor",
+      "desc": "Para abrir con control",
+      "pct": 10,
+      "keywords": "motor, automatic, control remoto, electrico"
+    },
+    {
+      "id": "acabado",
+      "name": "Acabado especial",
+      "desc": "Galvanizado, dos colores, pintura especial",
+      "pct": 10,
+      "keywords": "galvaniz, dos colores, electrostatic, pintura especial, dorado, cobre, oxidado"
+    },
+    {
+      "id": "acceso",
+      "name": "Difícil acceso o altura",
+      "desc": "Segundo piso, escaleras, andamio",
+      "pct": 15,
+      "keywords": "segundo piso, segunda planta, andamio, azotea, balcon, dificil acceso"
+    }
   ]
 }</script>
 
@@ -364,6 +431,27 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     return refOk && metalPrice(t.frameMetal) > 0 && (!t.barMetal || metalPrice(t.barMetal) > 0);
   }
 
+  /* DIFICULTAD DEL DISEÑO: el texto del cliente se compara con las palabras clave de cada detalle.
+     Cada detalle encontrado (o marcado por el cliente) suma su % al precio. */
+  const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const features = () => Array.isArray(cfg.features) ? cfg.features : [];
+  function detected(f, text) {
+    const t = norm(text);
+    if (!t.trim()) return false;
+    // la palabra clave debe empezar una palabra: «arco» no cuenta dentro de «marco»; «corrediz» sí detecta «corredizo»
+    return String(f.keywords || '').split(',').map((k) => norm(k).trim()).filter(Boolean)
+      .some((k) => new RegExp('(^|[^a-z0-9])' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(t));
+  }
+  function itemFeatures(it) {
+    return features().filter((f) => {
+      const o = it.featOver ? it.featOver[f.id] : undefined;
+      return o === undefined ? detected(f, it.desc) : o;
+    });
+  }
+  function difficulty(pct) {
+    return pct <= 0 ? 'Normal' : pct <= 25 ? 'Media' : pct <= 60 ? 'Alta' : 'Muy alta';
+  }
+
   function itemCalc(it) {
     const t = cfg.types.find((x) => x.id === it.typeId);
     const d = cfg.designs.find((x) => x.id === it.designId) || cfg.designs[0];
@@ -374,13 +462,15 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
     const material = m.cost * qty;
     const labor = laborFor(t, sizeOf(t, it.a, it.b) * qty);
     const base = material + labor.cost;
-    const designExtra = base * (num(d?.pct) / 100);
+    const feats = itemFeatures(it);
+    const extraPct = num(d?.pct) + feats.reduce((sum, f) => sum + num(f.pct), 0);
+    const designExtra = base * (extraPct / 100);
     let total = base + designExtra;
     const minTotal = num(t.min) * qty;
     const minApplied = total > 0 && total < minTotal;
     if (minApplied) total = minTotal;
     if (total > 0) total = roundUp(total);
-    return { t, d, qty, complete, parts: m.parts, material, labor, designExtra, total, minApplied, size: sizeOf(t, it.a, it.b) };
+    return { t, d, qty, complete, parts: m.parts, material, labor, designExtra, extraPct, feats, total, minApplied, size: sizeOf(t, it.a, it.b) };
   }
 
   function estimate(items) {
@@ -399,7 +489,7 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
   let art = null;
   const newItem = () => {
     const first = cfg.types.find(priced);
-    return { id: uid(), typeId: first ? first.id : '', a: '', b: '', qty: 1, designId: cfg.designs[0]?.id || '' };
+    return { id: uid(), typeId: first ? first.id : '', a: '', b: '', qty: 1, designId: cfg.designs[0]?.id || '', desc: '', featOver: {}, photo: false };
   };
   let client = { items: [newItem()], name: '', phone: '', via: 'whatsapp', address: '', notes: '', tried: false };
   let sent = null;
@@ -430,7 +520,9 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
         `${i + 1}) ${x.text}`,
         x.metal ? `   Metal: ${x.metal}` : null,
         `   Material: ${money(x.material)} · Mano de obra: ${money(x.labor)} (${x.laborText})`,
-        x.extra ? `   Diseño: +${money(x.extra)}` : null,
+        x.desc ? `   Lo que pide: "${x.desc}"` : null,
+        x.extra ? `   Dificultad ${difficulty(x.extraPct).toLowerCase()}: ${x.extraText} = +${money(x.extra)}` : null,
+        x.photo ? '   📷 Tiene foto o dibujo: te lo manda en este chat' : null,
         x.minApplied ? '   (se aplicó el precio mínimo)' : null,
         `   Estimado: ${money(x.total)}`,
       ].filter((l) => l !== null).join('\n')),
@@ -516,8 +608,25 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       ${t.mode !== 'pieza' ? `<div class="sketch" id="sk-${it.id}">${sketch(it, t)}</div>` : ''}
       <div style="margin-top:14px"><div class="small muted" style="margin-bottom:6px">Diseño</div>
         <div class="choices">${cfg.designs.map((d) => `<button type="button" class="choice" data-act="design" data-i="${it.id}" data-v="${esc(d.id)}" aria-pressed="${d.id === it.designId}"><span class="t">${esc(d.name)}</span><span class="d">${esc(d.desc)}</span></button>`).join('')}</div>
+      </div>
+      <div class="mydesign">
+        <label class="f">Describe el diseño que quieres <span class="u">opcional</span>
+          <textarea class="in" id="desc-${it.id}" data-i="${it.id}" data-k="desc" placeholder="Ej.: portón corredizo con arco arriba, puerta peatonal y lanzas de forja en la parte de arriba">${esc(it.desc)}</textarea></label>
+        <div id="feat-${it.id}">${featBlock(it)}</div>
+        <label class="photo"><input type="checkbox" data-act="photo" data-i="${it.id}" ${it.photo ? 'checked' : ''}> Tengo foto o dibujo del diseño <span class="muted">(lo mandas en el chat de WhatsApp)</span></label>
       </div>` : ''}
     </section>`;
+  }
+
+  function featBlock(it) {
+    const list = features();
+    if (!list.length) return '';
+    const on = new Set(itemFeatures(it).map((f) => f.id));
+    const d = cfg.designs.find((x) => x.id === it.designId) || cfg.designs[0];
+    const pct = num(d?.pct) + list.filter((f) => on.has(f.id)).reduce((sum, f) => sum + num(f.pct), 0);
+    return `<div class="small muted" style="margin:10px 0 6px">¿Qué lleva tu diseño? ${it.desc.trim() ? 'Marcamos lo que encontramos en tu descripción; corrige si hace falta.' : 'Marca lo que aplique.'}</div>
+      <div class="chips">${list.map((f) => `<button type="button" class="chip" data-act="feat" data-i="${it.id}" data-v="${esc(f.id)}" aria-pressed="${on.has(f.id)}" title="${esc(f.desc)}">${esc(f.name)}</button>`).join('')}</div>
+      <div class="diff diff-${difficulty(pct).toLowerCase().replace(' ', '-')}"><span>Dificultad del trabajo</span><b>${difficulty(pct)}${pct > 0 ? ` · +${fmt(pct, 1)} %` : ''}</b></div>`;
   }
 
   // Dibujo a escala: el claro con sus barrotes reales según el diseño elegido, o el tramo de barandal con sus postes.
@@ -532,10 +641,10 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       <div class="small"><div class="muted">Medida a cotizar</div><div class="num">${L ? `${fmt(L * Math.max(1, num(it.qty)))} ${u.len} lineales` : 'Escribe el largo'}</div>${L ? `<div class="muted">${posts} postes</div>` : ''}</div>`;
     }
     const A = num(it.a), B = num(it.b);
-    const W = 92, H = 56;
+    const W = 82, H = 56;
     let w = W, h = H;
     if (A > 0 && B > 0) { const k = Math.min(W / A, H / B); w = Math.max(10, A * k); h = Math.max(10, B * k); }
-    const x = 14 + (W - w) / 2, y = 6 + (H - h) / 2;
+    const x = 10 + (W - w) / 2, y = 6 + (H - h) / 2;
     const realBars = A > 0 && S > 0 ? Math.max(0, Math.ceil((A * u.subPer) / S) - 1) : 6;
     const drawBars = Math.min(realBars, 40);
     const rails = Math.max(0, Math.floor(num(t.rails)));
@@ -560,7 +669,7 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       <div class="big" style="margin-top:6px">${money(e.total)}</div>
       <div class="range">Entre ${money(e.low)} y ${money(e.high)}</div>
       <div class="lines">${e.calcs.map((c) => `<div style="display:grid;gap:2px"><div><span>${esc(c.t.name)}${c.qty > 1 ? ` × ${c.qty}` : ''} <span class="muted">· ${esc(c.d ? c.d.name : '')}</span></span><span class="num">${money(c.total)}</span></div>
-          <div class="muted small"><span>Material y mano de obra (${esc(laborText(c.labor))})</span></div></div>`).join('')}
+          <div class="muted small"><span>Material y mano de obra (${esc(laborText(c.labor))})${c.extraPct > 0 ? ` · dificultad ${difficulty(c.extraPct).toLowerCase()} +${fmt(c.extraPct, 1)} %` : ''}</span></div></div>`).join('')}
         ${pending ? `<div class="muted small"><span>Completa las medidas que faltan</span></div>` : ''}</div>
       <p class="notice">${esc(cfg.disclaimer)}</p>
       <button class="btn primary block" style="margin-top:14px" type="button" data-act="submit">Obtener mi cotización</button>
@@ -590,6 +699,8 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       items: client.items.map((it) => ({ it, c: itemCalc(it) })).filter((x) => x.c && x.c.complete && x.c.total > 0).map((x) => ({
         text: describeItem(x.c, x.it), total: x.c.total, material: x.c.material, labor: x.c.labor.cost,
         laborText: laborText(x.c.labor), metal: partsText(x.c.parts, x.c.qty), extra: x.c.designExtra, minApplied: x.c.minApplied,
+        desc: (x.it.desc || '').trim(), photo: !!x.it.photo, extraPct: x.c.extraPct,
+        extraText: [x.c.d && num(x.c.d.pct) ? `${x.c.d.name.toLowerCase()} +${fmt(num(x.c.d.pct), 1)} %` : null, ...x.c.feats.map((f) => `${f.name.toLowerCase()} +${fmt(num(f.pct), 1)} %`)].filter(Boolean).join(', '),
       })),
       total: e.total, low: e.low, high: e.high,
     };
@@ -669,6 +780,22 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
           <label class="f">Descripción<input class="in" id="dd-${esc(d.id)}" data-d="${esc(d.id)}" data-k="desc" value="${esc(d.desc)}"></label>
           <label class="f">Barrote cada <span class="u">${u.sub}</span><input class="in" id="ds-${esc(d.id)}" data-d="${esc(d.id)}" data-k="spacing" value="${esc(d.spacing)}" inputmode="decimal"></label>
           <label class="f">Extra <span class="u">%</span><input class="in" id="dp-${esc(d.id)}" data-d="${esc(d.id)}" data-k="pct" value="${esc(d.pct)}" inputmode="decimal"></label>
+        </div>`).join('')}
+      </section>
+
+      <section class="card stack">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2>Dificultad del diseño</h2><button class="btn sm" type="button" data-act="add-feature">+ Detalle</button></div>
+        <p class="muted small">El cliente describe su diseño. Si escribe alguna de las palabras clave, ese detalle se marca solo y el precio sube el %. Los porcentajes se suman.</p>
+        ${features().map((f) => `<div class="otype" style="gap:10px">
+          <div class="row" style="align-items:end">
+            <label class="f">Detalle<input class="in" id="fn-${esc(f.id)}" data-f="${esc(f.id)}" data-k="name" value="${esc(f.name)}"></label>
+            <label class="f">Explicación para el cliente<input class="in" id="fd-${esc(f.id)}" data-f="${esc(f.id)}" data-k="desc" value="${esc(f.desc)}"></label>
+            <label class="f">Sube el precio <span class="u">%</span><input class="in" id="fp-${esc(f.id)}" data-f="${esc(f.id)}" data-k="pct" value="${esc(f.pct)}" inputmode="decimal"></label>
+          </div>
+          <div style="display:flex;gap:8px;align-items:end">
+            <label class="f" style="flex:1">Palabras clave <span class="u">separadas por coma</span><input class="in" id="fk-${esc(f.id)}" data-f="${esc(f.id)}" data-k="keywords" value="${esc(f.keywords)}"></label>
+            <button class="btn sm ghost" type="button" data-act="del-feature" data-v="${esc(f.id)}">Quitar</button>
+          </div>
         </div>`).join('')}
       </section>
 
@@ -837,6 +964,15 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       case 'view': view = v; try { history.replaceState(null, '', v === 'dueno' ? '#dueno' : '#cliente'); } catch {} render(); break;
       case 'type': if (item) { item.typeId = v; render(); document.getElementById(`a-${item.id}`)?.focus(); } break;
       case 'design': if (item) { item.designId = v; render(); } break;
+      case 'feat': if (item) {
+        const isOn = itemFeatures(item).some((f) => f.id === v);
+        item.featOver = { ...(item.featOver || {}), [v]: !isOn };
+        const box = document.getElementById(`feat-${item.id}`); if (box) box.innerHTML = featBlock(item);
+        refreshEstimate();
+      } break;
+      case 'photo': if (item) item.photo = el.checked; break;
+      case 'add-feature': cfg.features = [...features(), { id: uid(), name: 'Nuevo detalle', desc: '', pct: 10, keywords: '' }]; setDirty(); render(); break;
+      case 'del-feature': cfg.features = features().filter((f) => f.id !== v); setDirty(); render(); break;
       case 'add-item': client.items.push(newItem()); render(); break;
       case 'del-item': client.items = client.items.filter((x) => x.id !== id); render(); break;
       case 'via': client.via = v; render(); break;
@@ -874,6 +1010,7 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
       const t = cfg.types.find((x) => x.id === it.typeId);
       const sk = document.getElementById(`sk-${it.id}`);
       if (sk && t) sk.innerHTML = sketch(it, t);
+      if (ds.k === 'desc') { const box = document.getElementById(`feat-${it.id}`); if (box) box.innerHTML = featBlock(it); }
       refreshEstimate();
       return;
     }
@@ -897,6 +1034,13 @@ textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertica
         if (t.mode === 'lineal') { if (!num(t.height)) t.height = 3; if (!num(t.postEvery)) t.postEvery = 6; if (!num(t.rails)) t.rails = 2; }
         setDirty(); render(); return;
       }
+      setDirty();
+      return;
+    }
+    if (ds.f) {
+      const f = features().find((x) => x.id === ds.f);
+      if (!f) return;
+      f[ds.k] = val(ds.k, el.value);
       setDirty();
       return;
     }
