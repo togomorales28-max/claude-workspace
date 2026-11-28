@@ -1,0 +1,662 @@
+<title>Estimador de Herrería</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style id="mw-style">
+/* Layout: una columna centrada; en escritorio el cliente ve el formulario a la izquierda y el estimado fijo a la derecha. */
+:root {
+  --bg: #eef1f5; --surface: #ffffff; --surface-2: #f6f8fb; --ink: #121821; --ink-2: #3c4757; --mute: #677385;
+  --line: #d9e0e8; --accent: #1f6fe5; --accent-2: #1659c0; --accent-soft: #e3edfd; --on-accent: #ffffff;
+  --ok: #1a8a60; --ok-soft: #e1f4ec; --warn: #a3650f; --warn-soft: #fbf0dc; --bad: #c23a30;
+  --font: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0b0f14; --surface: #121922; --surface-2: #17202b; --ink: #e6edf5; --ink-2: #b4c0ce; --mute: #8592a4;
+  --line: #263345; --accent: #3a8dff; --accent-2: #63a5ff; --accent-soft: #14294a; --on-accent: #04101f;
+  --ok: #3cc08d; --ok-soft: #10301f; --warn: #f0b341; --warn-soft: #33270f; --bad: #f2645a; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0b0f14; --surface: #121922; --surface-2: #17202b; --ink: #e6edf5; --ink-2: #b4c0ce; --mute: #8592a4;
+  --line: #263345; --accent: #3a8dff; --accent-2: #63a5ff; --accent-soft: #14294a; --on-accent: #04101f;
+  --ok: #3cc08d; --ok-soft: #10301f; --warn: #f0b341; --warn-soft: #33270f; --bad: #f2645a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 20px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 26px; font-weight: 700; }
+h2 { font-size: 17px; font-weight: 600; }
+p { margin: 0; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); }
+.muted { color: var(--mute); }
+.small { font-size: 13px; }
+
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.mark { width: 40px; height: 40px; flex: none; }
+.tabs { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.tabs button { border: 0; background: none; color: var(--mute); font: inherit; font-weight: 500; font-size: 14px; padding: 7px 14px; border-radius: 7px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--on-accent); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.stack { display: grid; gap: 16px; }
+.grid2 { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr) 340px; align-items: start; }
+.sticky { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+@media (max-width: 860px) { .grid2 { grid-template-columns: minmax(0, 1fr); } .sticky { position: static; } }
+
+.step { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.step b { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 500; }
+
+.choices { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.choice { text-align: left; border: 1.5px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 11px 12px; font: inherit; cursor: pointer; transition: border-color .15s, background-color .15s, transform .1s; }
+.choice:hover { border-color: var(--accent-2); }
+.choice:active { transform: scale(.98); }
+.choice[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.choice .t { display: block; font-weight: 600; font-size: 14.5px; }
+.choice .d { display: block; font-size: 12.5px; color: var(--mute); margin-top: 2px; }
+
+label.f { display: grid; gap: 5px; font-size: 13px; font-weight: 500; color: var(--ink-2); min-width: 0; }
+label.f .u { font-family: var(--mono); font-size: 11px; color: var(--mute); font-weight: 400; }
+.in { width: 100%; height: 42px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; padding: 0 11px; }
+textarea.in { height: auto; min-height: 70px; padding: 9px 11px; resize: vertical; }
+.in:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+.in.bad { border-color: var(--bad); }
+.row { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.err { color: var(--bad); font-size: 12.5px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; font-size: 15px; cursor: pointer; text-decoration: none; transition: background-color .15s, transform .1s; }
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: scale(.98); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.primary:hover { background: var(--accent-2); }
+.btn.wa { background: #1fa855; border-color: #1fa855; color: #fff; }
+.btn.wa:hover { background: #188a46; }
+.btn.block { width: 100%; }
+.btn.sm { height: 34px; padding: 0 12px; font-size: 13.5px; font-weight: 500; }
+.btn.ghost { border-color: transparent; background: none; color: var(--mute); }
+.btn:disabled { opacity: .45; pointer-events: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.item { border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: var(--surface); }
+.item-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+.sketch { display: flex; gap: 14px; align-items: center; margin-top: 12px; padding: 10px; border-radius: 10px; background: var(--surface-2); }
+.sketch svg { width: 120px; height: 84px; flex: none; }
+
+.est { text-align: left; }
+.big { font-family: var(--mono); font-size: 34px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
+.range { font-family: var(--mono); font-size: 14px; color: var(--ink-2); margin-top: 4px; }
+.lines { display: grid; gap: 6px; margin: 14px 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13.5px; }
+.lines div { display: flex; justify-content: space-between; gap: 10px; }
+.notice { border-radius: 9px; padding: 10px 12px; font-size: 13px; line-height: 1.45; background: var(--warn-soft); color: var(--warn); }
+.notice.info { background: var(--accent-soft); color: var(--ink-2); }
+.notice.ok { background: var(--ok-soft); color: var(--ok); }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; padding: 2px; background: var(--surface-2); }
+.seg button { border: 0; background: none; font: inherit; font-size: 13.5px; color: var(--mute); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+
+.done { max-width: 560px; margin: 0 auto; }
+.check { width: 48px; height: 48px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: grid; place-items: center; margin-bottom: 12px; }
+.summary { display: grid; gap: 8px; margin: 14px 0; padding: 12px; border-radius: 10px; background: var(--surface-2); font-size: 14px; }
+.summary div { display: flex; justify-content: space-between; gap: 12px; }
+
+/* Panel del dueño */
+.otype { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface-2); display: grid; gap: 12px; }
+.formula { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.formula .op { font-family: var(--mono); color: var(--mute); padding-bottom: 10px; }
+.formula label.f { width: 104px; }
+.rate { font-family: var(--mono); font-size: 12.5px; color: var(--ok); }
+.savebar { position: sticky; bottom: 0; margin-top: 18px; padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; box-shadow: 0 -6px 18px rgba(0,0,0,.06); }
+.checklist { display: grid; gap: 6px; font-size: 14px; }
+.checklist span { display: flex; gap: 8px; align-items: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 9px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+.copybox { width: 100%; min-height: 160px; font-family: var(--mono); font-size: 12.5px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="app" class="wrap"></div>
+
+<script type="application/json" id="mw-config">{
+  "business": "Mi Herrería",
+  "whatsapp": "",
+  "countryCode": "1",
+  "currency": "USD",
+  "unit": "ft",
+  "rangePct": 15,
+  "roundTo": 10,
+  "disclaimer": "Este es un estimado automático. El precio final puede variar según las medidas exactas, el diseño, los materiales y la instalación. Te confirmamos el precio después de revisar tu proyecto.",
+  "types": [
+    { "id": "porton", "name": "Portón", "mode": "area", "refA": 10, "refB": 24, "material": 200, "labor": 0, "min": 0, "active": true },
+    { "id": "reja", "name": "Reja / protección de ventana", "mode": "area", "refA": 4, "refB": 4, "material": 0, "labor": 0, "min": 0, "active": true },
+    { "id": "barandal", "name": "Barandal", "mode": "lineal", "refA": 10, "refB": 0, "material": 0, "labor": 0, "min": 0, "active": true },
+    { "id": "puerta", "name": "Puerta de herrería", "mode": "pieza", "refA": 1, "refB": 0, "material": 0, "labor": 0, "min": 0, "active": true }
+  ],
+  "designs": [
+    { "id": "sencillo", "name": "Sencillo", "desc": "Líneas rectas, barrotes lisos", "pct": 0 },
+    { "id": "medio", "name": "Con detalles", "desc": "Remates, combinación de perfiles", "pct": 25 },
+    { "id": "decorado", "name": "Decorado", "desc": "Forja, figuras, lámina cortada", "pct": 60 }
+  ]
+}</script>
+
+<script id="mw-main">
+(() => {
+  'use strict';
+
+  /* ───────── Configuración ───────── */
+  const PUBLISHED = JSON.parse(document.getElementById('mw-config').textContent);
+  const DRAFT_KEY = 'estimador.borrador.v1';
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  let cfg = clone(PUBLISHED);           // lo que se usa para calcular (borrador del dueño o lo publicado)
+  let dirty = false;
+
+  const $app = document.getElementById('app');
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (v) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
+  const uid = () => Math.random().toString(36).slice(2, 9);
+
+  const U = () => cfg.unit === 'm' ? { len: 'm', area: 'm²', lenLong: 'metros' } : { len: 'pies', area: 'pies²', lenLong: 'pies' };
+  const money = (n, dec = 0) => new Intl.NumberFormat(cfg.currency === 'MXN' ? 'es-MX' : 'en-US', { style: 'currency', currency: cfg.currency, minimumFractionDigits: dec, maximumFractionDigits: dec }).format(n || 0);
+  const fmt = (n, d = 2) => new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(n || 0);
+
+  /* ───────── Cálculo (el «cerebro») ───────── */
+  // Precio por unidad = precio del ejemplo ÷ unidades del ejemplo. Ej.: 10 × 24 = 240 pies² → $200 → $0.83 por pie².
+  const roundUp = (n) => { const r = num(cfg.roundTo); return r > 0 ? Math.ceil(n / r) * r : Math.round(n); };
+  const roundDown = (n) => { const r = num(cfg.roundTo); return r > 0 ? Math.floor(n / r) * r : Math.round(n); };
+  function refUnits(t) { return t.mode === 'area' ? num(t.refA) * num(t.refB) : t.mode === 'lineal' ? num(t.refA) : 1; }
+  function rates(t) {
+    const u = refUnits(t);
+    if (u <= 0) return { mat: 0, lab: 0, total: 0 };
+    const mat = num(t.material) / u, lab = num(t.labor) / u;
+    return { mat, lab, total: mat + lab };
+  }
+  const priced = (t) => t.active && rates(t).total > 0;
+  function itemUnits(it, t) { return (t.mode === 'area' ? num(it.a) * num(it.b) : t.mode === 'lineal' ? num(it.a) : 1) * Math.max(1, Math.floor(num(it.qty) || 1)); }
+  function itemCalc(it) {
+    const t = cfg.types.find((x) => x.id === it.typeId);
+    const d = cfg.designs.find((x) => x.id === it.designId) || cfg.designs[0];
+    if (!t) return null;
+    const r = rates(t), units = itemUnits(it, t), qty = Math.max(1, Math.floor(num(it.qty) || 1));
+    const mat = r.mat * units, lab = r.lab * units;
+    const designExtra = (mat + lab) * (num(d?.pct) / 100);
+    let total = mat + lab + designExtra;
+    const minTotal = num(t.min) * qty;
+    const minApplied = total > 0 && total < minTotal;
+    if (minApplied) total = minTotal;
+    if (total > 0) total = roundUp(total); // cada partida ya redondeada: las partidas suman el total exacto
+    const complete = t.mode === 'area' ? num(it.a) > 0 && num(it.b) > 0 : t.mode === 'lineal' ? num(it.a) > 0 : true;
+    return { t, d, units, qty, mat, lab, designExtra, total, minApplied, complete };
+  }
+  function estimate(items) {
+    const calcs = items.map(itemCalc).filter((c) => c && c.complete && c.total > 0);
+    const total = calcs.reduce((s, c) => s + c.total, 0);
+    const p = num(cfg.rangePct) / 100;
+    return { calcs, total: roundUp(total), low: roundDown(total * (1 - p)), high: roundUp(total * (1 + p)) };
+  }
+
+  /* ───────── Estado ───────── */
+  let view = 'cliente';
+  let canEdit = false;
+  let art = null;
+  const newItem = () => {
+    const first = cfg.types.find(priced);
+    return { id: uid(), typeId: first ? first.id : '', a: '', b: '', qty: 1, designId: cfg.designs[0]?.id || '' };
+  };
+  let client = { items: [newItem()], name: '', phone: '', via: 'whatsapp', address: '', notes: '', tried: false };
+  let sent = null;
+
+
+  /* ───────── Helpers de teléfono y mensaje ───────── */
+  const digits = (s) => String(s || '').replace(/\D/g, '');
+  function intlPhone(raw) {
+    let d = digits(raw);
+    if (d.length === 10) d = digits(cfg.countryCode) + d;  // número local: se agrega el código de país del taller
+    return d;
+  }
+  const phoneOk = (raw) => { const d = digits(raw); return d.length >= 10 && d.length <= 15; };
+  function folio() {
+    const t = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return `C${String(t.getFullYear()).slice(2)}${p(t.getMonth() + 1)}${p(t.getDate())}-${p(t.getHours())}${p(t.getMinutes())}${String(Math.floor(Math.random() * 90) + 10)}`;
+  }
+  function describeItem(c, it) {
+    const u = U();
+    const m = c.t.mode === 'area' ? `${fmt(num(it.a))} × ${fmt(num(it.b))} ${u.len} (${fmt(c.units / c.qty)} ${u.area})`
+      : c.t.mode === 'lineal' ? `${fmt(num(it.a))} ${u.len} de largo` : 'por pieza';
+    return `${c.t.name} — ${m}${c.qty > 1 ? ` × ${c.qty}` : ''} — diseño ${c.d ? c.d.name.toLowerCase() : ''}`;
+  }
+  function ownerMessage(s) {
+    const lines = [
+      `*Nueva cotización ${s.folio}*`,
+      `Cliente: ${s.name}`,
+      `${s.via === 'sms' ? 'Celular (prefiere SMS)' : 'WhatsApp'}: +${s.phone}`,
+      s.via === 'whatsapp' ? `Abrir chat: https://wa.me/${s.phone}` : null,
+      s.address ? `Ubicación: ${s.address}` : null,
+      '',
+      ...s.items.map((x, i) => `${i + 1}) ${x.text}\n   Estimado: ${money(x.total)}`),
+      '',
+      `*Estimado total: ${money(s.total)}*`,
+      `Rango: ${money(s.low)} – ${money(s.high)}`,
+      s.notes ? `\nComentarios: ${s.notes}` : null,
+      '',
+      '_Estimado automático. El precio final puede variar._',
+    ];
+    return lines.filter((l) => l !== null).join('\n').replace(/\n{3,}/g, '\n\n');
+  }
+  const waLink = (to, text) => `https://wa.me/${digits(to)}?text=${encodeURIComponent(text)}`;
+
+  /* ───────── Avisos ───────── */
+  let toastTimer;
+  function toast(text) {
+    let el = document.querySelector('.toast');
+    if (!el) { el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.textContent = text; el.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 2800);
+  }
+
+  /* ───────── Render general ───────── */
+  const markSvg = `<svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><rect x=".5" y=".5" width="39" height="39" rx="9" fill="var(--surface)" stroke="var(--line)"/><path d="M9 31V13l11-5 11 5v18" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round"/><path d="M14 31V17m6 14V15m6 16V17M9 24h22" stroke="var(--ink-2)" stroke-width="1.6"/></svg>`;
+
+  function render() {
+    const tabs = canEdit ? `<div class="tabs" role="tablist">
+        <button role="tab" aria-selected="${view === 'cliente'}" data-act="view" data-v="cliente">Lo que ve el cliente</button>
+        <button role="tab" aria-selected="${view === 'dueno'}" data-act="view" data-v="dueno">Precios (dueño)</button>
+      </div>` : '';
+    $app.innerHTML = `
+      <header class="top">
+        <div class="brand">${markSvg}<div style="min-width:0"><div class="eyebrow">${view === 'dueno' ? 'Panel del dueño' : 'Cotización al instante'}</div><h1>${esc(cfg.business || 'Herrería')}</h1></div></div>
+        ${tabs}
+      </header>
+      <main id="main">${view === 'dueno' && canEdit ? ownerView() : sent ? sentView() : clientView()}</main>`;
+    if (view !== 'dueno' && !sent) refreshEstimate();
+  }
+
+  /* ───────── Vista del cliente ───────── */
+  function clientView() {
+    const available = cfg.types.filter(priced);
+    if (!available.length) {
+      return `<div class="card done"><h2>Muy pronto</h2><p class="muted" style="margin-top:6px">El taller está preparando sus precios. Vuelve más tarde para cotizar al instante.</p></div>`;
+    }
+    return `<div class="grid2">
+      <div class="stack">
+        ${client.items.map((it, i) => itemView(it, i, available)).join('')}
+        <button class="btn" data-act="add-item" type="button">+ Agregar otro trabajo</button>
+        <section class="card stack" aria-labelledby="h-datos">
+          <div class="step"><b>${client.items.length + 1 < 10 ? '0' : ''}${client.items.length + 1}</b><h2 id="h-datos">Tus datos para enviarte la cotización</h2></div>
+          <div class="row">
+            <label class="f">Nombre<input class="in ${client.tried && !client.name.trim() ? 'bad' : ''}" id="c-name" data-c="name" value="${esc(client.name)}" autocomplete="name"></label>
+            <label class="f">WhatsApp o celular <span class="u">con lada</span><input class="in ${client.tried && !phoneOk(client.phone) ? 'bad' : ''}" id="c-phone" data-c="phone" value="${esc(client.phone)}" inputmode="tel" autocomplete="tel" placeholder="Ej. 555 123 4567"></label>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span class="small muted">¿Cómo te contactamos?</span>
+            <div class="seg"><button type="button" data-act="via" data-v="whatsapp" aria-pressed="${client.via === 'whatsapp'}">WhatsApp</button><button type="button" data-act="via" data-v="sms" aria-pressed="${client.via === 'sms'}">Mensaje SMS</button></div>
+          </div>
+          <label class="f">Ciudad o colonia <span class="u">opcional</span><input class="in" id="c-address" data-c="address" value="${esc(client.address)}"></label>
+          <label class="f">Comentarios <span class="u">opcional</span><textarea class="in" id="c-notes" data-c="notes" placeholder="Color, tipo de apertura, si incluye instalación…">${esc(client.notes)}</textarea></label>
+          <div id="c-errors" class="err" aria-live="polite"></div>
+        </section>
+      </div>
+      <aside class="sticky"><section class="card est" id="estimate" aria-live="polite"></section></aside>
+    </div>`;
+  }
+
+  function itemView(it, i, available) {
+    const t = cfg.types.find((x) => x.id === it.typeId);
+    const u = U();
+    const fields = !t ? '' : t.mode === 'area'
+      ? `<label class="f">Ancho <span class="u">${u.len}</span><input class="in" id="a-${it.id}" data-i="${it.id}" data-k="a" value="${esc(it.a)}" inputmode="decimal"></label>
+         <label class="f">Alto <span class="u">${u.len}</span><input class="in" id="b-${it.id}" data-i="${it.id}" data-k="b" value="${esc(it.b)}" inputmode="decimal"></label>`
+      : t.mode === 'lineal'
+      ? `<label class="f">Largo <span class="u">${u.len}</span><input class="in" id="a-${it.id}" data-i="${it.id}" data-k="a" value="${esc(it.a)}" inputmode="decimal"></label>`
+      : '';
+    return `<section class="item" aria-label="Trabajo ${i + 1}">
+      <div class="item-head"><div class="step" style="margin:0"><b>0${i + 1}</b><h2>¿Qué necesitas?</h2></div>
+        ${client.items.length > 1 ? `<button class="btn sm ghost" type="button" data-act="del-item" data-i="${it.id}">Quitar</button>` : ''}</div>
+      <div class="choices">${available.map((x) => `<button type="button" class="choice" data-act="type" data-i="${it.id}" data-v="${esc(x.id)}" aria-pressed="${x.id === it.typeId}"><span class="t">${esc(x.name)}</span><span class="d">${x.mode === 'area' ? 'Ancho × alto' : x.mode === 'lineal' ? 'Por largo' : 'Por pieza'}</span></button>`).join('')}</div>
+      ${t ? `<div class="row" style="margin-top:14px">${fields}<label class="f">Cantidad<input class="in" id="q-${it.id}" data-i="${it.id}" data-k="qty" value="${esc(it.qty)}" inputmode="numeric"></label></div>
+      ${t.mode !== 'pieza' ? `<div class="sketch" id="sk-${it.id}">${sketch(it, t)}</div>` : ''}
+      <div style="margin-top:14px"><div class="small muted" style="margin-bottom:6px">Diseño</div>
+        <div class="choices">${cfg.designs.map((d) => `<button type="button" class="choice" data-act="design" data-i="${it.id}" data-v="${esc(d.id)}" aria-pressed="${d.id === it.designId}"><span class="t">${esc(d.name)}</span><span class="d">${esc(d.desc)}</span></button>`).join('')}</div>
+      </div>` : ''}
+    </section>`;
+  }
+
+  // Dibujo a escala del claro con sus cotas (ancho × alto) o del tramo lineal.
+  function sketch(it, t) {
+    const u = U();
+    if (t.mode === 'lineal') {
+      const L = num(it.a);
+      return `<svg viewBox="0 0 120 84" aria-hidden="true"><path d="M8 52h104" stroke="var(--ink-2)" stroke-width="3"/>${[0, 1, 2, 3, 4, 5, 6].map((k) => `<path d="M${10 + k * 16.6} 52V26" stroke="var(--accent)" stroke-width="1.6"/>`).join('')}<path d="M8 26h104" stroke="var(--accent)" stroke-width="2.4"/><path d="M8 66h104" stroke="var(--mute)" stroke-width=".8"/><text x="60" y="80" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--ink-2)">${L ? fmt(L) + ' ' + u.len : 'largo'}</text></svg>
+      <div class="small"><div class="muted">Medida a cotizar</div><div class="num">${L ? `${fmt(L * Math.max(1, num(it.qty)))} ${u.len} lineales` : 'Escribe el largo'}</div></div>`;
+    }
+    const A = num(it.a), B = num(it.b);
+    const W = 92, H = 56;
+    let w = W, h = H;
+    if (A > 0 && B > 0) { const k = Math.min(W / A, H / B); w = Math.max(10, A * k); h = Math.max(10, B * k); }
+    const x = 14 + (W - w) / 2, y = 6 + (H - h) / 2;
+    const bars = Math.max(2, Math.min(9, Math.round(w / 12)));
+    return `<svg viewBox="0 0 120 84" aria-hidden="true">
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+      ${Array.from({ length: bars - 1 }, (_, k) => `<path d="M${x + (w / bars) * (k + 1)} ${y}v${h}" stroke="var(--accent)" stroke-width="1" opacity=".55"/>`).join('')}
+      <path d="M${x} 72h${w}" stroke="var(--mute)" stroke-width=".8"/><path d="M${x} 69v6M${x + w} 69v6" stroke="var(--mute)" stroke-width=".8"/>
+      <text x="${x + w / 2}" y="82" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">${A ? fmt(A) : 'ancho'}</text>
+      <text x="${x + w + 4}" y="${y + h / 2 + 3}" font-family="IBM Plex Mono, monospace" font-size="9.5" fill="var(--ink-2)">${B ? fmt(B) : 'alto'}</text>
+    </svg>
+    <div class="small"><div class="muted">Superficie</div><div class="num">${A && B ? `${fmt(A * B * Math.max(1, num(it.qty)))} ${u.area}` : 'Escribe ancho y alto'}</div></div>`;
+  }
+
+  function refreshEstimate() {
+    const box = document.getElementById('estimate');
+    if (!box) return;
+    const e = estimate(client.items);
+    const pending = client.items.some((it) => { const c = itemCalc(it); return !c || !c.complete; });
+    box.innerHTML = e.total > 0 ? `
+      <div class="eyebrow">Tu estimado</div>
+      <div class="big" style="margin-top:6px">${money(e.total)}</div>
+      <div class="range">Entre ${money(e.low)} y ${money(e.high)}</div>
+      <div class="lines">${e.calcs.map((c) => `<div><span>${esc(c.t.name)}${c.qty > 1 ? ` × ${c.qty}` : ''} <span class="muted">· ${esc(c.d ? c.d.name : '')}</span></span><span class="num">${money(c.total)}</span></div>`).join('')}
+        ${pending ? `<div class="muted small"><span>Completa las medidas que faltan</span></div>` : ''}</div>
+      <p class="notice">${esc(cfg.disclaimer)}</p>
+      <button class="btn primary block" style="margin-top:14px" type="button" data-act="submit">Obtener mi cotización</button>
+      <p class="small muted" style="margin-top:8px">Te pediremos tu nombre y número para enviarte la cotización.</p>`
+      : `<div class="eyebrow">Tu estimado</div>
+      <div class="big muted" style="margin-top:6px">—</div>
+      <p class="small muted" style="margin-top:8px">Elige el trabajo y escribe las medidas: el precio aparece al instante.</p>`;
+  }
+
+  function submit() {
+    client.tried = true;
+    const e = estimate(client.items);
+    const errs = [];
+    if (!e.total) errs.push('Completa las medidas del trabajo.');
+    if (!client.name.trim()) errs.push('Escribe tu nombre.');
+    if (!phoneOk(client.phone)) errs.push('Escribe tu número de WhatsApp o celular con lada (10 dígitos o más).');
+    if (errs.length) {
+      render();
+      const box = document.getElementById('c-errors');
+      if (box) box.textContent = errs.join(' ');
+      (document.querySelector('.in.bad') || document.getElementById('c-name'))?.focus();
+      return;
+    }
+    sent = {
+      folio: folio(), name: client.name.trim(), phone: intlPhone(client.phone), via: client.via,
+      address: client.address.trim(), notes: client.notes.trim(),
+      items: client.items.map((it) => ({ it, c: itemCalc(it) })).filter((x) => x.c && x.c.complete && x.c.total > 0).map((x) => ({ text: describeItem(x.c, x.it), total: x.c.total })),
+      total: e.total, low: e.low, high: e.high,
+    };
+    render();
+    window.scrollTo({ top: 0 });
+  }
+
+  function sentView() {
+    const s = sent;
+    const msg = ownerMessage(s);
+    const ownerOk = phoneOk(cfg.whatsapp);
+    return `<section class="card done stack">
+      <div><div class="check"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
+        <div class="eyebrow">Cotización ${esc(s.folio)}</div><h2 style="font-size:22px;margin-top:4px">¡Listo, ${esc(s.name.split(' ')[0])}! Tu cotización está lista</h2></div>
+      <div class="summary">${s.items.map((x) => `<div><span>${esc(x.text)}</span><span class="num">${money(x.total)}</span></div>`).join('')}
+        <div style="border-top:1px solid var(--line);padding-top:8px;font-weight:600"><span>Estimado total</span><span class="num">${money(s.total)}</span></div>
+        <div class="muted small"><span>Rango posible</span><span class="num">${money(s.low)} – ${money(s.high)}</span></div></div>
+      <p class="notice">${esc(cfg.disclaimer)}</p>
+      ${ownerOk ? `
+        <a class="btn wa block" href="${esc(waLink(cfg.whatsapp, msg))}" target="_blank" rel="noopener" data-act="sent-wa">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.3-.4.8-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.2-.2-.5-.3Z"/></svg>
+          Enviar al WhatsApp del taller</a>
+        <p class="small muted" style="text-align:center">Se abre WhatsApp con tu cotización escrita; sólo toca <b>Enviar</b>. El taller te contestará por ${s.via === 'sms' ? 'mensaje SMS' : 'WhatsApp'} al +${esc(s.phone)}.</p>`
+      : `<p class="notice info">El taller todavía no registra su número de WhatsApp. Copia tu cotización y envíala por mensaje.</p>`}
+      <details><summary class="small muted" style="cursor:pointer">Ver o copiar el texto de la cotización</summary>
+        <textarea class="in copybox" id="copy-text" readonly style="margin-top:8px">${esc(msg)}</textarea>
+        <button class="btn sm" type="button" data-act="copy" style="margin-top:8px">Copiar texto</button></details>
+      <button class="btn block" type="button" data-act="new">Nueva cotización</button>
+    </section>`;
+  }
+
+  /* ───────── Vista del dueño ───────── */
+  function ownerView() {
+    const u = U();
+    return `<div class="stack">
+      <section class="card stack">
+        <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between">
+          <div><h2>Cómo funciona</h2><p class="muted small" style="margin-top:4px;max-width:520px">Pon un ejemplo de lo que cobras por cada trabajo. El estimador calcula el precio por ${u.area} o por ${u.len} y lo aplica a las medidas del cliente, más el extra del diseño. Cuando el cliente termina, te manda la cotización a tu WhatsApp con su número para que le contestes.</p></div>
+          <div class="checklist" id="checklist">${checklist()}</div>
+        </div>
+      </section>
+
+      <section class="card stack">
+        <h2>Tu negocio</h2>
+        <div class="row">
+          <label class="f">Nombre del taller<input class="in" id="o-business" data-o="business" value="${esc(cfg.business)}"></label>
+          <label class="f">Tu WhatsApp <span class="u">con código de país</span><input class="in ${cfg.whatsapp && !phoneOk(cfg.whatsapp) ? 'bad' : ''}" id="o-whatsapp" data-o="whatsapp" value="${esc(cfg.whatsapp)}" inputmode="tel" placeholder="Ej. 1 555 123 4567"></label>
+          <label class="f">Código de país de tus clientes<input class="in" id="o-cc" data-o="countryCode" value="${esc(cfg.countryCode)}" inputmode="numeric" placeholder="1 = EE. UU., 52 = México"></label>
+        </div>
+        <div class="row">
+          <label class="f">Moneda<select class="in" id="o-currency" data-o="currency"><option value="USD" ${cfg.currency === 'USD' ? 'selected' : ''}>Dólares (USD)</option><option value="MXN" ${cfg.currency === 'MXN' ? 'selected' : ''}>Pesos (MXN)</option></select></label>
+          <label class="f">Medidas en<select class="in" id="o-unit" data-o="unit"><option value="ft" ${cfg.unit === 'ft' ? 'selected' : ''}>Pies</option><option value="m" ${cfg.unit === 'm' ? 'selected' : ''}>Metros</option></select></label>
+          <label class="f">Rango que ve el cliente <span class="u">± %</span><input class="in" id="o-range" data-o="rangePct" value="${esc(cfg.rangePct)}" inputmode="decimal"></label>
+          <label class="f">Redondear a <span class="u">${cfg.currency}</span><input class="in" id="o-round" data-o="roundTo" value="${esc(cfg.roundTo)}" inputmode="numeric"></label>
+        </div>
+        <label class="f">Aviso de que el precio puede variar<textarea class="in" id="o-disc" data-o="disclaimer">${esc(cfg.disclaimer)}</textarea></label>
+      </section>
+
+      <section class="card stack">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2>Trabajos y precios</h2><button class="btn sm" type="button" data-act="add-type">+ Trabajo</button></div>
+        <p class="muted small">Ejemplo: un portón de 10 × 24 = $200 de material + la mano de obra. Los trabajos sin precio no se le muestran al cliente.</p>
+        ${cfg.types.map((t) => typeEditor(t)).join('')}
+      </section>
+
+      <section class="card stack">
+        <h2>Diseño</h2>
+        <p class="muted small">Cuánto sube el precio según el diseño que elija el cliente.</p>
+        ${cfg.designs.map((d) => `<div class="row" style="align-items:end">
+          <label class="f">Nombre<input class="in" id="dn-${esc(d.id)}" data-d="${esc(d.id)}" data-k="name" value="${esc(d.name)}"></label>
+          <label class="f">Descripción<input class="in" id="dd-${esc(d.id)}" data-d="${esc(d.id)}" data-k="desc" value="${esc(d.desc)}"></label>
+          <label class="f">Extra <span class="u">%</span><input class="in" id="dp-${esc(d.id)}" data-d="${esc(d.id)}" data-k="pct" value="${esc(d.pct)}" inputmode="decimal"></label>
+        </div>`).join('')}
+      </section>
+
+      <div class="savebar">
+        <span class="small ${dirty ? '' : 'muted'}" id="save-state">${dirty ? 'Tienes cambios sin publicar. Tus clientes siguen viendo los precios anteriores.' : 'Tus clientes ven estos precios.'}</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${dirty ? '<button class="btn sm ghost" type="button" data-act="discard">Descartar</button>' : ''}
+          <button class="btn primary" type="button" data-act="publish" ${dirty ? '' : 'disabled'}>Guardar y publicar</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function checklist() {
+    const checks = [
+      { ok: !!cfg.business.trim(), t: 'Nombre del taller' },
+      { ok: phoneOk(cfg.whatsapp), t: 'Tu número de WhatsApp (ahí llegan las cotizaciones)' },
+      { ok: cfg.types.some(priced), t: 'Al menos un trabajo con precio' },
+      { ok: !cfg.types.some((t) => priced(t) && !num(t.labor)), t: 'Mano de obra en los trabajos con precio' },
+    ];
+    return checks.map((c) => `<span><i class="dot" style="background:${c.ok ? 'var(--ok)' : 'var(--warn)'}"></i>${esc(c.t)}${c.ok ? '' : ' <span class="muted">(falta)</span>'}</span>`).join('');
+  }
+  function refreshOwnerHints() {
+    const cl = document.getElementById('checklist');
+    if (cl) cl.innerHTML = checklist();
+    cfg.types.forEach((t) => { document.getElementById(`tlab-${t.id}`)?.classList.toggle('bad', priced(t) && !num(t.labor)); });
+    document.getElementById('o-whatsapp')?.classList.toggle('bad', !!cfg.whatsapp && !phoneOk(cfg.whatsapp));
+  }
+
+  function typeEditor(t) {
+    const u = U(), r = rates(t);
+    const unitName = t.mode === 'area' ? u.area : t.mode === 'lineal' ? u.len : 'pieza';
+    const ex = t.mode === 'area'
+      ? `<label class="f">Ancho <span class="u">${u.len}</span><input class="in" id="ta-${esc(t.id)}" data-t="${esc(t.id)}" data-k="refA" value="${esc(t.refA)}" inputmode="decimal"></label><span class="op">×</span>
+         <label class="f">Alto <span class="u">${u.len}</span><input class="in" id="tb-${esc(t.id)}" data-t="${esc(t.id)}" data-k="refB" value="${esc(t.refB)}" inputmode="decimal"></label><span class="op">=</span>`
+      : t.mode === 'lineal'
+      ? `<label class="f">Largo <span class="u">${u.len}</span><input class="in" id="ta-${esc(t.id)}" data-t="${esc(t.id)}" data-k="refA" value="${esc(t.refA)}" inputmode="decimal"></label><span class="op">=</span>`
+      : `<span class="op">1 pieza =</span>`;
+    return `<div class="otype">
+      <div class="row" style="align-items:end">
+        <label class="f">Trabajo<input class="in" id="tn-${esc(t.id)}" data-t="${esc(t.id)}" data-k="name" value="${esc(t.name)}"></label>
+        <label class="f">Se cobra<select class="in" id="tm-${esc(t.id)}" data-t="${esc(t.id)}" data-k="mode">
+          <option value="area" ${t.mode === 'area' ? 'selected' : ''}>Por área (ancho × alto)</option>
+          <option value="lineal" ${t.mode === 'lineal' ? 'selected' : ''}>Por largo</option>
+          <option value="pieza" ${t.mode === 'pieza' ? 'selected' : ''}>Por pieza</option></select></label>
+      </div>
+      <div class="formula">${ex}
+        <label class="f">Material <span class="u">${cfg.currency}</span><input class="in" id="tmat-${esc(t.id)}" data-t="${esc(t.id)}" data-k="material" value="${esc(t.material)}" inputmode="decimal"></label><span class="op">+</span>
+        <label class="f">Mano de obra <span class="u">${cfg.currency}</span><input class="in ${priced(t) && !num(t.labor) ? 'bad' : ''}" id="tlab-${esc(t.id)}" data-t="${esc(t.id)}" data-k="labor" value="${esc(t.labor)}" inputmode="decimal"></label>
+        <label class="f">Mínimo <span class="u">${cfg.currency}</span><input class="in" id="tmin-${esc(t.id)}" data-t="${esc(t.id)}" data-k="min" value="${esc(t.min)}" inputmode="decimal"></label>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center">
+        <span class="rate" id="rate-${esc(t.id)}">${rateText(t)}</span>
+        <span style="display:flex;gap:6px">
+          <button class="btn sm" type="button" data-act="toggle-type" data-v="${esc(t.id)}">${t.active ? 'Ocultar al cliente' : 'Mostrar al cliente'}</button>
+          <button class="btn sm ghost" type="button" data-act="del-type" data-v="${esc(t.id)}">Eliminar</button>
+        </span>
+      </div>
+    </div>`;
+  }
+  function rateText(t) {
+    const u = U(), r = rates(t);
+    const unitName = t.mode === 'area' ? u.area.replace('pies²', 'pie²') : t.mode === 'lineal' ? (cfg.unit === 'm' ? 'm' : 'pie') : 'pieza';
+    if (!t.active) return 'Oculto para el cliente';
+    if (r.total <= 0) return 'Sin precio: no se muestra al cliente';
+    return `= ${money(r.total, 2)} por ${unitName} (material ${money(r.mat, 2)} + mano de obra ${money(r.lab, 2)})`;
+  }
+
+  function setDirty() {
+    dirty = true;
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(cfg)); } catch {}
+    refreshOwnerHints();
+    const s = document.getElementById('save-state');
+    if (s) { s.textContent = 'Tienes cambios sin publicar. Tus clientes siguen viendo los precios anteriores.'; s.classList.remove('muted'); }
+    const b = document.querySelector('[data-act="publish"]');
+    if (b) b.disabled = false;
+  }
+
+  /* ───────── Publicar (el dueño guarda los precios dentro de la página) ───────── */
+  const SKELETON = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>';
+  function buildDocument(config) {
+    const style = document.getElementById('mw-style').textContent;
+    const main = document.getElementById('mw-main').textContent;
+    const json = JSON.stringify(config, null, 2).replace(/</g, '\\u003c');
+    const S = 'script';
+    return SKELETON +
+      '<title>Estimador de Herrería</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n' +
+      '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+      '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">\n' +
+      '<style id="mw-style">' + style + '</style>\n\n<div id="app" class="wrap"></div>\n\n' +
+      '<' + S + ' type="application/json" id="mw-config">' + json + '</' + S + '>\n\n' +
+      '<' + S + ' id="mw-main">' + main + '</' + S + '>\n</body></html>';
+  }
+  async function publish() {
+    if (!art) { toast('Para guardar, abre esta página dentro de Claude con permiso de edición.'); return; }
+    const btn = document.querySelector('[data-act="publish"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Publicando…'; }
+    try {
+      await art.publish(buildDocument(cfg));
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
+      dirty = false;
+      toast('Precios publicados');
+    } catch (e) {
+      const code = e && e.code;
+      toast(code === 'conflict' ? 'La página cambió en otra ventana. Se recargará con la versión más nueva.'
+        : code === 'not_granted' || code === 'not_writer' ? 'No tienes permiso para publicar cambios.'
+        : 'No se pudo publicar. Intenta de nuevo.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Guardar y publicar'; }
+    }
+  }
+
+  /* ───────── Eventos ───────── */
+  document.addEventListener('click', (ev) => {
+    const el = ev.target.closest('[data-act]');
+    if (!el) return;
+    const act = el.dataset.act, id = el.dataset.i, v = el.dataset.v;
+    const item = client.items.find((x) => x.id === id);
+    switch (act) {
+      case 'view': view = v; try { history.replaceState(null, '', v === 'dueno' ? '#dueno' : '#cliente'); } catch {} render(); break;
+      case 'type': if (item) { item.typeId = v; render(); document.getElementById(`a-${item.id}`)?.focus(); } break;
+      case 'design': if (item) { item.designId = v; render(); } break;
+      case 'add-item': client.items.push(newItem()); render(); break;
+      case 'del-item': client.items = client.items.filter((x) => x.id !== id); render(); break;
+      case 'via': client.via = v; render(); break;
+      case 'submit': submit(); break;
+      case 'new':
+        client = { items: [newItem()], name: '', phone: '', via: 'whatsapp', address: '', notes: '', tried: false };
+        sent = null; render(); window.scrollTo({ top: 0 }); break;
+      case 'sent-wa': setTimeout(() => toast('Cuando envíes el mensaje, toca «Nueva cotización» para el siguiente cliente.'), 600); break;
+      case 'copy': {
+        const ta = document.getElementById('copy-text');
+        const text = ta ? ta.value : '';
+        if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => toast('Texto copiado'), () => { ta?.select(); toast('Selecciona y copia el texto'); });
+        else { ta?.select(); toast('Selecciona y copia el texto'); }
+        break;
+      }
+      case 'add-type': cfg.types.push({ id: uid(), name: 'Nuevo trabajo', mode: 'area', refA: 1, refB: 1, material: 0, labor: 0, min: 0, active: true }); setDirty(); render(); break;
+      case 'del-type': cfg.types = cfg.types.filter((t) => t.id !== v); client.items.forEach((it) => { if (it.typeId === v) it.typeId = ''; }); setDirty(); render(); break;
+      case 'toggle-type': { const t = cfg.types.find((x) => x.id === v); if (t) { t.active = !t.active; setDirty(); render(); } break; }
+      case 'discard': cfg = clone(PUBLISHED); dirty = false; try { localStorage.removeItem(DRAFT_KEY); } catch {} render(); break;
+      case 'publish': publish(); break;
+    }
+  });
+
+  const NUMERIC = new Set(['refA', 'refB', 'material', 'labor', 'min', 'pct', 'rangePct', 'roundTo']);
+  document.addEventListener('input', (ev) => {
+    const el = ev.target;
+    if (el.dataset.c) { client[el.dataset.c] = el.value; const ce = document.getElementById('c-errors'); if (ce) ce.textContent = ''; if (client.tried) el.classList.toggle('bad', el.dataset.c === 'name' ? !el.value.trim() : el.dataset.c === 'phone' ? !phoneOk(el.value) : false); return; }
+    if (el.dataset.i && el.dataset.k) {
+      const it = client.items.find((x) => x.id === el.dataset.i);
+      if (!it) return;
+      it[el.dataset.k] = el.value;
+      const t = cfg.types.find((x) => x.id === it.typeId);
+      const sk = document.getElementById(`sk-${it.id}`);
+      if (sk && t) sk.innerHTML = sketch(it, t);
+      refreshEstimate();
+      return;
+    }
+    if (el.dataset.o) {
+      const k = el.dataset.o;
+      cfg[k] = NUMERIC.has(k) ? num(el.value) : el.value;
+      setDirty();
+      if (k === 'currency' || k === 'unit') render();
+      if (k === 'business') document.querySelector('h1').textContent = el.value || 'Herrería';
+      return;
+    }
+    if (el.dataset.t) {
+      const t = cfg.types.find((x) => x.id === el.dataset.t);
+      if (!t) return;
+      const k = el.dataset.k;
+      t[k] = NUMERIC.has(k) ? num(el.value) : el.value;
+      setDirty();
+      if (k === 'mode') { if (t.mode === 'area' && !num(t.refB)) t.refB = 1; render(); return; }
+      const r = document.getElementById(`rate-${t.id}`);
+      if (r) r.textContent = rateText(t);
+      return;
+    }
+    if (el.dataset.d) {
+      const d = cfg.designs.find((x) => x.id === el.dataset.d);
+      if (!d) return;
+      d[el.dataset.k] = NUMERIC.has(el.dataset.k) ? num(el.value) : el.value;
+      setDirty();
+    }
+  });
+  document.addEventListener('change', (ev) => { if (ev.target.tagName === 'SELECT' && (ev.target.dataset.o || ev.target.dataset.t)) ev.target.dispatchEvent(new Event('input', { bubbles: true })); });
+
+  /* ───────── Arranque ───────── */
+  if (location.hash === '#dueno') view = 'dueno';
+  render();
+
+  // ¿Quien abre la página puede editar? Entonces ve el panel del dueño. Los clientes nunca lo ven.
+  (async () => {
+    const host = window.claude;
+    if (!host || !host.use) return;
+    const [user, artifact] = await Promise.all([host.use('user').catch(() => null), host.use('artifact').catch(() => null)]);
+    art = artifact;
+    canEdit = user ? !!(await user.canEdit().catch(() => false)) : false;
+    if (!canEdit) { if (view === 'dueno') { view = 'cliente'; render(); } return; }
+    try {
+      const d = localStorage.getItem(DRAFT_KEY);
+      if (d) { const parsed = JSON.parse(d); if (parsed && Array.isArray(parsed.types) && JSON.stringify(parsed) !== JSON.stringify(PUBLISHED)) { cfg = parsed; dirty = true; } }
+    } catch {}
+    if (!phoneOk(cfg.whatsapp) || dirty || location.hash === '#dueno') view = 'dueno';
+    render();
+  })();
+})();
+</script>
