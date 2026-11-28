@@ -53,9 +53,9 @@ export function CutPlanEditor() {
 
   const exportPdf = async () => {
     await flush();
-    await cutListPdf(plan, settings, clients?.find((c) => c.id === plan.clientId) ?? null);
+    try { await cutListPdf(plan, settings, clients?.find((c) => c.id === plan.clientId) ?? null); } catch (e) { toast((e as Error).message, 'bad'); }
   };
-  const exportCsv = () => downloadText(`${safeName(plan.name)}-cortes.csv`, cutListCsv(plan), 'text/csv;charset=utf-8');
+  const exportCsv = () => downloadText(`${safeName(plan.name)}-cortes.csv`, cutListCsv(plan), 'text/csv;charset=utf-8').catch((e) => toast((e as Error).message, 'bad'));
   const toQuote = async () => {
     await flush();
     const { quote, warnings } = await createQuoteFromPlan(plan, settings);

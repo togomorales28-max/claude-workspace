@@ -1,4 +1,7 @@
-import { HashRouter, Route, Routes, Navigate } from 'react-router-dom';
+import { HashRouter, MemoryRouter, Route, Routes, Navigate } from 'react-router-dom';
+
+// En el visor de artifacts la URL no admite rutas (#/ruta): se navega en memoria.
+const Router = import.meta.env.VITE_ARTIFACT === '1' ? MemoryRouter : HashRouter;
 import { Shell } from './components/Shell';
 import { UiProvider } from './components/ui';
 import { Dashboard } from './features/dashboard/Dashboard';
@@ -13,7 +16,7 @@ import { SettingsPage } from './features/settings/SettingsPage';
 
 export default function App() {
   return (
-    <HashRouter>
+    <Router>
       <UiProvider>
         <Shell>
           <Routes>
@@ -30,6 +33,6 @@ export default function App() {
           </Routes>
         </Shell>
       </UiProvider>
-    </HashRouter>
+    </Router>
   );
 }

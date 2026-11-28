@@ -44,7 +44,7 @@ export function QuoteEditor() {
   const exportPdf = async () => {
     if (!totals?.ok) { toast('Corrige los datos antes de exportar', 'bad'); return; }
     await flush();
-    await quotePdf(q, settings, client);
+    try { await quotePdf(q, settings, client); } catch (e) { toast((e as Error).message, 'bad'); }
   };
   const duplicate = async () => {
     await flush();

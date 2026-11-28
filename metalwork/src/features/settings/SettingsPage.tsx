@@ -26,8 +26,7 @@ export function SettingsPage() {
     await flush();
     const b = await exportBackup();
     const d = new Date();
-    downloadText(`metalwork-respaldo-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.json`, JSON.stringify(b, null, 1), 'application/json');
-    toast('Respaldo descargado');
+    try { await downloadText(`metalwork-respaldo-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.json`, JSON.stringify(b, null, 1), 'application/json'); toast('Respaldo listo'); } catch (e) { toast((e as Error).message, 'bad'); }
   };
   const restore = async (file: File) => {
     try {

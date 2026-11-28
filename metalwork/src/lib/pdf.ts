@@ -4,6 +4,7 @@ import { allocateSale, computeBudget, EXPENSE_CATEGORIES } from '../domain/budge
 import { groupMoney, runGroup } from './cutPlan';
 import { addDays, dateMx, fixed, kg, money, num, pct } from './format';
 import { PIECE_COLORS } from '../components/BarDiagram';
+import { downloadBlob } from './csv';
 
 const INK: [number, number, number] = [20, 26, 34];
 const MUTE: [number, number, number] = [110, 120, 134];
@@ -78,7 +79,7 @@ function ensureSpace(doc: JsPDF, y: number, need: number) {
 }
 
 function save(doc: JsPDF, filename: string) {
-  doc.save(filename);
+  return downloadBlob(filename, doc.output('blob'));
 }
 
 const fileSafe = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w-]+/g, '-').replace(/^-|-$/g, '') || 'documento';
@@ -185,7 +186,7 @@ export async function quotePdf(q: Quote, s: Settings, client: Client | null) {
   doc.setFontSize(8).setTextColor(...MUTE).text('Acepto cotización — nombre y firma', W - M - 100, y + 32, { align: 'center' });
 
   footer(doc, `${s.shop.name || 'Cotización'} · ${q.number}`);
-  save(doc, `${fileSafe(q.number)}-${fileSafe(q.title)}.pdf`);
+  await save(doc, `${fileSafe(q.number)}-${fileSafe(q.title)}.pdf`);
 }
 
 /* ═════════ Lista de cortes ═════════ */
@@ -258,7 +259,7 @@ export async function cutListPdf(plan: CutPlan, s: Settings, client: Client | nu
     (doc.splitTextToSize(plan.notes, W - 2 * M) as string[]).forEach((l) => { y = ensureSpace(doc, y, 14); doc.text(l, M, y + 8); y += 11; });
   }
   footer(doc, `${plan.name} · Medidas en milímetros`);
-  save(doc, `${fileSafe(plan.name)}-lista-de-cortes.pdf`);
+  await save(doc, `${fileSafe(plan.name)}-lista-de-cortes.pdf`);
 }
 
 function hex(h: string): [number, number, number] {
